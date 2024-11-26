@@ -160,3 +160,90 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.next
+dist/
+build/
+.cache/
+coverage/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+Desktop.ini
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Local development
+*.log
+.local/
+tmp/
+temp/
+
+# Database
+*.sqlite3
+*.db
+
+# Media and static files
+media/
+static/
+!frontend/src/static/
+uploads/
+
+# Production
+.env.prod
+.env.staging
+production.yml
+staging.yml
