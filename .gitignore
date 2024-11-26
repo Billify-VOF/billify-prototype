@@ -191,18 +191,32 @@ wheels/
 .coverage
 htmlcov/
 
-# Node
+# Node/React
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .npm
-.next
-dist/
+.next/
+out/
 build/
+dist/
 .cache/
 coverage/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.vercel
+.turbo
+storybook-static/
+.eslintcache
+.stylelintcache
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
 # IDEs and editors
 .idea/
@@ -218,9 +232,14 @@ coverage/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
-.directory
+ehthumbs.db
 Desktop.ini
+.directory
 
 # Docker
 .docker/
@@ -247,3 +266,16 @@ uploads/
 .env.staging
 production.yml
 staging.yml
+
+# Testing
+coverage/
+.nyc_output
+cypress/videos/
+cypress/screenshots/
+
+# Misc
+*.pem
+.DS_Store
+*.pid
+*.seed
+*.pid.lock
