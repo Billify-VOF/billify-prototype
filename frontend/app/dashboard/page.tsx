@@ -5,7 +5,6 @@ import {
   Settings,
   Receipt,
   Wallet,
-  TrendingUp,
 } from '@/components/ui/icons'
 import { Card, CardContent } from '@/components/ui/card'
 
