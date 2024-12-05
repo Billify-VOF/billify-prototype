@@ -13,18 +13,16 @@ env = environ.Env(
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(BASE_DIR, '../.env'))
+environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = env.bool('DEBUG', default=True)
-DEBUG = True
-print(f"DEBUG={DEBUG}")  # Print immediately after setting DEBUG
+DEBUG = env.bool('DEBUG', default=True)
 
-# ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# Define allowed hosts from environment variables
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 # Application definition
 INSTALLED_APPS = [
@@ -43,7 +41,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.invoices',
     'apps.cashflow',
-    'apps.api',
+    # 'api' is not included here as it's not a Django app
 ]
 
 MIDDLEWARE = [
@@ -109,12 +107,12 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR.parent / 'static'
 
 # Media files
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -124,13 +122,18 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100,
 }
 
 # CORS settings
@@ -155,3 +158,5 @@ if not DEBUG:
     AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL')
     AWS_DEFAULT_ACL = None
     AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_VERIFY = True
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
