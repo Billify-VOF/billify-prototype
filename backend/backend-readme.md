@@ -197,5 +197,3 @@ export DJANGO_SETTINGS_MODULE=billify.settings.development
 - Production dependencies: `requirements/production.txt`
 
 ---
-
-This README reflects the updated structure and provides a comprehensive guide to the refactored backend. Let me know if you'd like to expand on any section!
