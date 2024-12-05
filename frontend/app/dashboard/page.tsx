@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Menu,
   Upload,
@@ -6,9 +6,52 @@ import {
   Receipt,
   Wallet,
 } from '@/components/ui/icons'
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 
 const BillifyDashboard = () => {
+    // Add state for file upload
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+
+    //Add file handling functions
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (file && file.type === 'application/pdf') {
+            setSelectedFile(file)
+        } else {
+            setUploadStatus('error')
+            alert('Please select a PDF file')
+        }
+    }
+
+    // Add function to handle file upload
+    const handleUpload = async () => {
+      if (!selectedFile) return
+
+      setUploadStatus('uploading');
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        // We'll create this endpoint later in the backend
+        const response = await fetch('/api/invoice/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) throw new Error('Failed to upload file')
+
+        setUploadStatus('success');
+        // Reset file selection
+        setSelectedFile(null);
+        // You might want to refresh your invoice list here
+      } catch (error) {
+        setUploadStatus('error')
+        console.error('Upload error:', error);
+      }
+    }
+
     // Sample data
     const financialData = {
       cashSaldo: 25000,
@@ -74,10 +117,52 @@ const BillifyDashboard = () => {
                     <button className="px-4 py-2 text-sm rounded-lg bg-gray-100">
                       Filter
                     </button>
-                    <button className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      Upload
-                    </button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          Upload
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Upload Invoice</h3>
+                          <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                            <input
+                              type="file"
+                              accept=".pdf"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              id="file-upload"
+                            />
+                            <label
+                              htmlFor="file-upload"
+                              className="cursor-pointer text-blue-600 hover:text-blue-700"
+                            >
+                              {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
+                            </label>
+                          </div>
+                          
+                          {uploadStatus === 'uploading' && (
+                            <div className="text-center text-gray-500">Uploading...</div>
+                          )}
+                          
+                          {selectedFile && uploadStatus === 'idle' && (
+                            <button
+                              onClick={handleUpload}
+                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                              Upload Invoice
+                            </button>
+                          )}
+                          
+                          {uploadStatus === 'error' && (
+                            <div className="text-red-500 text-center">Upload failed. Please try again.</div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
                   </div>
                 </div>
                 
