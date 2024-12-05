@@ -1,1 +1,0 @@
-# Implementation using Django ORM

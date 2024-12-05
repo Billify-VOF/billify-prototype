@@ -1,1 +1,0 @@
-# REST views, separated by module
