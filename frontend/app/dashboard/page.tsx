@@ -36,7 +36,7 @@ const BillifyDashboard = () => {
 
       try {
         // We'll create this endpoint later in the backend
-        const response = await fetch('/api/invoice/upload', {
+        const response = await fetch('http://localhost:3000/api/invoice/upload', {
           method: 'POST',
           body: formData
         })
