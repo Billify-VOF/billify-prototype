@@ -40,52 +40,53 @@ class InvoiceUploadView(APIView):
         3. Returns the created invoice information
         """
         serializer = InvoiceUploadSerializer(data=request.data)
-        if serializer.is_valid():
-            uploaded_file = serializer.validated_data['file']
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
 
-            try:
-                # Delegate to domain service for business logic
-                invoice = self.invoice_service.process_invoice(
-                    file=uploaded_file,
-                    storage=self.storage,
-                    user=request.user
-                )
+        uploaded_file = serializer.validated_data['file']
 
-                return Response({
-                    'message': 'Invoice processed successfully',
-                    'invoice_id': invoice.id,
-                    'status': invoice.status
-                }, status=201)
+        try:
+            # Delegate to domain service for business logic
+            invoice = self.invoice_service.process_invoice(
+                file=uploaded_file,
+                storage=self.storage
+            )
 
-            except InvalidInvoiceError as e:
-                logger.warning(
-                    "Invalid invoice upload: %s",
-                    str(e),
-                    extra={'user_id': request.user.id}
-                )
-                return Response({
-                    'error': 'Invalid invoice format',
-                    'detail': str(e)
-                }, status=400)
+            return Response({
+                'message': 'Invoice processed successfully',
+                'invoice_id': invoice['id'],
+                'status': invoice['status']
+            }, status=201)
 
-            except StorageError as e:
-                logger.error(
-                    "Storage error during invoice upload: %s",
-                    str(e),
-                    extra={'user_id': request.user.id}
-                )
-                return Response({
-                    'error': 'Unable to store invoice',
-                    'detail': 'Please try again later'
-                }, status=503)
+        except InvalidInvoiceError as e:
+            logger.warning(
+                "Invalid invoice upload: %s",
+                str(e),
+                extra={'user_id': request.user.id}
+            )
+            return Response({
+                'error': 'Invalid invoice format',
+                'detail': str(e)
+            }, status=400)
 
-            except ProcessingError as e:
-                logger.error(
-                    "Processing error during invoice upload: %s",
-                    str(e),
-                    extra={'user_id': request.user.id}
-                )
-                return Response({
-                    'error': 'Unable to process invoice',
-                    'detail': str(e)
-                }, status=422)
+        except StorageError as e:
+            logger.error(
+                "Storage error during invoice upload: %s",
+                str(e),
+                extra={'user_id': request.user.id}
+            )
+            return Response({
+                'error': 'Unable to store invoice',
+                'detail': 'Please try again later'
+            }, status=503)
+
+        except ProcessingError as e:
+            logger.error(
+                "Processing error during invoice upload: %s",
+                str(e),
+                extra={'user_id': request.user.id}
+            )
+            return Response({
+                'error': 'Unable to process invoice',
+                'detail': str(e)
+            }, status=422)
