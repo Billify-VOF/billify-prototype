@@ -1,0 +1,12 @@
+{
+    "include": [
+        "."
+    ],
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonVersion": "3.10",
+            "pythonPlatform": "Linux"
+        }
+    ]
+}
