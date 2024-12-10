@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(BASE_DIR.parent))
 
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.invoices',
     'apps.cashflow',
     # 'api' is not included here as it's not a Django app
+    'infrastructure',
 ]
 
 MIDDLEWARE = [
