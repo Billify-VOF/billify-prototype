@@ -1,38 +1,32 @@
 import { NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export async function POST(request: Request) {
     try {
-        console.log('API route hit - starting file upload process')
-        
         const formData = await request.formData();
-        console.log('Form data received:', formData)
-        const file = formData.get('file') as File;
-        console.log('File extracted from form data:', file)
-
-        // For testing, just log the file details
-        console.log('Received file:', {
-            name: file.name,
-            size: file.size,
-            type: file.type
-        })
-
-        // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
         
-        // Return a success response
-        console.log('Sending success response')
-        return NextResponse.json({ 
-            success: true,
-            message: 'File received successfully' 
-        })
+        // Forward the request to Django backend
+        const response = await fetch(`${BACKEND_URL}/api/invoices/upload/`, {
+            method: 'POST',
+            body: formData,
+            // Include any auth headers if needed
+            headers: {
+                // Remove the default content-type as it's set automatically with FormData
+                ...(request.headers as any),
+            },
+        });
+
+        const data = await response.json();
+
+        // Forward the response status
+        return NextResponse.json(data, { status: response.status });
+        
     } catch (error) {
-        console.error('Upload error details:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
-        })
+        console.error('Upload error:', error);
         return NextResponse.json({ 
-            success: false,
-            message: 'Failed to upload file' 
-        }, { status: 500 })
+            error: 'Failed to upload file',
+            detail: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
     }
 }
