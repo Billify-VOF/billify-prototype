@@ -10,10 +10,12 @@ import {
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
 const BillifyDashboard = () => {
     // Add state for file upload
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+    const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,30 +30,42 @@ const BillifyDashboard = () => {
 
     // Add function to handle file upload
     const handleUpload = async () => {
-      if (!selectedFile) return
+      if (!selectedFile) return;
 
       setUploadStatus('uploading');
       const formData = new FormData();
       formData.append('file', selectedFile);
 
       try {
-        // We'll create this endpoint later in the backend
-        const response = await fetch('http://localhost:3000/api/invoice/upload', {
+        const response = await fetch('/api/invoice/upload', {
           method: 'POST',
           body: formData
-        })
+        });
 
-        if (!response.ok) throw new Error('Failed to upload file')
+        if (!response.ok) throw new Error('Failed to upload file');
 
+        // Add a slight delay to show the progress bar
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         setUploadStatus('success');
-        // Reset file selection
+        // Reset file selection after successful upload
         setSelectedFile(null);
-        // You might want to refresh your invoice list here
+        
+        // Reset status after showing success message
+        setTimeout(() => {
+          setUploadStatus('idle');
+        }, 3000);
+        
       } catch (error) {
-        setUploadStatus('error')
         console.error('Upload error:', error);
+        setUploadStatus('error');
+        
+        // Reset error status after 3 seconds
+        setTimeout(() => {
+          setUploadStatus('idle');
+        }, 3000);
       }
-    }
+    };
 
     // Sample data
     const financialData = {
@@ -144,21 +158,38 @@ const BillifyDashboard = () => {
                             </label>
                           </div>
                           
+                          {/* Progress Bar */}
                           {uploadStatus === 'uploading' && (
-                            <div className="text-center text-gray-500">Uploading...</div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div 
+                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: '100%', animation: 'progress 1s ease-in-out infinite' }}
+                              />
+                            </div>
                           )}
                           
                           {selectedFile && uploadStatus === 'idle' && (
                             <button
                               onClick={handleUpload}
-                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={(uploadStatus as UploadStatus) === 'uploading'}
                             >
                               Upload Invoice
                             </button>
                           )}
                           
+                          {/* Success Message */}
+                          {uploadStatus === 'success' && (
+                            <div className="text-green-500 text-center bg-green-50 p-3 rounded-lg">
+                              Invoice uploaded successfully!
+                            </div>
+                          )}
+                          
+                          {/* Error Message */}
                           {uploadStatus === 'error' && (
-                            <div className="text-red-500 text-center">Upload failed. Please try again.</div>
+                            <div className="text-red-500 text-center bg-red-50 p-3 rounded-lg">
+                              Upload failed. Please try again.
+                            </div>
                           )}
                         </div>
                       </DialogContent>
