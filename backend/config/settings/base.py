@@ -1,5 +1,6 @@
 """Django settings for billify project."""
 import os
+import sys
 from pathlib import Path
 import environ
 
@@ -10,7 +11,10 @@ env = environ.Env(
 )
 
 # Build paths inside the project
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Add the project root to the Python path
+sys.path.append(str(BASE_DIR.parent))
 
 # Take environment variables from .env file
 environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))

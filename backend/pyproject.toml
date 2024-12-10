@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "billify-backend"
+version = "1.0.0"
+authors = [
+    { name="Christian Vuye" },
+]
+description = "Backend for the Billify invoice management system"
+readme = "README.md"
+requires-python = ">=3.10"
