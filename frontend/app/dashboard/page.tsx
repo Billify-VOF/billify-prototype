@@ -28,39 +28,30 @@ const BillifyDashboard = () => {
 
     // Add function to handle file upload
     const handleUpload = async () => {
-      if (!selectedFile) return;
+      if (!selectedFile) return
 
       setUploadStatus('uploading');
       const formData = new FormData();
       formData.append('file', selectedFile);
 
       try {
-        const response = await fetch('/api/invoice/upload', {
+        // We'll create this endpoint later in the backend
+        const response = await fetch('http://localhost:3000/api/invoice/upload', {
           method: 'POST',
-          body: formData,
-          // Add credentials if using session auth
-          credentials: 'include',
-        });
+          body: formData
+        })
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || 'Failed to upload file');
-        }
+        if (!response.ok) throw new Error('Failed to upload file')
 
         setUploadStatus('success');
         // Reset file selection
         setSelectedFile(null);
-        
-        // Optional: Show success message
-        alert('Invoice uploaded successfully!');
-        
+        // You might want to refresh your invoice list here
       } catch (error) {
-        setUploadStatus('error');
+        setUploadStatus('error')
         console.error('Upload error:', error);
-        alert(error instanceof Error ? error.message : 'Failed to upload file');
       }
-    };
+    }
 
     // Sample data
     const financialData = {
