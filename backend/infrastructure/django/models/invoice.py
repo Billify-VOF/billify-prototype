@@ -40,6 +40,7 @@ class Invoice(models.Model):
 
     class Meta:
         """Model configuration for database behavior and indexing."""
+        app_label = 'infrastructure'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['invoice_number']),
