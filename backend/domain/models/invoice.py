@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from datetime import date
+from typing import Optional
 from domain.exceptions import InvalidInvoiceError
 
 
@@ -11,8 +12,15 @@ class Invoice:
     business data and validation rules.
     """
 
-    def __init__(self, amount: Decimal, due_date: date, 
-                 invoice_number: str, file_path: str):
+    def __init__(
+        self,
+        amount: Decimal,
+        due_date: date,
+        invoice_number: str,
+        file_path: str,
+        invoice_id: Optional[int] = None
+    ):
+        self.id = invoice_id
         self.amount = amount
         self.due_date = due_date
         self.invoice_number = invoice_number

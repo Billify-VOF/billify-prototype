@@ -1,5 +1,8 @@
 """Django ORM model for invoice persistence and database operations."""
 
+from typing import Optional
+from decimal import Decimal
+from datetime import date
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -7,6 +10,8 @@ from django.utils import timezone
 
 class Invoice(models.Model):
     """Database model for storing invoice information."""
+
+    objects = models.Manager()
 
     STATUS_CHOICES = [
         ('pending', 'Pending Payment'),
@@ -54,3 +59,20 @@ class Invoice(models.Model):
         if self.is_overdue() and self.status == 'pending':
             self.status = 'overdue'
             self.save(update_fields=['status', 'updated_at'])
+
+    def __init__(
+        self,
+        amount: Decimal,
+        due_date: date,
+        invoice_number: str,
+        file_path: str,
+        invoice_id: Optional[int] = None,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.id = invoice_id
+        self.amount = amount
+        self.due_date = due_date
+        self.invoice_number = invoice_number
+        self.file_path = file_path
+        self.status = 'pending'

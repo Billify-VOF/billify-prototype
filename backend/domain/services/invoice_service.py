@@ -15,6 +15,9 @@ from integrations.transformers.pdf.transformer import (
     PDFTransformer,
     PDFTransformationError
 )
+from infrastructure.django.repositories.invoice_repository import (
+    DjangoInvoiceRepository
+)
 
 
 class InvoiceService:
@@ -23,18 +26,20 @@ class InvoiceService:
     def __init__(self):
         """Initialize service with required components."""
         self.pdf_transformer = PDFTransformer()
+        self.invoice_repository = DjangoInvoiceRepository()
 
-    def process_invoice(self, file, storage):
+    def process_invoice(self, file, storage, user_id: int):
         """
         Process a new invoice file through the complete business workflow.
 
         Args:
             file: The uploaded invoice file
             storage: Storage implementation for saving the file
-            user: The user who uploaded the invoice
+            user_id: The ID of the user who uploaded the invoice
 
         Returns:
-            Invoice: The processed invoice object
+            dict: A dictionary containing the ID, invoice number,
+                    and status of the processed invoice
 
         Raises:
             InvalidInvoiceError: If the invoice fails validation
@@ -48,20 +53,18 @@ class InvoiceService:
             # Extract data from the PDF
             invoice_data = self.pdf_transformer.transform(Path(file_path))
 
-            # Create an Invoice object
+            # Create and validate the Invoice object
             invoice = Invoice(**invoice_data)
-
-            # Validate the invoice according to business rules
             invoice.validate()
 
-            # Here we would typically:
-            # 3. Create invoice records
-            # 4. Update any related business data
-            # In a full implementation, we would persist
-            # the structured data to our database here
+            # Save to database
+            saved_invoice = self.invoice_repository.save(invoice, user_id)
 
-            # For now, return a simple structure
-            return invoice
+            return {
+                'invoice_id': saved_invoice.id,
+                'invoice_number': saved_invoice.invoice_number,
+                'status': saved_invoice.status
+            }
 
         except PDFTransformationError as e:
             raise ProcessingError(
