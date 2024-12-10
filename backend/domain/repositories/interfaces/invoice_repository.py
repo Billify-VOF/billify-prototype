@@ -10,8 +10,14 @@ class InvoiceRepository(ABC):
     """Interface defining invoice data access operations."""
 
     @abstractmethod
-    def save(self, invoice: Invoice) -> Invoice:
-        """Save an invoice to the database."""
+    def save(self, invoice: Invoice, user_id: int) -> Invoice:
+        """
+        Save an invoice to the database.
+
+        Args:
+            invoice: The domain invoice to save
+            user_id: ID of the user who uploaded the invoice
+        """
 
     @abstractmethod
     def get_by_id(self, invoice_id: int) -> Optional[Invoice]:
