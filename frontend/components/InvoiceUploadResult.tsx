@@ -8,7 +8,7 @@ interface InvoiceData {
   supplier_name?: string;
 }
 
-interface UploadResult {
+export interface UploadResult {
   status: 'success' | 'error';
   message?: string;
   error?: string;
