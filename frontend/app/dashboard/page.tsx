@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/icons'
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
+import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -16,6 +17,7 @@ const BillifyDashboard = () => {
     // Add state for file upload
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+    const [errorMessage, setErrorMessage] = useState<string>('');
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,28 +44,43 @@ const BillifyDashboard = () => {
           body: formData
         });
 
-        if (!response.ok) throw new Error('Failed to upload file');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Failed to upload file');
+        }
 
         // Add a slight delay to show the progress bar
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         setUploadStatus('success');
-        // Reset file selection after successful upload
-        setSelectedFile(null);
         
-        // Reset status after showing success message
-        setTimeout(() => {
-          setUploadStatus('idle');
-        }, 3000);
-        
+        // Show the extracted data in the dialog
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Extracted Invoice Data</h3>
+            <div className="space-y-2">
+              <p><span className="font-medium">Invoice Number:</span> {data.extracted_data.invoice_number}</p>
+              <p><span className="font-medium">Amount:</span> €{data.extracted_data.amount}</p>
+              <p><span className="font-medium">Date:</span> {new Date(data.extracted_data.date).toLocaleDateString()}</p>
+              {data.extracted_data.supplier_name && (
+                <p><span className="font-medium">Supplier:</span> {data.extracted_data.supplier_name}</p>
+              )}
+            </div>
+          </div>
+        );
+
       } catch (error) {
-        console.error('Upload error:', error);
         setUploadStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
         
-        // Reset error status after 3 seconds
-        setTimeout(() => {
-          setUploadStatus('idle');
-        }, 3000);
+        // Show error details
+        return (
+          <div className="text-red-500 bg-red-50 p-4 rounded-lg">
+            <h3 className="font-semibold">Upload Failed</h3>
+            <p>{error.message}</p>
+          </div>
+        );
       }
     };
 
@@ -171,25 +188,39 @@ const BillifyDashboard = () => {
                           {selectedFile && uploadStatus === 'idle' && (
                             <button
                               onClick={handleUpload}
-                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                               disabled={(uploadStatus as UploadStatus) === 'uploading'}
+                              type="button"
                             >
                               Upload Invoice
                             </button>
                           )}
                           
-                          {/* Success Message */}
+                          {/* Use InvoiceUploadResult component for success/error states */}
                           {uploadStatus === 'success' && (
-                            <div className="text-green-500 text-center bg-green-50 p-3 rounded-lg">
-                              Invoice uploaded successfully!
-                            </div>
+                            <InvoiceUploadResult 
+                              result={{
+                                status: 'success',
+                                invoice_data: {
+                                  invoice_number: '',
+                                  amount: '0',
+                                  date: '',
+                                  supplier_name: ''
+                                }
+                              }}
+                              onClose={() => setUploadStatus('idle')}
+                            />
                           )}
                           
-                          {/* Error Message */}
                           {uploadStatus === 'error' && (
-                            <div className="text-red-500 text-center bg-red-50 p-3 rounded-lg">
-                              Upload failed. Please try again.
-                            </div>
+                            <InvoiceUploadResult 
+                              result={{
+                                status: 'error',
+                                error: 'Upload failed',
+                                detail: errorMessage
+                              }}
+                              onClose={() => setUploadStatus('idle')}
+                            />
                           )}
                         </div>
                       </DialogContent>
