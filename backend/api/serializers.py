@@ -36,14 +36,14 @@ class InvoiceUploadSerializer(serializers.Serializer):
 
         return value
 
-    def create(self, validated_data):
+    def create(self, *_):
         """Not used - this serializer only validates file uploads."""
         raise NotImplementedError(
             "InvoiceUploadSerializer is for validation only. "
             "Use InvoiceService for invoice creation."
         )
 
-    def update(self, instance, validated_data):
+    def update(self, *_):
         """
         Not used - this serializer only validates file uploads.
 
