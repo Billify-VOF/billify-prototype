@@ -1,6 +1,7 @@
 """API views for invoice management including file uploads."""
 
 from logging import getLogger
+from pathlib import Path
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ from domain.exceptions import (
     StorageError,
     ProcessingError
 )
+from integrations.transformers.pdf.transformer import PDFTransformer
 from infrastructure.storage.file_system import FileStorage
 
 logger = getLogger(__name__)
@@ -29,15 +31,19 @@ class InvoiceUploadView(APIView):
         super().__init__(*args, **kwargs)
         self.invoice_service = InvoiceService()
         self.storage = FileStorage()
+        # Add the PDF transformer as a class dependency
+        self.transformer = PDFTransformer()
 
     def post(self, request):
         """
         Process uploaded invoice PDF and initiate invoice creation workflow.
 
-        This endpoint:
+        This endpoint performs a complete processing pipeline:
         1. Validates the uploaded file
-        2. Passes it to the invoice service for processing
-        3. Returns the created invoice information
+        2. Stores the file securely
+        3. Extracts data using OCR and text analysis
+        4. Creates an invoice record with the extracted data
+        5. Returns both the invoice record and extracted information
         """
         serializer = InvoiceUploadSerializer(data=request.data)
         if not serializer.is_valid():
@@ -46,17 +52,47 @@ class InvoiceUploadView(APIView):
         uploaded_file = serializer.validated_data['file']
 
         try:
-            # Delegate to domain service for business logic
+            # First, let invoice service handle storage and basic processing
             invoice = self.invoice_service.process_invoice(
                 file=uploaded_file,
                 storage=self.storage
             )
 
-            return Response({
+            # Now, process the stored PDF to extract structured data
+            file_path = self.storage.get_file_path(invoice['file_path'])
+            extracted_data = self.transformer.transform(Path(file_path))
+
+            # Combine invoice record with extracted data in response
+            response_data = {
+                'status': 'success',
                 'message': 'Invoice processed successfully',
-                'invoice_id': invoice['id'],
-                'status': invoice['status']
-            }, status=201)
+                'invoice': {
+                    'id': invoice['id'],
+                    'status': invoice['status'],
+                    'file_path': invoice['file_path']
+                },
+                'extracted_data': {
+                    'invoice_number': extracted_data.get('invoice_number'),
+                    'amount': str(extracted_data.get('amount')),  # For JSON
+                    'date': (extracted_data.get('date').isoformat()
+                             if extracted_data.get('date') else None),
+                    'supplier_name': extracted_data.get('supplier_name')
+                }
+            }
+
+            logger.info(
+                "Successfully processed invoice with extracted data",
+                extra={
+                    'user_id': request.user.id,
+                    'invoice_id': invoice['id'],
+                    'has_invoice_number': bool(
+                        extracted_data.get('invoice_number')),
+                    'has_amount': bool(extracted_data.get('amount')),
+                    'has_date': bool(extracted_data.get('date'))
+                }
+            )
+
+            return Response(response_data, status=201)
 
         except InvalidInvoiceError as e:
             logger.warning(
@@ -65,6 +101,7 @@ class InvoiceUploadView(APIView):
                 extra={'user_id': request.user.id}
             )
             return Response({
+                'status': 'error',
                 'error': 'Invalid invoice format',
                 'detail': str(e)
             }, status=400)
@@ -76,6 +113,7 @@ class InvoiceUploadView(APIView):
                 extra={'user_id': request.user.id}
             )
             return Response({
+                'status': 'error',
                 'error': 'Unable to store invoice',
                 'detail': 'Please try again later'
             }, status=503)
@@ -87,6 +125,7 @@ class InvoiceUploadView(APIView):
                 extra={'user_id': request.user.id}
             )
             return Response({
+                'status': 'error',
                 'error': 'Unable to process invoice',
                 'detail': str(e)
             }, status=422)
