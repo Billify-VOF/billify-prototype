@@ -55,7 +55,8 @@ class InvoiceUploadView(APIView):
             # First, let invoice service handle storage and basic processing
             invoice = self.invoice_service.process_invoice(
                 file=uploaded_file,
-                storage=self.storage
+                storage=self.storage,
+                user_id=request.user.id
             )
 
             # Now, process the stored PDF to extract structured data
