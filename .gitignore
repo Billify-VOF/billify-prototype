@@ -67,6 +67,7 @@ docs/_build/
 *.pid
 *.pid.lock
 *.seed
+.cursorrules
 .env
 .env.*
 !.env.example
