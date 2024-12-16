@@ -41,46 +41,35 @@ const BillifyDashboard = () => {
       try {
         const response = await fetch('/api/invoice/upload', {
           method: 'POST',
-          body: formData
+          body: formData,
+          credentials: 'include'
         });
 
         const data = await response.json();
+        console.log('Server response:', data);
 
         if (!response.ok) {
-          throw new Error(data.detail || 'Failed to upload file');
+          throw new Error(data.detail || data.error || 'Failed to upload file');
         }
 
-        // Add a slight delay to show the progress bar
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         setUploadStatus('success');
-        
-        // Show the extracted data in the dialog
+        setSelectedFile(null);
+
+        // Show success message with extracted data
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Extracted Invoice Data</h3>
-            <div className="space-y-2">
-              <p><span className="font-medium">Invoice Number:</span> {data.extracted_data.invoice_number}</p>
-              <p><span className="font-medium">Amount:</span> €{data.extracted_data.amount}</p>
-              <p><span className="font-medium">Date:</span> {new Date(data.extracted_data.date).toLocaleDateString()}</p>
-              {data.extracted_data.supplier_name && (
-                <p><span className="font-medium">Supplier:</span> {data.extracted_data.supplier_name}</p>
-              )}
-            </div>
-          </div>
+          <InvoiceUploadResult 
+            result={{
+              status: 'success',
+              invoice_data: data.extracted_data
+            }}
+            onClose={() => setUploadStatus('idle')}
+          />
         );
 
       } catch (error) {
+        console.error('Upload error details:', error);
         setUploadStatus('error');
         setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
-        
-        // Show error details
-        return (
-          <div className="text-red-500 bg-red-50 p-4 rounded-lg">
-            <h3 className="font-semibold">Upload Failed</h3>
-            <p>{error.message}</p>
-          </div>
-        );
       }
     };
 
