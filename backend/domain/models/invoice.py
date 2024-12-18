@@ -31,8 +31,8 @@ class Invoice:
         """Apply business rules to validate invoice data."""
         if self.amount <= 0:
             raise InvalidInvoiceError("Invoice amount must be positive")
-        if self.due_date < date.today():
-            raise InvalidInvoiceError("Due date cannot be in the past")
+        # if self.due_date < date.today():
+        # raise InvalidInvoiceError("Due date cannot be in the past")
 
     def get_status_display(self) -> str:
         """Return a human-readable status description."""

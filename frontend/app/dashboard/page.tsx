@@ -18,6 +18,7 @@ const BillifyDashboard = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +31,9 @@ const BillifyDashboard = () => {
         }
     }
 
+    const uploadUrl = '/api/invoices/upload';  // Define URL separately
+    console.log('Attempting upload to:', uploadUrl);  // Log the URL
+
     // Add function to handle file upload
     const handleUpload = async () => {
       if (!selectedFile) return;
@@ -39,7 +43,7 @@ const BillifyDashboard = () => {
       formData.append('file', selectedFile);
 
       try {
-        const response = await fetch('/api/invoice/upload', {
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData,
           credentials: 'include'
@@ -54,17 +58,7 @@ const BillifyDashboard = () => {
 
         setUploadStatus('success');
         setSelectedFile(null);
-
-        // Show success message with extracted data
-        return (
-          <InvoiceUploadResult 
-            result={{
-              status: 'success',
-              invoice_data: data.extracted_data
-            }}
-            onClose={() => setUploadStatus('idle')}
-          />
-        );
+        setUploadedInvoiceData(data.invoice_data);  // Store the received data
 
       } catch (error) {
         console.error('Upload error details:', error);
@@ -190,7 +184,7 @@ const BillifyDashboard = () => {
                             <InvoiceUploadResult 
                               result={{
                                 status: 'success',
-                                invoice_data: {
+                                invoice_data: uploadedInvoiceData || {
                                   invoice_number: '',
                                   amount: '0',
                                   date: '',

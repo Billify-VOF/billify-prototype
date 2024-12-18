@@ -14,14 +14,17 @@ class TextAnalyzer:
     def extract_fields(self, text: str) -> Dict:
         """Extract structured field data from raw text."""
         try:
+            print("TextAnalyzer: Starting field extraction")
+            print(f"Text Analysis: Input text:\n{text}")
             patterns = {
-                'invoice_number': r'Invoice\s*#?\s*(\w+[-]?\d+)',
-                'amount': r'Total[\s:]*[$€£]?\s*(\d+[.,]\d{2})',
-                'date': r'Date[\s:]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
-                'supplier_name': r'Company[\s:]*(.+)'
+                'invoice_number': r'Invoice Number[^\n]*?(\d{6,})',
+                'amount': r'Amount Due USD\s*(\d+\.\d{2})',
+                'date': r'Date\s*(.*?)(?:\n|Status)',
+                'supplier_name': r'(?:Webflow|From\s+)([^,\n]+(?:,\s*Inc\.)?)'
             }
-
-            return self._extract_using_patterns(text, patterns)
+            extracted = self._extract_using_patterns(text, patterns)
+            print(f"TextAnalyzer: Extracted fields: {extracted}")
+            return extracted
         except Exception as e:
             raise TextAnalysisError(
                 f"Failed to extract fields: {str(e)}"
@@ -36,7 +39,11 @@ class TextAnalyzer:
         """Apply regex patterns to extract fields."""
         extracted = {}
         for field, pattern in patterns.items():
-            match = re.search(pattern, text)
+            match = re.search(pattern, text, re.IGNORECASE)
+            print(f"\nTrying to match {field} with pattern: {pattern}")
             if match:
                 extracted[field] = match.group(1)
+                print(f"Found match for {field}: {match.group(1)}")
+            else:
+                print(f"No match found for {field}")
         return extracted

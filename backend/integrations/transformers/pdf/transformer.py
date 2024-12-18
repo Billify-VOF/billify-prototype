@@ -1,6 +1,6 @@
 """Coordinates the complete PDF transformation process."""
 
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any
@@ -26,21 +26,34 @@ class PDFTransformer:
     def transform(self, pdf_path: Path) -> Dict[str, Any]:
         """Transform a PDF invoice into structured data."""
         try:
+            print(f"\nStarting PDF transformation for: {pdf_path}")
             # Step 1: Extract text using OCR
             text_content = self.ocr_service.extract_text(pdf_path)
+            print(f"\nExtracted text:\n{text_content}")
 
             # Step 2: Analyze text to extract fields
             raw_data = self.text_analyzer.extract_fields(text_content)
+            print(f"\nExtracted raw data:\n{raw_data}")
+
+            # String of pdf path
+            pdf_path_str = str(pdf_path)
 
             # Step 3: Standardize the extracted data
-            return self._standardize_data(raw_data)
+            standardized = self._standardize_data(raw_data, pdf_path_str)
+            print(f"\nStandardized data:\n{standardized}")
+
+            # Return the standardized data
+            return standardized
 
         except (OCRError, TextAnalysisError) as e:
+            print(f"\nTransformation error: {str(e)}")
             raise PDFTransformationError(
                 f"PDF transformation failed: {str(e)}"
             ) from e
 
-    def _standardize_data(self, raw_data: Dict) -> Dict[str, Any]:
+    def _standardize_data(
+        self, raw_data: Dict, file_path: str
+    ) -> Dict[str, Any]:
         """
         Convert raw extracted data into our standard invoice format.
 
@@ -58,60 +71,53 @@ class PDFTransformer:
         """
 
         try:
-            standardized = {}
+            standardized = {
+                'file_path': file_path
+            }
 
             # Process invoice number
             if 'invoice_number' in raw_data:
-                standardized['invoice_number'] = (
-                    raw_data['invoice_number'].strip()
-                )
+                standardized['invoice_number'] = raw_data['invoice_number'].strip()
 
-            # Process amount - convert to Decimal and handle different formats
+            # Process amount
             if 'amount' in raw_data:
-                amount_str = raw_data['amount'].replace(',', '.')
-                try:
-                    standardized['amount'] = Decimal(amount_str)
-                except InvalidOperation as exc:
-                    raise PDFTransformationError(
-                        f"Invalid amount format: {amount_str}"
-                    ) from exc
+                standardized['amount'] = Decimal(raw_data['amount'].strip())
 
-            # Process date - convert to ISO format
-            if 'date' in raw_data:
+            # Process date with more flexible parsing
+            if 'date' in raw_data and raw_data['date']:
+                date_str = raw_data['date'].strip()
                 try:
-                    # Try multiple date formats
-                    for fmt in (
-                        '%d-%m-%Y',
-                        '%d/%m/%Y',
-                        '%Y-%m-%d'
-                    ):
+                    # Remove ordinal indicators and extra whitespace
+                    cleaned_date = (
+                        date_str.replace('st', '')
+                        .replace('nd', '')
+                        .replace('rd', '')
+                        .replace('th', '')
+                        .strip()
+                    )
+                    
+                    # Try parsing with various formats
+                    for fmt in [
+                        '%b %d %Y',      # Nov 5 2024
+                        '%B %d %Y',      # November 5 2024
+                        '%d-%m-%Y',      # 05-11-2024
+                        '%d/%m/%Y',      # 05/11/2024
+                        '%Y-%m-%d'       # 2024-11-05
+                    ]:
                         try:
-                            parsed_date = datetime.strptime(
-                                raw_data['date'],
-                                fmt
-                            )
-                            standardized['date'] = parsed_date.date()
+                            parsed_date = datetime.strptime(cleaned_date, fmt)
+                            standardized['due_date'] = parsed_date.date()
                             break
                         except ValueError:
                             continue
+                    
+                    if 'due_date' not in standardized:
+                        raise ValueError(f"Could not parse date: {date_str}")
+                        
                 except Exception as e:
-                    raise PDFTransformationError(
-                        f"Invalid date format: {str(e)}"
-                    ) from e
-
-            # Add supplier information if available
-            if 'supplier_name' in raw_data:
-                standardized['supplier_name'] = (
-                    raw_data['supplier_name'].strip()
-                )
-
-            # Validate required fields
-            required_fields = {'invoice_number', 'amount', 'date'}
-            missing_fields = required_fields - set(standardized.keys())
-            if missing_fields:
-                raise PDFTransformationError(
-                    f"Missing required fields: {', '.join(missing_fields)}"
-                )
+                    print(f"Date parsing failed: {str(e)}")
+                    # Set a default due date 30 days from now if parsing fails
+                    standardized['due_date'] = date.today() + timedelta(days=30)
 
             return standardized
 

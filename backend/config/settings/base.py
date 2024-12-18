@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.invoices',
     'apps.cashflow',
-    # 'api' is not included here as it's not a Django app
+    # 'api' is not included here as it's not a Django app -> it actually could
+    # be a Django app, but it's not a real app, it's just a collection of views
+    # and endpoints.
     'infrastructure',
 ]
 
@@ -129,8 +131,12 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    # Authentication is not required during development, for now.
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',  # Changed from IsAuthenticated
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -146,6 +152,15 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS', default=['http://localhost:3000']
 )
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # API Documentation
 SPECTACULAR_SETTINGS = {

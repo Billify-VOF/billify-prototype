@@ -7,6 +7,7 @@ contract.
 from pathlib import Path
 from datetime import datetime
 import uuid
+from django.conf import settings
 from domain.exceptions import StorageError
 
 
@@ -15,8 +16,8 @@ class FileStorage:
 
     def __init__(self):
         """Initialize storage with base directory for invoices."""
-        # Using absolute path from project root ensures consistent behavior
-        self.base_dir = Path('media/invoices')
+        # Use Django's MEDIA_ROOT setting
+        self.base_dir = Path(settings.MEDIA_ROOT) / 'invoices'
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def save_invoice(self, file):
@@ -36,6 +37,7 @@ class FileStorage:
             # Create year/month directory structure
             year_month = datetime.now().strftime('%Y/%m')
             storage_dir = self.base_dir / year_month
+            print(f"Creating directory at: {storage_dir}")
             storage_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate unique filename while preserving original extension
@@ -43,17 +45,22 @@ class FileStorage:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             unique_id = uuid.uuid4().hex[:8]
             unique_filename = f"{timestamp}_{unique_id}{original_name.suffix}"
+            print(f"Generated filename: {unique_filename}")
 
             # Create full storage path
             file_path = storage_dir / unique_filename
-
+            print(f"Full storage path: {file_path}")
             # Save the file using chunks for memory efficiency
             with file_path.open('wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
 
+            print(f"File saved successfully at: {file_path}")
+
             # Return path relative to base_dir for database storage
-            return str(file_path.relative_to(self.base_dir))
+            relative_path = str(file_path.relative_to(self.base_dir))
+            print(f"Relative path: {relative_path}")
+            return relative_path
 
         except Exception as e:
             raise StorageError(
@@ -70,4 +77,25 @@ class FileStorage:
         Returns:
             Path: Full system path to the file
         """
-        return self.base_dir / relative_path
+        full_path = self.base_dir / relative_path
+        print(f"Looking for file at: {full_path}")
+        print(f"get_file_path called with: {relative_path}")
+        print(f"Returning full path: {full_path}")
+        return full_path
+
+    def delete_file(self, file_path: str) -> None:
+        """
+        Delete a stored file.
+
+        Args:
+            file_path: Relative path to the file from base_dir
+
+        Raises:
+            StorageError: If file deletion fails
+        """
+        try:
+            full_path = self.base_dir / file_path
+            if full_path.exists():
+                full_path.unlink()
+        except Exception as e:
+            raise StorageError(f"Failed to delete file: {str(e)}") from e

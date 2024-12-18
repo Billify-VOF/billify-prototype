@@ -36,6 +36,8 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
     );
   }
 
+  console.log('Upload Result Data:', result);
+
   return (
     <Alert className="bg-green-50">
       <AlertTitle>Upload Successful</AlertTitle>
@@ -43,9 +45,9 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
         <div className="mt-4">
           <h4 className="font-semibold">Extracted Invoice Data:</h4>
           <div className="mt-2 space-y-2">
-            <p><span className="font-medium">Invoice Number:</span> {result.invoice_data?.invoice_number}</p>
-            <p><span className="font-medium">Amount:</span> €{result.invoice_data?.amount}</p>
-            <p><span className="font-medium">Date:</span> {new Date(result.invoice_data?.date).toLocaleDateString()}</p>
+            <p><span className="font-medium">Invoice Number:</span> {result.invoice_data?.invoice_number || 'N/A'}</p>
+            <p><span className="font-medium">Amount:</span> €{result.invoice_data?.amount || '0'}</p>
+            <p><span className="font-medium">Date:</span> {result.invoice_data?.date || 'N/A'}</p>
             {result.invoice_data?.supplier_name && (
               <p><span className="font-medium">Supplier:</span> {result.invoice_data.supplier_name}</p>
             )}
