@@ -4,8 +4,10 @@ from datetime import date
 from typing import Optional, List
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.contrib.auth import get_user_model
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
 from domain.models.invoice import Invoice as DomainInvoice
+from domain.exceptions import InvalidInvoiceError
 from infrastructure.django.models.invoice import Invoice as DjangoInvoice
 
 
@@ -28,13 +30,15 @@ class DjangoInvoiceRepository(InvoiceRepository):
         user_id: int
     ) -> DjangoInvoice:
         """Convert domain model to Django model."""
+        user_model = get_user_model()
+        user = user_model.objects.get(id=user_id)
         return DjangoInvoice(
             invoice_number=domain_invoice.invoice_number,
             amount=domain_invoice.amount,
             due_date=domain_invoice.due_date,
             file_path=domain_invoice.file_path,
             status=domain_invoice.status,
-            uploaded_by_id=user_id
+            uploaded_by_id=user
         )
 
     def save(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
@@ -83,3 +87,19 @@ class DjangoInvoiceRepository(InvoiceRepository):
             return True
         except ObjectDoesNotExist:
             return False
+
+    def update(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
+        """Update an existing invoice."""
+        try:
+            db_invoice = DjangoInvoice.objects.get(
+                invoice_number=invoice.invoice_number
+            )
+            db_invoice.amount = invoice.amount
+            db_invoice.due_date = invoice.due_date
+            db_invoice.file_path = invoice.file_path
+            db_invoice.save()
+            return self._to_domain(db_invoice)
+        except ObjectDoesNotExist as exc:
+            raise InvalidInvoiceError(
+                f"Invoice {invoice.invoice_number} not found"
+            ) from exc

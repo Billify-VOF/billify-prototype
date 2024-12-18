@@ -38,3 +38,16 @@ class InvoiceRepository(ABC):
     @abstractmethod
     def update_status(self, invoice_id: int, status: str) -> bool:
         """Update the status of an invoice."""
+
+    @abstractmethod
+    def update(self, invoice: Invoice, user_id: int) -> Invoice:
+        """
+        Update an existing invoice.
+
+        Args:
+            invoice: The domain invoice with updated data
+            user_id: ID of the user performing the update
+
+        Returns:
+            Invoice: The updated invoice
+        """

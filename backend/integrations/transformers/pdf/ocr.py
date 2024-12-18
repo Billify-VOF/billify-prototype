@@ -40,15 +40,19 @@ class OCRService:
             OCRError: If text extraction fails for any reason
         """
         try:
+            print(f"OCR: Starting text extraction from {pdf_path}")
             # First, convert the PDF into a list of images
             # Each image represents one page of the PDF
             pages = convert_from_path(pdf_path)
+            print(f"OCR: Extracted {len(pages)} pages from {pdf_path}")
 
             # Process each page and collect the extracted text
             text_content = []
-            for page in pages:
+            for i, page in enumerate(pages):
                 # Use OCR to extract text from the page image
                 text = pytesseract.image_to_string(page)
+                print(f"OCR: Extracted text from page {i + 1}:")
+                print(text)
                 text_content.append(text)
 
             # Combine all pages into a single text document

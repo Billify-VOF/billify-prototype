@@ -1,8 +1,5 @@
 """Django ORM model for invoice persistence and database operations."""
 
-from typing import Optional
-from decimal import Decimal
-from datetime import date
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -61,19 +58,23 @@ class Invoice(models.Model):
             self.status = 'overdue'
             self.save(update_fields=['status', 'updated_at'])
 
-    def __init__(
-        self,
-        amount: Decimal,
-        due_date: date,
-        invoice_number: str,
-        file_path: str,
-        invoice_id: Optional[int] = None,
-        **kwargs
-    ):
-        super().__init__(**kwargs)
-        self.id = invoice_id
-        self.amount = amount
-        self.due_date = due_date
-        self.invoice_number = invoice_number
-        self.file_path = file_path
-        self.status = 'pending'
+    def __init__(self, *args, **kwargs):
+        # Extract domain model attributes
+        domain_attrs = {}
+        for field in ['amount', 'due_date', 'invoice_number', 'file_path']:
+            if field in kwargs:
+                domain_attrs[field] = kwargs.pop(field)
+
+        # Initialize Django model
+        super().__init__(*args, **kwargs)
+
+        # Set domain attributes if provided
+        if domain_attrs:
+            self.amount = domain_attrs.get('amount', self.amount)
+            self.due_date = domain_attrs.get('due_date', self.due_date)
+            self.invoice_number = domain_attrs.get(
+                'invoice_number',
+                self.invoice_number
+            )
+            self.file_path = domain_attrs.get('file_path', self.file_path)
+            self.status = 'pending'
