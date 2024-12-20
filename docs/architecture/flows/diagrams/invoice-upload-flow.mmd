@@ -1,0 +1,36 @@
+flowchart TD
+    A[User Clicks Upload] --> B[BillifyDashboard handleUpload]
+    B --> C[Next.js API Route]
+    C --> D[Django InvoiceUploadView]
+    D --> E[FileStorage save_invoice]
+    D --> F[InvoiceService process_invoice]
+    F --> G[PDFTransformer transform]
+    G --> H[OCRService extract_text]
+    H --> I[TextAnalyzer extract_fields]
+    I --> J[PDFTransformer standardize_data]
+    J --> K[Invoice Model Creation]
+    K --> L[DjangoInvoiceRepository save]
+    L --> M[Database Save]
+    M --> N[Response to Frontend]
+    N --> O[Update UI]
+
+    subgraph Frontend
+    A
+    B
+    C
+    O
+    end
+
+    subgraph Backend
+    D
+    E
+    F
+    G
+    H
+    I
+    J
+    K
+    L
+    M
+    N
+    end
