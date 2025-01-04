@@ -28,10 +28,16 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
   if (result.status === 'error') {
     return (
       <Alert variant="destructive">
-        <AlertTitle>Upload Failed</AlertTitle>
+        <AlertTitle className="text-lg font-bold">Upload Failed</AlertTitle>
         <AlertDescription>
           {result.error}: {result.detail}
         </AlertDescription>
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+        >
+          ×
+        </button>
       </Alert>
     );
   }
@@ -40,7 +46,7 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
 
   return (
     <Alert className="bg-green-50">
-      <AlertTitle>Upload Successful</AlertTitle>
+      <AlertTitle className="text-lg font-bold">Upload Successful</AlertTitle>
       <AlertDescription>
         <div className="mt-4">
           <h4 className="font-semibold">Extracted Invoice Data:</h4>
@@ -53,6 +59,12 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
             )}
           </div>
         </div>
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+        >
+          ×
+        </button>
       </AlertDescription>
     </Alert>
   );
