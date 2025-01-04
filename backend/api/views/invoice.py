@@ -166,11 +166,7 @@ class InvoiceUploadView(APIView):
         """Process extracted data and convert due_date to datetime object."""
         self.validate_extracted_data(extracted_data)
         raw_due_date = extracted_data.get('due_date')
-        try:
-            due_date = self.normalize_date(raw_due_date) if raw_due_date else None
-        except ValueError:
-            logger.warning(f"Invalid due_date format: {raw_due_date}")
-            due_date = None
+        due_date = self.normalize_date(raw_due_date) if raw_due_date else None
 
         processed_data = {
             'invoice_number': extracted_data.get('invoice_number'),
@@ -190,17 +186,11 @@ class InvoiceUploadView(APIView):
 
         # Validate due_date format
         raw_due_date = data.get('due_date')
-        if raw_due_date:
-            valid_date = False
-            for fmt in ['%Y-%m-%d', '%b %d %Y']:
-                try:
-                    datetime.strptime(raw_due_date, fmt)
-                    valid_date = True
-                    break
-                except ValueError:
-                    continue
-            if not valid_date:
-                errors.append(f"Invalid date format: {raw_due_date}")
+        try:
+            if raw_due_date:
+                datetime.strptime(raw_due_date, '%b %d %Y')
+        except ValueError:
+            errors.append(f"Invalid date format: {raw_due_date}")
 
         # Validate amount
         try:
@@ -214,10 +204,13 @@ class InvoiceUploadView(APIView):
             raise ValueError(errors)
 
     def normalize_date(self, raw_date):
-        """Normalize the date format after validation for consistent internal representation."""
+        """Normalize the date format for consistent internal representation."""
         for fmt in ['%Y-%m-%d', '%b %d %Y']:
             try:
-                return datetime.strptime(raw_date, fmt).strftime('%Y-%m-%d')
+                normalized_date = datetime.strptime(raw_date, fmt)
+                logger.debug(f"Normalized date {raw_date} to {normalized_date} using format {fmt}")
+                return normalized_date
             except ValueError:
                 continue
+        logger.warning(f"Failed to normalize date: {raw_date}")
         return None
