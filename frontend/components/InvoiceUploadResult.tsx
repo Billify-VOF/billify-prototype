@@ -30,9 +30,7 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
       <Alert variant="destructive">
         <AlertTitle className="text-lg font-bold">Upload Failed</AlertTitle>
         <AlertDescription>
-          {result.error}: {result.detail?.includes('Invalid date format') ? 
-          'Please ensure the date format is YYYY-MM-DD or Dec 7th 2024.' : 
-          result.detail}
+          {result.error}: {result.detail}
         </AlertDescription>
         <button
           onClick={onClose}

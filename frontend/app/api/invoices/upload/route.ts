@@ -22,12 +22,6 @@ export async function POST(request: Request) {
             console.log('Backend response:', data);
 
             if (!backendResponse.ok) {
-                if (backendResponse.status === 400) {
-                    throw new Error(data.detail || 'Invalid input data.');
-                }
-                if (backendResponse.status === 422) {
-                    throw new Error('The uploaded file could not be processed. Please check the file format and try again.');
-                }
                 throw new Error(data.detail || 'An unexpected error occurred while processing your invoice.');
             }
 
