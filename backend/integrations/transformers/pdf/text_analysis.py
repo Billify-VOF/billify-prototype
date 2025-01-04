@@ -17,10 +17,10 @@ class TextAnalyzer:
             print("TextAnalyzer: Starting field extraction")
             print(f"Text Analysis: Input text:\n{text}")
             patterns = {
-                'invoice_number': r'Invoice Number[^\n]*?(\d{6,})',
-                'amount': r'Amount Due USD\s*(\d+\.\d{2})',
-                'date': r'Date\s*(.*?)(?:\n|Status)',
-                'supplier_name': r'(?:Webflow|From\s+)([^,\n]+(?:,\s*Inc\.)?)'
+                'invoice_number': r'(?:Factuur|Facture):?\s*([0-9]{4}[-./][0-9]{3,4})',
+                'amount': r'(?:Totaal|Total):?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2}))\s*(?:EUR|€)',
+                'date': r'(?:Documentdatum|Date du document):?\s*(\d{2}[-/]\d{2}[-/]\d{4})',
+                'supplier_name': r'^([^\n]+?(?:CommV|BV|BVBA|SA|SPRL|NV)?\b)'
             }
             extracted = self._extract_using_patterns(text, patterns)
             print(f"TextAnalyzer: Extracted fields: {extracted}")

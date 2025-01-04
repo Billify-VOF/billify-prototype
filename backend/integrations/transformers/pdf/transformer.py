@@ -81,7 +81,10 @@ class PDFTransformer:
 
             # Process amount
             if 'amount' in raw_data:
-                standardized['amount'] = Decimal(raw_data['amount'].strip())
+                amount_str = raw_data['amount'].strip()
+                # Handle European number formatting with comma decimals
+                amount_str = amount_str.replace('.', '').replace(',', '.')
+                standardized['amount'] = Decimal(amount_str)
 
             # Process date with more flexible parsing
             if 'date' in raw_data and raw_data['date']:
