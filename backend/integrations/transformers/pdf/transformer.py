@@ -1,5 +1,6 @@
 """Coordinates the complete PDF transformation process."""
 
+import re
 from datetime import datetime, date, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
