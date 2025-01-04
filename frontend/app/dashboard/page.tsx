@@ -19,17 +19,25 @@ const BillifyDashboard = () => {
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
+    const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
-        if (file && file.type === 'application/pdf') {
-            setSelectedFile(file)
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024) {
+                setUploadStatus('error');
+                alert('Please select a valid PDF file smaller than 5MB.');
+                return;
+            }
+            setSelectedFile(file);
+            setIsFileTypeInvalid(false);
         } else {
-            setUploadStatus('error')
-            alert('Please select a PDF file')
+            setUploadStatus('error');
+            setIsFileTypeInvalid(true);
+            alert('Please select a PDF file');
         }
-    }
+    };
 
     const uploadUrl = '/api/invoices/upload';  // Define URL separately
     console.log('Attempting upload to:', uploadUrl);  // Log the URL
@@ -142,7 +150,7 @@ const BillifyDashboard = () => {
                       <DialogContent>
                         <div className="space-y-4">
                           <h3 className="text-lg font-semibold">Upload Invoice</h3>
-                          <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                          <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
                             <input
                               type="file"
                               accept=".pdf"
@@ -174,6 +182,7 @@ const BillifyDashboard = () => {
                               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                               disabled={(uploadStatus as UploadStatus) === 'uploading'}
                               type="button"
+                              aria-label="Upload Invoice"
                             >
                               Upload Invoice
                             </button>

@@ -16,24 +16,29 @@ export async function POST(request: Request) {
             credentials: 'include'
         });
 
-        const data = await backendResponse.json();
-        console.log('Backend response:', data);
+        const contentType = backendResponse.headers.get('Content-Type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await backendResponse.json();
+            console.log('Backend response:', data);
 
-        if (!backendResponse.ok) {
-            throw new Error(data.detail || 'Backend processing failed');
-        }
-
-        // Format the response to match the expected structure
-        return NextResponse.json({
-            status: 'success',
-            message: data.message,
-            invoice_data: {
-                invoice_number: data.invoice_data.invoice_number,
-                amount: data.invoice_data.amount,
-                date: data.invoice_data.date || 'N/A',
-                supplier_name: data.invoice_data.supplier_name
+            if (!backendResponse.ok) {
+                throw new Error(data.detail || 'An unexpected error occurred while processing your invoice.');
             }
-        });
+
+            // Format the response to match the expected structure
+            return NextResponse.json({
+                status: 'success',
+                message: data.message,
+                invoice_data: {
+                    invoice_number: data.invoice_data.invoice_number,
+                    amount: data.invoice_data.amount,
+                    date: data.invoice_data.date || 'N/A',
+                    supplier_name: data.invoice_data.supplier_name
+                }
+            });
+        } else {
+            throw new Error('Unexpected response format');
+        }
 
     } catch (error) {
         console.error('Upload error details:', {

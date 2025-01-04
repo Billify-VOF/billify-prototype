@@ -2,6 +2,8 @@
 
 from logging import getLogger
 from pathlib import Path
+from datetime import datetime
+from decimal import Decimal
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -47,16 +49,15 @@ class InvoiceUploadView(APIView):
         5. Returns both the invoice record and extracted information
         """
 
-        print("Starting upload process")
-        print(f"Request data: {request.data}")
-        print(f"Received file: {request.FILES.get('file')}")
+        logger.debug(f"Request data: {request.data}")
+        logger.debug(f"Received file: {request.FILES.get('file')}")
         serializer = InvoiceUploadSerializer(data=request.data)
         if not serializer.is_valid():
-            print(f"Serializer errors: {serializer.errors}")
+            logger.error(f"Serializer errors: {serializer.errors}")
             return Response(serializer.errors, status=400)
 
         uploaded_file = serializer.validated_data['file']
-        print(
+        logger.info(
             f"Validated file: {uploaded_file.name}, "
             f"size: {uploaded_file.size}"
         )
@@ -66,9 +67,9 @@ class InvoiceUploadView(APIView):
             invoice = self.invoice_service.process_invoice(
                 file=uploaded_file,
                 storage=self.storage,
-                user_id=1  # Hardcode for development
+                user_id=request.user.id if request.user.is_authenticated else 1
             )
-            print(f"Invoice processed: {invoice}")
+            logger.info(f"Invoice processed: {invoice}")
 
             if 'file_path' not in invoice:
                 raise ProcessingError(
@@ -77,9 +78,13 @@ class InvoiceUploadView(APIView):
 
             # Now, process the stored PDF to extract structured data
             file_path = self.storage.get_file_path(invoice['file_path'])
-            print(f"File path: {file_path}")
+            logger.info(f"File path: {file_path}")
             extracted_data = self.transformer.transform(Path(file_path))
-            print(f"Extracted data: {extracted_data}")
+            logger.info(f"Extracted data: {extracted_data}")
+
+            # Process extracted data
+            processed_data = self.process_extracted_data(extracted_data)
+            logger.info(f"Processed data: {processed_data}")
 
             # Combine invoice record with extracted data in response
             response_data = {
@@ -92,22 +97,22 @@ class InvoiceUploadView(APIView):
                     'updated': invoice.get('updated', False)
                 },
                 'invoice_data': {
-                    'invoice_number': extracted_data.get('invoice_number'),
-                    'amount': str(extracted_data.get('amount')),
-                    'date': extracted_data.get('due_date').strftime('%b %d %Y') if extracted_data.get('due_date') else None,
-                    'supplier_name': extracted_data.get('supplier_name')
+                    'invoice_number': processed_data.get('invoice_number'),
+                    'amount': str(processed_data.get('amount')),
+                    'date': processed_data.get('due_date').strftime('%b %d %Y') if processed_data.get('due_date') else None,
+                    'supplier_name': processed_data.get('supplier_name')
                 }
             }
 
             logger.info(
                 "Successfully processed invoice with extracted data",
                 extra={
-                    'user_id': 1,  # Hardcode for development
+                    'user_id': request.user.id if request.user.is_authenticated else 1,
                     'invoice_id': invoice['invoice_id'],
                     'has_invoice_number': bool(
-                        extracted_data.get('invoice_number')),
-                    'has_amount': bool(extracted_data.get('amount')),
-                    'has_date': bool(extracted_data.get('date'))
+                        processed_data.get('invoice_number')),
+                    'has_amount': bool(processed_data.get('amount')),
+                    'has_date': bool(processed_data.get('due_date'))
                 }
             )
 
@@ -117,7 +122,7 @@ class InvoiceUploadView(APIView):
             logger.warning(
                 "Invalid invoice upload: %s",
                 str(e),
-                extra={'user_id': 1}  # Hardcode for development
+                extra={'user_id': request.user.id if request.user.is_authenticated else 1}
             )
             return Response({
                 'status': 'error',
@@ -129,7 +134,7 @@ class InvoiceUploadView(APIView):
             logger.error(
                 "Storage error during invoice upload: %s",
                 str(e),
-                extra={'user_id': 1}  # Hardcode for development
+                extra={'user_id': request.user.id if request.user.is_authenticated else 1}
             )
             return Response({
                 'status': 'error',
@@ -141,10 +146,63 @@ class InvoiceUploadView(APIView):
             logger.error(
                 "Processing error during invoice upload: %s",
                 str(e),
-                extra={'user_id': 1}  # Hardcode for development
+                extra={'user_id': request.user.id if request.user.is_authenticated else 1}
             )
             return Response({
                 'status': 'error',
                 'error': 'Unable to process invoice',
                 'detail': str(e)
             }, status=422)
+
+        except KeyError as e:
+            logger.error(f"Missing required data: {e}")
+            return Response({'error': 'Missing required data', 'details': str(e)}, status=400)
+
+        except Exception as e:
+            logger.exception("Unexpected error occurred during invoice upload")
+            return Response({'error': 'Internal server error', 'details': str(e)}, status=500)
+
+    def process_extracted_data(self, extracted_data):
+        """Process extracted data and convert due_date to datetime object."""
+        self.validate_extracted_data(extracted_data)
+        raw_due_date = extracted_data.get('due_date')
+        try:
+            due_date = datetime.strptime(raw_due_date, '%b %d %Y') if raw_due_date else None
+        except ValueError:
+            logger.warning(f"Invalid due_date format: {raw_due_date}")
+            due_date = None
+
+        processed_data = {
+            'invoice_number': extracted_data.get('invoice_number'),
+            'amount': Decimal(extracted_data.get('amount')) if extracted_data.get('amount') else None,
+            'due_date': due_date,
+            'supplier_name': extracted_data.get('supplier_name'),
+        }
+        return processed_data
+
+    def validate_extracted_data(self, data):
+        """Validate extracted data to ensure correct format."""
+        errors = []
+
+        # Validate invoice number
+        if not data.get('invoice_number'):
+            errors.append("Invoice number is missing.")
+
+        # Validate due_date format
+        raw_due_date = data.get('due_date')
+        try:
+            if raw_due_date:
+                datetime.strptime(raw_due_date, '%b %d %Y')
+        except ValueError:
+            errors.append(f"Invalid date format: {raw_due_date}")
+
+        # Validate amount
+        try:
+            if data.get('amount'):
+                Decimal(data['amount'])
+        except (ValueError, TypeError):
+            errors.append(f"Invalid amount: {data.get('amount')}")
+
+        if errors:
+            logger.error(f"Validation errors: {errors}")
+            raise ValueError(errors)
