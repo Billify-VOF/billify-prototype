@@ -4,7 +4,6 @@ from datetime import date
 from typing import Optional, List
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.contrib.auth import get_user_model
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
 from domain.models.invoice import Invoice as DomainInvoice
 from domain.exceptions import InvalidInvoiceError
@@ -30,15 +29,13 @@ class DjangoInvoiceRepository(InvoiceRepository):
         user_id: int
     ) -> DjangoInvoice:
         """Convert domain model to Django model."""
-        user_model = get_user_model()
-        user = user_model.objects.get(id=user_id)
         return DjangoInvoice(
             invoice_number=domain_invoice.invoice_number,
             amount=domain_invoice.amount,
             due_date=domain_invoice.due_date,
             file_path=domain_invoice.file_path,
             status=domain_invoice.status,
-            uploaded_by_id=user
+            uploaded_by_id=user_id
         )
 
     def save(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
