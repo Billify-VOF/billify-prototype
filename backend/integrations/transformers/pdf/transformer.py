@@ -1,5 +1,6 @@
 """Coordinates the complete PDF transformation process."""
 
+import re
 from datetime import datetime, date, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -82,45 +83,14 @@ class PDFTransformer:
             # Process amount
             if 'amount' in raw_data:
                 amount_str = raw_data['amount'].strip()
-                # Handle European number formatting with comma decimals
-                amount_str = amount_str.replace('.', '').replace(',', '.')
-                standardized['amount'] = Decimal(amount_str)
+                format_type = 'belgian' if ',' in amount_str else 'english'
+                standardized['amount'] = Decimal(self.text_analyzer.standardize_amount(amount_str, format_type))
 
             # Process date with more flexible parsing
             if 'date' in raw_data and raw_data['date']:
                 date_str = raw_data['date'].strip()
-                try:
-                    # Remove ordinal indicators and extra whitespace
-                    cleaned_date = (
-                        date_str.replace('st', '')
-                        .replace('nd', '')
-                        .replace('rd', '')
-                        .replace('th', '')
-                        .strip()
-                    )
-                    
-                    # Try parsing with various formats
-                    for fmt in [
-                        '%b %d %Y',      # Nov 5 2024
-                        '%B %d %Y',      # November 5 2024
-                        '%d-%m-%Y',      # 05-11-2024
-                        '%d/%m/%Y',      # 05/11/2024
-                        '%Y-%m-%d'       # 2024-11-05
-                    ]:
-                        try:
-                            parsed_date = datetime.strptime(cleaned_date, fmt)
-                            standardized['due_date'] = parsed_date.date()
-                            break
-                        except ValueError:
-                            continue
-                    
-                    if 'due_date' not in standardized:
-                        raise ValueError(f"Could not parse date: {date_str}")
-                        
-                except Exception as e:
-                    print(f"Date parsing failed: {str(e)}")
-                    # Set a default due date 30 days from now if parsing fails
-                    standardized['due_date'] = date.today() + timedelta(days=30)
+                format_type = 'belgian' if re.match(r'\d{2}[-/]\d{2}[-/]\d{4}', date_str) else 'english'
+                standardized['due_date'] = self.text_analyzer.standardize_date(date_str, format_type)
 
             return standardized
 
