@@ -19,9 +19,9 @@ class TextAnalyzer:
             print(f"Text Analysis: Input text:\n{text}")
             patterns = {
                 'invoice_number': r'(?:Factuur|Facture|Invoice Number):?\s*([0-9]{4}[-./][0-9]{3,4}|[0-9]+)',
-                'amount': r'(?:Totaal|Total|Amount Due):?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))\s*(?:EUR|€|USD|\$)',
+                'amount': r'(?:Totaal|Total|Amount Due):?\s*(?:USD\s*)?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))\s*(?:EUR|€|USD|\$)?',
                 'date': r'(?:Documentdatum|Date du document|Date):?\s*(\d{2}[-/]\d{2}[-/]\d{4}|[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})',
-                'supplier_name': r'^([^\n]+?(?:CommV|BV|BVBA|SA|SPRL|NV)?\b)'
+                'supplier_name': r'^([^\n]+?(?:CommV|BV|BVBA|SA|SPRL|NV|Inc\.|LLC)?\b)'
             }
             extracted = self._extract_using_patterns(text, patterns)
             print(f"TextAnalyzer: Extracted fields: {extracted}")
