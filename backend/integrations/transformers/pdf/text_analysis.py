@@ -18,11 +18,26 @@ class TextAnalyzer:
             print("TextAnalyzer: Starting field extraction")
             print(f"Text Analysis: Input text:\n{text}")
             patterns = {
-                'invoice_number': r'(?:Factuur|Facture|Invoice Number):?\s*([0-9]{4}[-./][0-9]{3,4}|[0-9]+)',
-                'amount': r'(?:Amount Due|Totaal|Total):?\s*(?:USD\s*)?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))\s*(?:EUR|€|USD|\$)?',
-                'date': r'(?:Documentdatum|Date du document|Date):?\s*(\d{2}[-/]\d{2}[-/]\d{4}|[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})',
-                'supplier_name': r'^([^\n]+?(?:CommV|BV|BVBA|SA|SPRL|NV|Inc\.|LLC)?\b)'
-                }
+                'invoice_number': (
+                    r'(?:Factuur|Facture|Invoice Number|Invoice number):?\s*'
+                    r'([A-Za-z0-9._-]+)'
+                ),
+                'amount': (
+                    r'(?:Totaal|Total|Amount Due|due):?\s*'
+                    r'(?:€|EUR|USD|\$)?\s*'
+                    r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))'
+                ),
+                'date': (
+                    r'(?:Documentdatum|Date du document|Date|'
+                    r'Date of issue|Date due):?\s*'
+                    r'(\d{2}[-/]\d{2}[-/]\d{4}|'
+                    r'[A-Za-z]{3,9}\s+\d{1,2}'
+                    r'(?:st|nd|rd|th)?,?\s+\d{4})'
+                ),
+                'supplier_name': (
+                    r'^([^\n]+?(?:CommV|BV|BVBA|SA|SPRL|NV|Inc\.|LLC)?\b)'
+                )
+            }
             extracted = self._extract_using_patterns(text, patterns)
             print(f"TextAnalyzer: Extracted fields: {extracted}")
             return extracted
@@ -81,6 +96,8 @@ class TextAnalyzer:
             try:
                 date_obj = parse(date_str)
                 return date_obj.strftime('%Y-%m-%d')
-            except:
+            except (ValueError, TypeError) as e:
+                print(f"Failed to parse date: {e}")
                 return None
+
         return None
