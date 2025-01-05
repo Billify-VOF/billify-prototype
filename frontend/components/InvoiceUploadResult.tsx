@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface InvoiceData {
@@ -23,6 +23,8 @@ interface Props {
 }
 
 export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
+  const [editableData, setEditableData] = useState<InvoiceData | null>(result?.invoice_data || null);
+
   if (!result) return null;
 
   if (result.status === 'error') {
@@ -42,6 +44,19 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
     );
   }
 
+  const handleInputChange = (field: keyof InvoiceData, value: string) => {
+    setEditableData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
+  const handleSave = () => {
+    // Handle save logic here, e.g., send updated data to the backend
+    console.log('Saved data:', editableData);
+    onClose();
+  };
+
   console.log('Upload Result Data:', result);
 
   return (
@@ -51,14 +66,52 @@ export const InvoiceUploadResult: React.FC<Props> = ({ result, onClose }) => {
         <div className="mt-4">
           <h4 className="font-semibold">Extracted Invoice Data:</h4>
           <div className="mt-2 space-y-2">
-            <p><span className="font-medium">Invoice Number:</span> {result.invoice_data?.invoice_number || 'N/A'}</p>
-            <p><span className="font-medium">Amount:</span> €{result.invoice_data?.amount || '0'}</p>
-            <p><span className="font-medium">Date:</span> {result.invoice_data?.date || 'N/A'}</p>
-            {result.invoice_data?.supplier_name && (
-              <p><span className="font-medium">Supplier:</span> {result.invoice_data.supplier_name}</p>
+            <div>
+              <label className="font-medium">Invoice Number:</label>
+              <input
+                type="text"
+                value={editableData?.invoice_number || ''}
+                onChange={(e) => handleInputChange('invoice_number', e.target.value)}
+                className="ml-2 p-1 border rounded"
+              />
+            </div>
+            <div>
+              <label className="font-medium">Amount:</label>
+              <input
+                type="text"
+                value={editableData?.amount || ''}
+                onChange={(e) => handleInputChange('amount', e.target.value)}
+                className="ml-2 p-1 border rounded"
+              />
+            </div>
+            <div>
+              <label className="font-medium">Date:</label>
+              <input
+                type="text"
+                value={editableData?.date || ''}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                className="ml-2 p-1 border rounded"
+              />
+            </div>
+            {editableData?.supplier_name && (
+              <div>
+                <label className="font-medium">Supplier:</label>
+                <input
+                  type="text"
+                  value={editableData.supplier_name}
+                  onChange={(e) => handleInputChange('supplier_name', e.target.value)}
+                  className="ml-2 p-1 border rounded"
+                />
+              </div>
             )}
           </div>
         </div>
+        <button
+          onClick={handleSave}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Save
+        </button>
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
