@@ -20,6 +20,8 @@ const BillifyDashboard = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
+    const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState<boolean>(false);
+    const [confirmedInvoiceData, setConfirmedInvoiceData] = useState<any>(null);
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,12 +69,25 @@ const BillifyDashboard = () => {
         setUploadStatus('success');
         setSelectedFile(null);
         setUploadedInvoiceData(data.invoice_data);  // Store the received data
+        setIsConfirmationDialogOpen(true);  // Open the confirmation dialog
 
       } catch (error) {
         console.error('Upload error details:', error);
         setUploadStatus('error');
         setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
       }
+    };
+
+    const handleConfirm = () => {
+      setConfirmedInvoiceData(uploadedInvoiceData);
+      setIsConfirmationDialogOpen(false);
+    };
+
+    const handleEditChange = (field: string, value: string) => {
+      setUploadedInvoiceData((prevData: any) => ({
+        ...prevData,
+        [field]: value
+      }));
     };
 
     // Sample data
