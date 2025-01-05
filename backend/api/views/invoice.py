@@ -186,11 +186,19 @@ class InvoiceUploadView(APIView):
 
         # Validate due_date format
         raw_due_date = data.get('due_date')
-        try:
-            if raw_due_date:
-                datetime.strptime(raw_due_date, '%b %d %Y')
-        except ValueError:
-            errors.append(f"Invalid date format: {raw_due_date}")
+        if raw_due_date:
+            try:
+                # Try multiple date formats
+                for fmt in ['%Y-%m-%d', '%b %d %Y']:
+                    try:
+                        datetime.strptime(raw_due_date, fmt)
+                        break  # If any format works, we're good
+                    except ValueError:
+                        continue
+                else:  # No format worked
+                    errors.append(f"Invalid date format: {raw_due_date}")
+            except Exception:
+                errors.append(f"Invalid date format: {raw_due_date}")
 
         # Validate amount
         try:
