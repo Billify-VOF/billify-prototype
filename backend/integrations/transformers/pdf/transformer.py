@@ -92,6 +92,10 @@ class PDFTransformer:
                 format_type = 'belgian' if re.match(r'\d{2}[-/]\d{2}[-/]\d{4}', date_str) else 'english'
                 standardized['due_date'] = self.text_analyzer.standardize_date(date_str, format_type)
 
+            # Process supplier name
+            if 'supplier_name' in raw_data:
+                standardized['supplier_name'] = raw_data['supplier_name'].strip()
+
             return standardized
 
         except Exception as e:
