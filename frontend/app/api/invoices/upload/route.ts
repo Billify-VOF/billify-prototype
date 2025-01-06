@@ -29,6 +29,7 @@ export async function POST(request: Request) {
             return NextResponse.json({
                 status: 'success',
                 message: data.message,
+                invoice: data.invoice,
                 invoice_data: {
                     invoice_number: data.invoice_data.invoice_number,
                     amount: data.invoice_data.amount,
