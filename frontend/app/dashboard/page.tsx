@@ -27,14 +27,13 @@ const BillifyDashboard = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
-    const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState<boolean>(false);
-    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
     useEffect(() => {
-      if (isConfirmationDialogOpen && uploadedInvoiceData) {
+      if (isDialogOpen && uploadedInvoiceData) {
         console.log('PARENT TEST - Rendering Dialog with uploadedInvoiceData:', uploadedInvoiceData);
       }
-    }, [isConfirmationDialogOpen, uploadedInvoiceData]);
+    }, [isDialogOpen, uploadedInvoiceData]);
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +82,7 @@ const BillifyDashboard = () => {
         setUploadStatus('success');
         setSelectedFile(null);
         setUploadedInvoiceData(data);  // Store the entire response
-        setIsConfirmationDialogOpen(true);  // Open the confirmation dialog
+        setIsDialogOpen(true);  // Open the combined dialog
 
       } catch (error) {
         console.error('Upload error details:', error);
@@ -157,8 +156,8 @@ const BillifyDashboard = () => {
                     <button className="px-4 py-2 text-sm rounded-lg bg-gray-100">
                       Filter
                     </button>
-                    {/* Upload Dialog */}
-                    <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                    {/* Combined Dialog */}
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <button className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2">
                           <Upload className="w-4 h-4" />
@@ -216,38 +215,19 @@ const BillifyDashboard = () => {
                                 error: 'Upload failed',
                                 detail: errorMessage
                               }}
-                              onClose={() => setUploadStatus('idle')}
                             />
                           )}
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    {/* Preview Dialog */}
-                    <Dialog 
-                      open={isConfirmationDialogOpen} 
-                      onOpenChange={(open) => {
-                        setIsConfirmationDialogOpen(open);
-                        if (!open) {
-                          setUploadStatus('idle');
-                          setUploadedInvoiceData(null);
-                        }
-                      }}
-                    >
-                      <DialogContent className="max-w-4xl bg-white border shadow-xl">
-                        <DialogTitle>Invoice Preview</DialogTitle>
-                        <DialogDescription>
-                          Review and confirm the extracted invoice data
-                        </DialogDescription>
                         {uploadedInvoiceData && (
-                          <InvoiceUploadResult
-                            result={uploadedInvoiceData}
-                            onClose={() => {
-                              setIsConfirmationDialogOpen(false);
-                              setUploadStatus('idle');
-                              setUploadedInvoiceData(null);
-                            }}
-                          />
+                          <>
+                            <DialogTitle>Invoice Preview</DialogTitle>
+                            <DialogDescription>
+                              Review and confirm the extracted invoice data
+                            </DialogDescription>
+                            <InvoiceUploadResult
+                              result={uploadedInvoiceData}
+                            />
+                          </>
                         )}
                       </DialogContent>
                     </Dialog>
