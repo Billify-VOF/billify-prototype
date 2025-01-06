@@ -34,10 +34,9 @@ export interface UploadResult {
 
 interface Props {
   result: UploadResult;
-  onClose?: () => void;
 }
 
-export function InvoiceUploadResult({ result, onClose }: Props) {
+export function InvoiceUploadResult({ result }: Props) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoice_number: '',
     amount: '',
@@ -61,7 +60,6 @@ export function InvoiceUploadResult({ result, onClose }: Props) {
   }, [result]);
 
   const handleAmountChange = (value: string) => {
-    // Only allow numbers and up to 2 decimal places
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(value) || value === '') {
       setInvoiceData(prev => ({ ...prev, amount: value }));
@@ -69,13 +67,10 @@ export function InvoiceUploadResult({ result, onClose }: Props) {
   };
 
   const handleDateSelect = (newDate: Date | undefined) => {
-    console.log('Date selected:', newDate);
     if (newDate) {
-      console.log('Setting date to:', format(newDate, 'PPP'));
       setDate(newDate);
       setInvoiceData(prev => {
         const formattedDate = format(newDate, 'yyyy-MM-dd');
-        console.log('Updating invoice data with date:', formattedDate);
         return {
           ...prev,
           date: formattedDate
