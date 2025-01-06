@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Menu,
   Upload,
@@ -7,11 +7,18 @@ import {
   Receipt,
   Wallet,
 } from '@/components/ui/icons'
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+type InvoiceStatus = 'urgent' | 'warning' | 'safe';
+
+const statusColors: Record<InvoiceStatus, string> = {
+  urgent: 'bg-red-100 text-red-800',
+  warning: 'bg-yellow-100 text-yellow-800',
+  safe: 'bg-green-100 text-green-800'
+};
 
 const BillifyDashboard = () => {
     // Add state for file upload
@@ -21,7 +28,13 @@ const BillifyDashboard = () => {
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
     const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState<boolean>(false);
-    const [confirmedInvoiceData, setConfirmedInvoiceData] = useState<any>(null);
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
+
+    useEffect(() => {
+      if (isConfirmationDialogOpen && uploadedInvoiceData) {
+        console.log('PARENT TEST - Rendering Dialog with uploadedInvoiceData:', uploadedInvoiceData);
+      }
+    }, [isConfirmationDialogOpen, uploadedInvoiceData]);
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,9 +79,10 @@ const BillifyDashboard = () => {
           throw new Error(data.detail || data.error || 'Failed to upload file');
         }
 
+        console.log('PARENT TEST - Upload successful, setting data:', data);
         setUploadStatus('success');
         setSelectedFile(null);
-        setUploadedInvoiceData(data.invoice_data);  // Store the received data
+        setUploadedInvoiceData(data);  // Store the entire response
         setIsConfirmationDialogOpen(true);  // Open the confirmation dialog
 
       } catch (error) {
@@ -76,18 +90,6 @@ const BillifyDashboard = () => {
         setUploadStatus('error');
         setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
       }
-    };
-
-    const handleConfirm = () => {
-      setConfirmedInvoiceData(uploadedInvoiceData);
-      setIsConfirmationDialogOpen(false);
-    };
-
-    const handleEditChange = (field: string, value: string) => {
-      setUploadedInvoiceData((prevData: any) => ({
-        ...prevData,
-        [field]: value
-      }));
     };
 
     // Sample data
@@ -105,7 +107,7 @@ const BillifyDashboard = () => {
     ];
   
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen bg-gray-50">
         {/* Left Sidebar */}
         <div className="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6">
           {/* Logo */}
@@ -155,16 +157,20 @@ const BillifyDashboard = () => {
                     <button className="px-4 py-2 text-sm rounded-lg bg-gray-100">
                       Filter
                     </button>
-                    <Dialog>
+                    {/* Upload Dialog */}
+                    <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                       <DialogTrigger asChild>
                         <button className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2">
                           <Upload className="w-4 h-4" />
                           Upload
                         </button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="bg-white border shadow-xl">
+                        <DialogTitle>Upload Invoice</DialogTitle>
+                        <DialogDescription>
+                          Upload a PDF invoice to process and extract data
+                        </DialogDescription>
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold">Upload Invoice</h3>
                           <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
                             <input
                               type="file"
@@ -203,22 +209,6 @@ const BillifyDashboard = () => {
                             </button>
                           )}
                           
-                          {/* Use InvoiceUploadResult component for success/error states */}
-                          {uploadStatus === 'success' && (
-                            <InvoiceUploadResult 
-                              result={{
-                                status: 'success',
-                                invoice_data: uploadedInvoiceData || {
-                                  invoice_number: '',
-                                  amount: '0',
-                                  date: '',
-                                  supplier_name: ''
-                                }
-                              }}
-                              onClose={() => setUploadStatus('idle')}
-                            />
-                          )}
-                          
                           {uploadStatus === 'error' && (
                             <InvoiceUploadResult 
                               result={{
@@ -233,17 +223,39 @@ const BillifyDashboard = () => {
                       </DialogContent>
                     </Dialog>
                     
+                    {/* Preview Dialog */}
+                    <Dialog 
+                      open={isConfirmationDialogOpen} 
+                      onOpenChange={(open) => {
+                        setIsConfirmationDialogOpen(open);
+                        if (!open) {
+                          setUploadStatus('idle');
+                          setUploadedInvoiceData(null);
+                        }
+                      }}
+                    >
+                      <DialogContent className="max-w-4xl bg-white border shadow-xl">
+                        <DialogTitle>Invoice Preview</DialogTitle>
+                        <DialogDescription>
+                          Review and confirm the extracted invoice data
+                        </DialogDescription>
+                        {uploadedInvoiceData && (
+                          <InvoiceUploadResult
+                            result={uploadedInvoiceData}
+                            onClose={() => {
+                              setIsConfirmationDialogOpen(false);
+                              setUploadStatus('idle');
+                              setUploadedInvoiceData(null);
+                            }}
+                          />
+                        )}
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   {invoices.map(invoice => {
-                    const statusColors = {
-                      urgent: 'bg-red-50 text-red-700',
-                      warning: 'bg-orange-50 text-orange-700',
-                      safe: 'bg-green-50 text-green-700'
-                    };
-  
                     return (
                       <div key={invoice.id} className="flex items-center justify-between p-4 bg-white rounded-lg">
                         <div>
@@ -251,7 +263,7 @@ const BillifyDashboard = () => {
                           <div className="text-gray-500 text-sm">Due: {invoice.dueDate}</div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className={`px-3 py-1 rounded-full ${statusColors[invoice.status]}`}>
+                          <span className={`px-3 py-1 rounded-full ${statusColors[invoice.status as InvoiceStatus]}`}>
                             €{invoice.amount}
                           </span>
                           <input 
@@ -271,12 +283,16 @@ const BillifyDashboard = () => {
     );
   };
   
-  // Helper component for metric cards
-  const MetricCard = ({ title, value }) => (
+  interface MetricCardProps {
+    title: string;
+    value: number;
+  }
+
+  const MetricCard = ({ title, value }: MetricCardProps) => (
     <Card>
       <CardContent className="p-6">
         <h3 className="text-gray-500 text-sm mb-2">{title}</h3>
-        <p className="text-2xl font-bold">€{value.toLocaleString()}</p>
+        <p className="text-2xl font-bold">€{value.toLocaleString('en-US')}</p>
       </CardContent>
     </Card>
   );
