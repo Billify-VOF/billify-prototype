@@ -2,28 +2,95 @@
 
 # Integrations Layer
 
-The integrations layer manages connections and communications with external services.
+The integrations layer manages connections and communications with external services and data transformations. This layer is responsible for adapting external data formats and services to our domain model.
 
 ## Structure
 
-### Providers
-External service implementations:
+### PDF Processing (`transformers/pdf/`)
+PDF document processing pipeline:
+- `transformer.py` - Main PDF transformation pipeline
+- `text_analysis.py` - Text extraction and analysis
+- `ocr.py` - Optical Character Recognition service
+
+### External Service Providers (`providers/`)
+External service integrations (planned):
 - `ponto.py` - Banking service integration
 - `yuki.py` - Accounting service integration
 
-### Sync
-Data synchronization management:
-- `manager.py` - Sync orchestration
-- `tasks.py` - Background tasks
+### Data Synchronization (`sync/`)
+Background processing and synchronization:
+- `manager.py` - Sync orchestration (planned)
+- `tasks.py` - Celery background tasks
 
-### Transformers
-Data transformation logic:
-- `ponto_transformer.py` - Bank data transformation
-- `yuki_transformer.py` - Accounting data transformation
+### Data Transformers (`transformers/`)
+Data transformation services:
+- `pdf/` - PDF processing pipeline
+- `ponto_transformer.py` - Bank data transformation (planned)
+- `yuki_transformer.py` - Accounting data transformation (planned)
+
+## Technical Details
+
+### PDF Processing Pipeline
+1. **Document Upload**
+   - File validation
+   - Format verification
+   - Storage management
+
+2. **Text Extraction**
+   - OCR processing
+   - Text analysis
+   - Data structuring
+
+3. **Data Transformation**
+   - Invoice data extraction
+   - Field mapping
+   - Validation rules
+
+### External Integrations (Planned)
+- Banking data synchronization
+- Accounting system integration
+- Secure API communications
+- Rate limiting and quotas
 
 ## Guidelines
 
-- Keep external system specifics isolated
-- Handle data format conversions
-- Manage authentication with external services
-- Implement retry and error handling
+### Code Organization
+- Isolate external service specifics
+- Use adapter pattern for integrations
+- Implement retry mechanisms
+- Handle API versioning
+
+### Error Handling
+- Implement graceful degradation
+- Handle API failures
+- Log integration errors
+- Monitor service health
+
+### Security
+- Secure credential management
+- API authentication
+- Data encryption
+- Access control
+
+### Performance
+- Implement caching strategies
+- Handle rate limits
+- Optimize large file processing
+- Manage resource usage
+
+## Best Practices
+
+1. **Resilience**: Implement circuit breakers and fallbacks
+2. **Monitoring**: Track integration health and performance
+3. **Versioning**: Handle API version changes gracefully
+4. **Testing**: Mock external services in tests
+5. **Documentation**: Maintain API integration details
+
+## Development Guidelines
+
+- Use appropriate design patterns for integrations
+- Document external service dependencies
+- Write integration tests
+- Monitor API usage and quotas
+- Keep security considerations in mind
+- Maintain service documentation
