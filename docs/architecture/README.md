@@ -1,107 +1,96 @@
 # Billify Architecture Documentation
 
+⚠️ **PROPRIETARY SOFTWARE NOTICE**: This documentation is part of Billify's proprietary software. All rights reserved.
+Unauthorized copying, modification, distribution, or use is strictly prohibited.
+
+## Overview
+
 This directory contains comprehensive documentation about Billify's system architecture and design decisions. Our architecture documentation serves as both a reference and a guide for understanding how Billify works at a technical level.
 
 ## Directory Structure
 
-### Flows
+```
+architecture/
+├── flows/                # Key system process documentation
+│   └── diagrams/       # System diagrams (Mermaid format)
+└── overview.md         # High-level architecture overview
+```
 
-The `/flows` directory contains detailed documentation of key system processes:
+### Process Flows (`/flows/`)
 
-- Invoice processing pipeline
+- Invoice processing pipeline documentation
+- Visual diagrams for each major flow
 
-- User authentication flows
+### System Diagrams (`/flows/diagrams/`)
 
-- Integration synchronization processes
-
-- Each flow includes both written documentation and visual diagrams
-
-### Diagrams
-
-Located in `/flows/diagrams/`, this directory contains our system diagrams in Mermaid format:
-
-- Process flowcharts
-
-- System architecture diagrams
-
+- Process flowcharts in Mermaid format
+- System architecture visualizations
 - Component interaction diagrams
+- Database schema representations
 
-- Database schema visualizations
+## Core Architecture
 
-## Core Architectural Principles
+### Clean Architecture Design
 
-Billify's architecture follows these key principles:
+Our system implements clean architecture with clear separation of concerns:
 
-### Clean Architecture
+- Domain Layer: Core business logic and rules
+- Application Layer: Use case implementations
+- Interface Layer: UI and API endpoints
+- Infrastructure Layer: External service integrations
 
-Our system is built using clean architecture principles, separating concerns into:
+### Microservices Readiness
 
-- Domain layer (business logic)
+Architecture designed for future microservices transition:
 
-- Application layer (use cases)
-
-- Interface layer (UI/API)
-
-- Infrastructure layer (external services)
-
-### Microservices Preparation
-
-While currently monolithic, our architecture is designed to be ready for future microservices:
-
-- Clear service boundaries
-
-- Well-defined interfaces
-
+- Defined service boundaries
 - Independent data stores
+- Standardized interfaces
+- Loose component coupling
 
-- Loose coupling between components
+### Security Architecture
 
-### Security First
+Built-in security measures:
 
-Security is built into our architecture through:
-
-- Secure authentication/authorization
-
-- Data encryption
-
-- Audit logging
-
-- Regular security reviews
+- Secure authentication and authorization
+- Data encryption at rest and in transit
+- Comprehensive audit logging
+- Regular security assessments
 
 ## Technology Stack
 
-Our current technology stack includes:
+```
+Frontend:
+- Next.js with React
+- TypeScript
+- Tailwind CSS
 
-- Frontend: Next.js with React
+Backend:
+- Django
+- Django REST Framework
+- PostgreSQL
 
-- Backend: Django with REST Framework
+Infrastructure:
+- Local filesystem (dev)
+- S3-compatible storage (prod)
+- Tesseract OCR with enhancements
+```
 
-- Database: PostgreSQL
+## Getting Started
 
-- File Storage: Local filesystem (production: S3-compatible)
+1. Read `overview.md` for high-level architecture
+2. Review process flows in `/flows/`
+3. Study component interactions
+4. Examine integration patterns
 
-- OCR Processing: Tesseract with custom enhancements
+## Contributing Guidelines
 
-## Understanding the Architecture
+When making architectural changes:
 
-To best understand Billify's architecture:
+- Update relevant documentation
+- Include Mermaid diagrams
+- Document design decisions
+- Consider scalability impact
+- Maintain clean architecture principles
 
-1\. Start with the overview.md file
-
-2\. Review the key process flows
-
-3\. Examine the component interactions
-
-4\. Study the integration patterns
-
-## Contributing to Architecture
-
-When contributing architectural changes:
-
-1\. Update relevant documentation
-
-2\. Include clear diagrams
-
-3\. Explain design decisions
-
-4\. Consider scalability implications
+For detailed information about specific components, refer to their respective documentation in the directory structure above.

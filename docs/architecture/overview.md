@@ -1,203 +1,161 @@
 # Billify Architecture Overview
 
+⚠️ **PROPRIETARY SOFTWARE NOTICE**: This documentation is part of Billify's proprietary software. All rights reserved.
+Unauthorized copying, modification, distribution, or use is strictly prohibited.
+
 ## Introduction
 
-Billify is designed as a modern, scalable cash flow management system that helps small to medium-sized enterprises track and manage their financial flows. This document provides a comprehensive overview of Billify's architecture, explaining how different components work together to deliver our core functionality.
+Billify is a modern cash flow management system designed for small to medium-sized enterprises. This document provides a high-level overview of Billify's architecture and explains how our components work together to deliver core functionality.
 
-## System Architecture
+## System Components
 
 ### Frontend Architecture
 
-Our frontend is built with Next.js and React, providing:
+```
+Technology Stack:
+- Next.js 14.2+ with App Router
+- React 18.3+ with TypeScript
+- Tailwind CSS for styling
+- React Query for data fetching
+- Radix UI and Shadcn/UI components
+```
 
-- Server-side rendering for optimal performance
-
-- Component-based UI architecture
-
-- State management using React hooks
-
-- Real-time updates where needed
+Key features:
+- Server-side rendering for performance
+- Component-based architecture
+- State management via React hooks and React Query
+- Modern UI with Shadcn/UI components
 
 ### Backend Architecture
 
-The backend uses Django with a focus on:
+```
+Technology Stack:
+- Django 5.0+ with REST Framework
+- PostgreSQL 15+
+- drf-spectacular for API docs
+- django-filter for query filtering
+```
 
+Design principles:
 - RESTful API design
-
-- Domain-driven design principles
-
+- Domain-driven design (implemented in domain/ layer)
 - Clean architecture patterns
+- Separation of concerns across layers
 
-- Scalable data processing
+### Integration Layer
 
-### Integration Architecture
+Core integrations:
+- Tesseract OCR for document processing
+- S3-compatible storage for files (MinIO/AWS S3)
+- Third-party service connectors
+- CORS-enabled API endpoints
 
-Our integration layer handles:
+## Core Workflows
 
-- OCR processing for invoices
+### Invoice Processing Pipeline
 
-- Third-party service connections
+1. Document upload and validation
+2. OCR processing and text extraction (via Tesseract)
+3. Data structuring and validation
+4. Database storage and indexing
+5. UI state updates via React Query
 
-- Data synchronization
+### Authentication Flow
 
-- Error handling and recovery
+Current implementation:
+- Session-based authentication
+- Basic authentication support
+- Development mode: AllowAny permissions
+- CORS configuration for frontend access
 
-## Core Components
+### Data Management
 
-### Invoice Processing System
+Storage strategy:
+- PostgreSQL for structured data
+- S3-compatible storage for documents
+- File-based session storage
+- Local filesystem for development
 
-The invoice processing pipeline is a key component that:
-
-1\. Receives uploaded documents
-
-2\. Processes them through OCR
-
-3\. Extracts relevant data
-
-4\. Stores structured information
-
-5\. Updates the user interface
-
-### User Management
-
-The user system handles:
-
-- Authentication and authorization
-
-- User preferences
-
-- Access control
-
-- Session management
-
-### Data Storage
-
-Our data storage strategy includes:
-
-- Relational database for structured data
-
-- File storage for documents
-
-- Caching layer for performance
-
-- Backup and recovery systems
-
-## Design Principles
+## Architecture Principles
 
 ### Scalability
 
-The system is designed to scale through:
-
-- Horizontal scaling capabilities
-
+Built for growth:
 - Stateless components where possible
-
-- Efficient resource utilization
-
-- Caching strategies
+- Efficient resource usage
+- Optimized database queries
 
 ### Security
 
-Security is implemented through:
-
-- Secure authentication
-
-- Data encryption
-
-- Access control
-
-- Audit logging
+Security measures:
+- Session-based authentication
+- CORS protection
+- Request validation
+- Environment-based security settings
 
 ### Maintainability
 
-We maintain code quality through:
+Quality assurance:
+- Automated testing (Jest, pytest)
+- Consistent coding standards (enforced by ESLint, Black)
+- Comprehensive documentation
+- Regular code reviews
 
-- Clear separation of concerns
+## System Integration
 
-- Comprehensive testing
+### Internal Communication
 
-- Consistent coding standards
+- RESTful APIs for data operations
+- React Query for state management
+- Session-based authentication
+- Database access via Django ORM
 
-- Detailed documentation
+### External Services
 
-## System Interactions
+Current integrations:
+- OCR processing via Tesseract
+- S3-compatible storage
+- Future planned: Banking APIs
+- Future planned: Accounting software
 
-### Internal Communications
-
-Components communicate through:
-
-- RESTful APIs
-
-- Event-driven updates
-
-- Message queues
-
-- Direct database access where appropriate
-
-### External Integrations
-
-The system integrates with:
-
-- OCR services
-
-- Banking systems
-
-- Accounting software
-
-- Payment processors
-
-## Development Practices
+## Development Workflow
 
 ### Testing Strategy
 
-Our testing approach includes:
+```
+Testing Layers:
+- Unit tests: Jest (frontend), pytest (backend)
+- Integration tests: pytest
+- E2E tests: Cypress
+- API tests: drf-spectacular
+```
 
-- Unit testing
+### Development Process
 
-- Integration testing
+```
+Development Flow:
+1. Local development
+2. Automated testing
+3. Code review
+4. Integration
+```
 
-- End-to-end testing
+## Future Roadmap
 
-- Performance testing
+### Planned Enhancements
 
-### Deployment Process
+Short-term:
+- JWT authentication implementation
+- Role-based access control
+- Redis for caching
+- WebSocket for real-time updates
 
-Deployment is managed through:
-
-- Continuous Integration
-
-- Automated testing
-
-- Staged rollouts
-
-- Monitoring and alerting
-
-## Future Architecture
-
-### Planned Improvements
-
-We plan to enhance:
-
-- Real-time processing capabilities
-
-- Machine learning integration
-
-- Additional third-party integrations
-
-- Advanced analytics features
-
-### Scalability Plans
-
-Future scaling will involve:
-
-- Microservices adoption where beneficial
-
-- Enhanced caching strategies
-
-- Improved data processing
-
-- Additional automation
+Long-term:
+- Machine learning for document processing
+- Microservices transition
+- Enhanced caching strategy
+- Automated workflow builder
 
 ## Conclusion
 
-This architecture provides a solid foundation for Billify's current needs while allowing for future growth and enhancement. Regular reviews and updates ensure it continues to meet evolving requirements.
+This architecture provides a solid foundation for Billify's current operations. The codebase follows clean architecture principles with clear separation of concerns, making it maintainable and extensible for future enhancements.

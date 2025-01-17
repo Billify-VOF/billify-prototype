@@ -1,105 +1,87 @@
 # Billify Documentation
 
-Welcome to the Billify documentation. This central knowledge base serves as your comprehensive guide to understanding, using, and contributing to our cash flow management system. Whether you're a developer looking to contribute code, an integrator wanting to connect with our APIs, or a team member seeking to understand our system architecture, you'll find the information you need here.
+⚠️ **PROPRIETARY SOFTWARE NOTICE**: This documentation is part of Billify's proprietary software. All rights reserved.
+Unauthorized copying, modification, distribution, or use is strictly prohibited.
 
-## Documentation Organization
+## Overview
 
-We have organized our documentation into three main sections, each serving a specific purpose and audience.
+This central knowledge base serves as your comprehensive guide to understanding, using, and contributing to our cash flow management system. Whether you're a developer looking to contribute code, an integrator wanting to connect with our APIs, or a team member seeking to understand our system architecture, you'll find the information you need here.
 
-### Architecture Documentation
+## Documentation Structure
 
-The architecture documentation, found in `/docs/architecture/`, provides a deep dive into the technical foundation of Billify. Here you'll find detailed explanations of:
+```
+docs/
+├── architecture/           # System architecture documentation
+│   ├── overview.md        # High-level system overview
+│   └── flows/             # Process flow diagrams and explanations
+├── api/                   # API documentation
+│   ├── endpoints/         # API endpoint specifications
+│   └── guides/           # Integration guides
+└── development/          # Development guides and standards
+    ├── setup/            # Environment setup guides
+    └── standards/        # Coding standards and guidelines
+```
 
-Our system's underlying architecture, including how different components interact and why we made specific design choices.
+### Architecture Documentation (`/docs/architecture/`)
 
-Process flows that illustrate how key system operations work, such as invoice processing and data synchronization.
+- System architecture and component interactions
+- Process flows for key operations (invoice processing, data sync)
+- Technical decisions and rationales
+- System interaction diagrams and data flows
 
-Comprehensive diagrams that visualize complex system interactions and data flows, helping you understand both the big picture and the details.
+### API Documentation (`/docs/api/`)
 
-Technical decisions and their rationales, helping you understand not just what we built, but why we built it that way.
+- API endpoint specifications and parameters
+- Authentication and authorization guides
+- Integration examples and patterns
+- Best practices for API usage
 
-### API Documentation
+### Development Documentation (`/docs/development/`)
 
-The API documentation in `/docs/api/` serves as your guide to integrating with Billify. It includes:
-
-Detailed descriptions of all API endpoints, including their purposes, parameters, and response formats.
-
-Authentication and authorization guides that explain how to securely connect to our services.
-
-Real-world examples showing how to implement common integration patterns.
-
-Best practices for efficient and reliable API usage.
-
-### Development Documentation
-
-In `/docs/development/`, you'll find everything needed to start developing with Billify:
-
-Step-by-step guides for setting up your development environment.
-
-Our coding standards and guidelines that ensure consistency across the codebase.
-
-Testing procedures that maintain our high quality standards.
-
-Deployment processes for different environments.
+- Development environment setup guides
+- Coding standards and guidelines
+- Testing procedures and quality standards
+- Deployment processes
 
 ## Getting Started
 
-If you're new to Billify, we recommend following this learning path:
+1. Begin with the architecture overview (`/docs/architecture/overview.md`)
+2. Review key process flows (`/docs/architecture/flows/`)
+3. Set up your development environment (`/docs/development/setup/`)
+4. Explore specific areas of interest
 
-1\. Begin with our architecture overview (`/docs/architecture/overview.md`) to understand our system's foundation.
+## Contributing Guidelines
 
-2\. Review key process flows (`/docs/architecture/flows/`) to see how different parts of the system work together.
+When contributing to the documentation:
 
-3\. Set up your development environment using our development guides (`/docs/development/`).
-
-4\. Explore specific areas of interest in more detail.
-
-## Contributing to Documentation
-
-Documentation is a crucial part of our project, and we maintain it with the same care as our code. When contributing to the documentation:
-
-Keep content up-to-date with code changes to prevent confusion and maintain accuracy.
-
-Follow our established Markdown formatting for consistency.
-
-Include practical examples that help readers understand complex concepts.
-
-Add diagrams when they can help explain complex processes or relationships.
-
-Test all code examples to ensure they work as described.
+- Keep content synchronized with code changes
+- Follow established Markdown formatting
+- Include practical examples and code snippets
+- Add diagrams for complex processes
+- Test all code examples thoroughly
 
 ## Getting Help
 
-We want to ensure you can find the information you need. If you need assistance:
+1. Search documentation using relevant keywords
+2. Check existing GitHub issues
+3. Open a new issue with clear description
+4. Contact development team for urgent matters
 
-First, try searching the documentation using key terms related to your question.
+## Documentation Maintenance
 
-Check existing GitHub issues to see if your question has been addressed.
+Our documentation is maintained with the same rigor as our codebase:
 
-If you can't find an answer, open a new issue with a clear description of what you're trying to understand.
+- Regular updates for new features
+- Continuous improvement based on feedback
+- Addition of new examples and use cases
+- Enhancement of visual aids and diagrams
 
-For urgent matters, contact the development team directly.
+## Feedback
 
-## Documentation Updates
+We welcome your suggestions for improvement:
 
-Our documentation evolves with our software. We regularly:
+- Use documentation feedback forms
+- Open GitHub issues for specific improvements
+- Contact the documentation team directly
 
-Update content to reflect new features and changes.
-
-Improve explanations based on user feedback.
-
-Add new examples and use cases.
-
-Enhance diagrams and visual aids.
-
-## Feedback and Suggestions
-
-Your feedback helps us improve. If you have suggestions for making our documentation more helpful:
-
-Use the feedback forms available throughout the documentation.
-
-Open GitHub issues for specific improvements.
-
-Contact the documentation team directly with general suggestions.
-
-Thank you for being part of the Billify community. We're committed to providing the resources you need to succeed with our platform.
+For detailed information about specific areas, refer to the respective section in the documentation structure above.
