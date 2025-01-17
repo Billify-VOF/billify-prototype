@@ -6,10 +6,14 @@ This directory contains Django application configurations. These apps handle fra
 
 ## Structure
 
-- `accounts/` - User authentication and management
+- `accounts/` - User management
   - `admin.py` - Django admin interface configuration
   - `apps.py` - Django app configuration
-  - `tests.py` - App-specific tests
+  - `models.py` - Database models
+  - `views.py` - View logic
+  - `tests/` - App-specific unit tests
+    - `test_models.py`
+    - `test_views.py`
 
 - `cashflow/` - Cash flow management
   - Similar structure to accounts
@@ -22,3 +26,4 @@ This directory contains Django application configurations. These apps handle fra
 - Keep apps focused on Django configuration
 - Avoid putting business logic here
 - Use for framework-specific features (admin, signals)
+- Keep tests focused on Django-specific functionality

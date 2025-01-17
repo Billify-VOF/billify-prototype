@@ -2,30 +2,75 @@
 
 # Domain Layer
 
-The domain layer contains the core business logic and rules of our application. It is completely independent of frameworks and technical implementations.
+The domain layer contains the core business logic and rules of our application. It is completely independent of frameworks and technical implementations, following Domain-Driven Design principles.
 
 ## Structure
 
-### Models
+### Models (`models/`)
 Pure business objects representing core concepts:
-- `cash_flow.py` - Cash flow business rules and calculations
-- `invoice.py` - Invoice business rules and validation
-- `value_objects.py` - Shared business value objects
+- `invoice.py` - Invoice entity with validation rules and business logic
+- `cash_flow.py` - Cash flow calculations and projections (planned)
+- `value_objects.py` - Immutable value objects for business concepts
 
-### Services
+### Services (`services/`)
 Business operations and workflows:
-- `cash_flow_service.py` - Cash flow operations
-- `invoice_service.py` - Invoice processing logic
+- `invoice_service.py` - Invoice processing and validation
+- `cash_flow_service.py` - Cash flow analysis (planned)
 
-### Repositories
-Interfaces for data access:
-- `interfaces/`
-  - `cash_flow_repository.py` - Cash flow data access interface
+### Repositories (`repositories/`)
+Interfaces for data persistence:
+- `interfaces/` - Abstract base classes defining repository contracts
   - `invoice_repository.py` - Invoice data access interface
+  - `cash_flow_repository.py` - Cash flow data access interface (planned)
+
+### Exceptions (`exceptions.py`)
+Domain-specific exceptions:
+- `InvoiceError` - Invoice-related business rule violations
+- `ValidationError` - Domain validation failures
+- `RepositoryError` - Data access issues
+
+## Domain Rules
+
+### Invoice Processing
+- Validation rules for invoice data
+- Business rules for invoice states
+- Processing workflow requirements
+
+### Cash Flow (Planned)
+- Cash flow calculation rules
+- Projection and analysis logic
+- Financial reporting requirements
 
 ## Guidelines
 
-- No framework dependencies allowed
-- Use pure Python classes
-- Define interfaces for technical implementations
-- Keep business rules isolated and clear
+### Code Organization
+- Keep business logic isolated from infrastructure
+- Use pure Python classes and type hints
+- Define clear interfaces for technical implementations
+- Maintain separation of concerns
+
+### Domain Model Design
+- Use rich domain models with behavior
+- Implement value objects for immutable concepts
+- Keep entities focused and cohesive
+- Follow Single Responsibility Principle
+
+### Error Handling
+- Use domain-specific exceptions
+- Validate business rules at the domain level
+- Maintain clear error messages
+- Handle edge cases explicitly
+
+### Testing
+- Unit test all business rules
+- Use test-driven development (TDD)
+- Mock external dependencies
+- Focus on behavior, not implementation
+
+## Best Practices
+
+1. **Dependency Rule**: Domain layer should not depend on outer layers
+2. **Immutability**: Use immutable objects where possible
+3. **Validation**: Enforce invariants at object creation
+4. **Encapsulation**: Hide implementation details
+5. **Documentation**: Document business rules and decisions
