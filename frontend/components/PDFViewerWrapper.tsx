@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Document, Page } from 'react-pdf';
 import { pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -22,6 +22,25 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   
   console.log('TEST LOG - PDFViewerWrapper rendered with:', filePath);
   
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheelEvent = (e: WheelEvent) => {
+      if (scale > 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPosition(prev => ({
+          x: prev.x - e.deltaX,
+          y: prev.y - e.deltaY
+        }));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheelEvent, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheelEvent);
+  }, [scale]);
+
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setError(null);
@@ -35,7 +54,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale > 1) {
+    if (scale > 1 && e.button === 0) { // Left click
       setIsDragging(true);
       setStartPosition({
         x: e.clientX - position.x,
@@ -45,7 +64,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && containerRef.current) {
+    if (isDragging && scale > 1) {
       const newX = e.clientX - startPosition.x;
       const newY = e.clientY - startPosition.y;
       setPosition({ x: newX, y: newY });
@@ -70,7 +89,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   console.log('Attempting to load PDF from:', pdfUrl);
 
   return (
-    <div className="pdf-viewer border rounded-lg bg-gray-50 p-4">
+    <div className="pdf-viewer border rounded-lg bg-gray-50 p-4 overflow-hidden">
       <div className="flex justify-end gap-2 mb-2">
         <button
           onClick={zoomOut}
@@ -101,7 +120,11 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+        style={{ 
+          cursor: isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default'),
+          touchAction: 'none',
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
         <div 
           style={{ 
