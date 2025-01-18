@@ -7,7 +7,7 @@ import {
   Receipt,
   Wallet,
 } from '@/components/ui/icons'
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
 
@@ -173,10 +173,6 @@ const BillifyDashboard = () => {
                         </button>
                       </DialogTrigger>
                       <DialogContent className="bg-white border shadow-xl">
-                        <DialogTitle>Upload Invoice</DialogTitle>
-                        <DialogDescription>
-                          Upload a PDF invoice to process and extract data
-                        </DialogDescription>
                         {!uploadedInvoiceData && (
                           <div className="space-y-4">
                             <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
@@ -230,10 +226,6 @@ const BillifyDashboard = () => {
                         )}
                         {uploadedInvoiceData && (
                           <>
-                            <DialogTitle>Invoice Preview</DialogTitle>
-                            <DialogDescription>
-                              Review and confirm the extracted invoice data
-                            </DialogDescription>
                             <InvoiceUploadResult
                               result={uploadedInvoiceData}
                             />
