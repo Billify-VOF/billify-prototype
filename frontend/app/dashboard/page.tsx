@@ -37,6 +37,11 @@ const BillifyDashboard = () => {
 
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (uploadedInvoiceData) {
+            alert('You cannot select a new file while previewing an invoice.');
+            return;
+        }
+
         const file = event.target.files?.[0];
         if (file) {
             if (file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024) {
@@ -159,7 +164,10 @@ const BillifyDashboard = () => {
                     {/* Combined Dialog */}
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
-                        <button className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2">
+                        <button 
+                          className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2"
+                          disabled={!!uploadedInvoiceData}
+                        >
                           <Upload className="w-4 h-4" />
                           Upload
                         </button>
@@ -169,55 +177,57 @@ const BillifyDashboard = () => {
                         <DialogDescription>
                           Upload a PDF invoice to process and extract data
                         </DialogDescription>
-                        <div className="space-y-4">
-                          <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                              id="file-upload"
-                            />
-                            <label
-                              htmlFor="file-upload"
-                              className="cursor-pointer text-blue-600 hover:text-blue-700"
-                            >
-                              {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
-                            </label>
-                          </div>
-                          
-                          {/* Progress Bar */}
-                          {uploadStatus === 'uploading' && (
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                              <div 
-                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                                style={{ width: '100%', animation: 'progress 1s ease-in-out infinite' }}
+                        {!uploadedInvoiceData && (
+                          <div className="space-y-4">
+                            <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
+                              <input
+                                type="file"
+                                accept=".pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                id="file-upload"
                               />
+                              <label
+                                htmlFor="file-upload"
+                                className="cursor-pointer text-blue-600 hover:text-blue-700"
+                              >
+                                {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
+                              </label>
                             </div>
-                          )}
-                          
-                          {selectedFile && uploadStatus === 'idle' && (
-                            <button
-                              onClick={handleUpload}
-                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              disabled={(uploadStatus as UploadStatus) === 'uploading'}
-                              type="button"
-                              aria-label="Upload Invoice"
-                            >
-                              Upload Invoice
-                            </button>
-                          )}
-                          
-                          {uploadStatus === 'error' && (
-                            <InvoiceUploadResult 
-                              result={{
-                                status: 'error',
-                                error: 'Upload failed',
-                                detail: errorMessage
-                              }}
-                            />
-                          )}
-                        </div>
+                            
+                            {/* Progress Bar */}
+                            {uploadStatus === 'uploading' && (
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                  style={{ width: '100%', animation: 'progress 1s ease-in-out infinite' }}
+                                />
+                              </div>
+                            )}
+                            
+                            {selectedFile && uploadStatus === 'idle' && (
+                              <button
+                                onClick={handleUpload}
+                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                disabled={(uploadStatus as UploadStatus) === 'uploading'}
+                                type="button"
+                                aria-label="Upload Invoice"
+                              >
+                                Upload Invoice
+                              </button>
+                            )}
+                            
+                            {uploadStatus === 'error' && (
+                              <InvoiceUploadResult 
+                                result={{
+                                  status: 'error',
+                                  error: 'Upload failed',
+                                  detail: errorMessage
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
                         {uploadedInvoiceData && (
                           <>
                             <DialogTitle>Invoice Preview</DialogTitle>
