@@ -173,11 +173,16 @@ const BillifyDashboard = () => {
                         </button>
                       </DialogTrigger>
                       <DialogContent 
-                        className={`bg-white border shadow-xl ${!uploadedInvoiceData ? 'w-80 h-80' : 'max-w-[90vw] max-h-[90vh]'}`}
+                        className={`bg-white border shadow-xl ${
+                          !uploadedInvoiceData 
+                            ? (selectedFile ? 'w-[300px] h-[180px] p-3' : 'w-[300px] h-[140px] p-3')
+                            : 'w-[1000px] h-[600px] p-6'
+                        } resize-none overflow-auto`}
                       >
                         {!uploadedInvoiceData && (
                           <div className="space-y-4">
-                            <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
+                            <h2 className="text-lg font-semibold mb-2">Upload Invoice</h2>
+                            <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-4 text-center`}>
                               <input
                                 type="file"
                                 accept=".pdf"
@@ -187,7 +192,7 @@ const BillifyDashboard = () => {
                               />
                               <label
                                 htmlFor="file-upload"
-                                className="cursor-pointer text-blue-600 hover:text-blue-700"
+                                className="cursor-pointer text-blue-600 hover:text-blue-700 block truncate max-w-[250px] mx-auto"
                               >
                                 {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
                               </label>
@@ -195,9 +200,9 @@ const BillifyDashboard = () => {
                             
                             {/* Progress Bar */}
                             {uploadStatus === 'uploading' && (
-                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
-                                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                   style={{ width: '100%', animation: 'progress 1s ease-in-out infinite' }}
                                 />
                               </div>
@@ -214,24 +219,15 @@ const BillifyDashboard = () => {
                                 Upload Invoice
                               </button>
                             )}
-                            
-                            {uploadStatus === 'error' && (
-                              <InvoiceUploadResult 
-                                result={{
-                                  status: 'error',
-                                  error: 'Upload failed',
-                                  detail: errorMessage
-                                }}
-                              />
-                            )}
                           </div>
                         )}
                         {uploadedInvoiceData && (
-                          <>
-                            <InvoiceUploadResult
-                              result={uploadedInvoiceData}
-                            />
-                          </>
+                          <div className="h-full flex flex-col">
+                            <h2 className="text-lg font-semibold mb-4">Invoice Preview</h2>
+                            <div className="flex-1 flex gap-6 overflow-hidden">
+                              <InvoiceUploadResult result={uploadedInvoiceData} />
+                            </div>
+                          </div>
                         )}
                       </DialogContent>
                     </Dialog>
