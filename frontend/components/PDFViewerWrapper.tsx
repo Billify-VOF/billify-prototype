@@ -89,89 +89,102 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   console.log('Attempting to load PDF from:', pdfUrl);
 
   return (
-    <div className="pdf-viewer border rounded-lg bg-gray-50 p-4 overflow-hidden">
-      <div className="flex justify-end gap-2 mb-2">
-        <button
-          onClick={zoomOut}
-          className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-          title="Zoom Out"
-        >
-          -
-        </button>
-        <button
-          onClick={resetZoom}
-          className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-          title="Reset Zoom"
-        >
-          {Math.round(scale * 100)}%
-        </button>
-        <button
-          onClick={zoomIn}
-          className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-          title="Zoom In"
-        >
-          +
-        </button>
-      </div>
+    <div className="pdf-viewer h-full flex flex-col border rounded-lg bg-gray-50 p-4 overflow-hidden">
+      {filePath && (
+        <div className="flex justify-end gap-2 mb-2">
+          <button
+            onClick={zoomOut}
+            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            title="Zoom Out"
+          >
+            -
+          </button>
+          <button
+            onClick={resetZoom}
+            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            title="Reset Zoom"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            onClick={zoomIn}
+            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            title="Zoom In"
+          >
+            +
+          </button>
+        </div>
+      )}
       <div 
         ref={containerRef}
-        className="h-[400px] overflow-hidden relative"
+        className={`flex-1 relative overflow-hidden flex items-center justify-center ${!filePath && 'border border-dashed border-gray-300 rounded-lg'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         style={{ 
-          cursor: isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default'),
+          cursor: filePath ? (isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default')) : 'default',
           touchAction: 'none',
           WebkitOverflowScrolling: 'touch'
         }}
       >
-        <div 
-          style={{ 
-            transform: `translate(${position.x}px, ${position.y}px)`,
-            transition: isDragging ? 'none' : 'transform 0.1s',
-          }}
-        >
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={(error) => {
-              console.error('PDF Load Error:', error);
-              setError(error.message);
+        {!filePath ? (
+          <div className="text-gray-500 text-center p-4">
+            <p className="text-sm">Click to select a PDF file</p>
+          </div>
+        ) : (
+          <div 
+            style={{ 
+              transform: `translate(${position.x}px, ${position.y}px)`,
+              transition: isDragging ? 'none' : 'transform 0.1s',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
             }}
-            loading={<div className="text-gray-500">Loading PDF...</div>}
           >
-            <Page 
-              pageNumber={pageNumber} 
-              width={300}
-              scale={scale}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              loading={<div className="text-gray-500">Loading page...</div>}
-            />
-          </Document>
-          {numPages && numPages > 1 && (
-            <div className="flex justify-between items-center mt-4">
-              <button
-                onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
-                disabled={pageNumber <= 1}
-                className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {pageNumber} of {numPages}
-              </span>
-              <button
-                onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
-                disabled={pageNumber >= numPages}
-                className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={(error) => {
+                console.error('PDF Load Error:', error);
+                setError(error.message);
+              }}
+              loading={<div className="text-gray-500">Loading PDF...</div>}
+            >
+              <Page 
+                pageNumber={pageNumber} 
+                width={400}
+                scale={scale}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                loading={<div className="text-gray-500">Loading page...</div>}
+              />
+            </Document>
+            {numPages && numPages > 1 && (
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between items-center p-4 bg-white bg-opacity-90">
+                <button
+                  onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                  disabled={pageNumber <= 1}
+                  className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {pageNumber} of {numPages}
+                </span>
+                <button
+                  onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
+                  disabled={pageNumber >= numPages}
+                  className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

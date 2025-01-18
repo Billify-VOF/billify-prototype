@@ -85,64 +85,58 @@ export function InvoiceUploadResult({ result }: Props) {
 
   if (result.status === 'success') {
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 max-w-[90vw] max-h-[80vh]">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Invoice Number:</label>
-                <input
-                  type="text"
-                  value={invoiceData.invoice_number}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, invoice_number: e.target.value }))}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Amount:</label>
-                <div className="relative mt-1">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">€</span>
-                  <input
-                    type="text"
-                    value={invoiceData.amount}
-                    onChange={(e) => handleAmountChange(e.target.value)}
-                    placeholder="0.00"
-                    className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Date:</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal border border-gray-300 hover:bg-gray-50",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-white" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={handleDateSelect}
-                      initialFocus
-                      className="rounded-md border"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </div>
+      <div className="flex w-full h-full gap-6">
+        <div className="w-1/3 space-y-4">
           <div>
-            <PDFViewerWrapper filePath={result.invoice?.file_path || ''} />
+            <label className="block text-sm font-medium text-gray-700">Invoice Number:</label>
+            <input
+              type="text"
+              value={invoiceData.invoice_number}
+              onChange={(e) => setInvoiceData({ ...invoiceData, invoice_number: e.target.value })}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Amount:</label>
+            <input
+              type="text"
+              value={invoiceData.amount}
+              onChange={(e) => setInvoiceData({ ...invoiceData, amount: e.target.value })}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Date:</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal border border-gray-300 hover:bg-gray-50 mt-1",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-white" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  className="rounded-md border"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        <div className="w-2/3 h-full">
+          <PDFViewerWrapper filePath={result.invoice?.file_path || ''} />
         </div>
       </div>
     );
