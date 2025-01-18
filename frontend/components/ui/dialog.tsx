@@ -39,7 +39,8 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] min-w-[500px] max-h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 sm:rounded-lg overflow-auto resize-x cursor-ew-resize",
-        className
+        className,
+        !props['data-has-file'] ? 'w-80 h-80' : 'max-w-[90vw] max-h-[90vh]'
       )}
       {...props}
     >
