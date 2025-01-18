@@ -172,7 +172,9 @@ const BillifyDashboard = () => {
                           Upload
                         </button>
                       </DialogTrigger>
-                      <DialogContent className="bg-white border shadow-xl">
+                      <DialogContent 
+                        className={`bg-white border shadow-xl ${!uploadedInvoiceData ? 'w-80 h-80' : 'max-w-[90vw] max-h-[90vh]'}`}
+                      >
                         {!uploadedInvoiceData && (
                           <div className="space-y-4">
                             <div className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-8 text-center`}>
