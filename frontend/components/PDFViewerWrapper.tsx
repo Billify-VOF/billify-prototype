@@ -122,8 +122,8 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
               pageNumber={pageNumber} 
               width={300}
               scale={scale}
-              renderTextLayer={false}
-              renderAnnotationLayer={false}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
               loading={<div className="text-gray-500">Loading page...</div>}
             />
           </Document>
