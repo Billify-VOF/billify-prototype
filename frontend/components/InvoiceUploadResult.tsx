@@ -59,6 +59,14 @@ export function InvoiceUploadResult({ result }: Props) {
     }
   }, [result]);
 
+  useEffect(() => {
+    console.log('Date state changed:', date);
+  }, [date]);
+
+  useEffect(() => {
+    console.log('InvoiceData state changed:', invoiceData);
+  }, [invoiceData]);
+
   const handleAmountChange = (value: string) => {
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(value) || value === '') {
@@ -68,6 +76,7 @@ export function InvoiceUploadResult({ result }: Props) {
 
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
+      console.log('Selected date:', newDate);
       setDate(newDate);
       setInvoiceData(prev => {
         const formattedDate = format(newDate, 'yyyy-MM-dd');
