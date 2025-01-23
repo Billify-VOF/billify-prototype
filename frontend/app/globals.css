@@ -48,6 +48,7 @@
     --rdp-outline: 2px solid var(--rdp-accent-color);
     --rdp-outline-selected: 2px solid var(--rdp-accent-color);
     margin: 0;
+    z-index: 9999; /* P7aad */
   }
 
   .rdp-day_selected, 
