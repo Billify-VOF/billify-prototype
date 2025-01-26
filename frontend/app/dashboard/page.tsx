@@ -29,6 +29,19 @@ const BillifyDashboard = () => {
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
+    // Reset all states when dialog is closed
+    const handleDialogOpenChange = (open: boolean) => {
+      setIsDialogOpen(open);
+      if (!open) {
+        // Reset all states when dialog is closed
+        setSelectedFile(null);
+        setUploadStatus('idle');
+        setErrorMessage('');
+        setUploadedInvoiceData(null);
+        setIsFileTypeInvalid(false);
+      }
+    };
+
     useEffect(() => {
       if (isDialogOpen && uploadedInvoiceData) {
         console.log('PARENT TEST - Rendering Dialog with uploadedInvoiceData:', uploadedInvoiceData);
@@ -168,7 +181,7 @@ const BillifyDashboard = () => {
                       Filter
                     </button>
                     {/* Combined Dialog */}
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                       <DialogTrigger asChild>
                         <button 
                           className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2"
@@ -224,6 +237,9 @@ const BillifyDashboard = () => {
                               >
                                 Upload Invoice
                               </button>
+                            )}
+                            {uploadStatus === 'error' && errorMessage && (
+                              <p className="text-red-600 text-sm mt-2">{errorMessage}</p>
                             )}
                           </div>
                         )}
