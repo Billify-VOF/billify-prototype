@@ -41,6 +41,7 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 sm:rounded-lg",
         className
       )}
+      onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside clicks
       {...props}
     >
       {children}
