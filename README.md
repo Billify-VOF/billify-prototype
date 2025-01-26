@@ -8,6 +8,24 @@ Unauthorized copying, modification, distribution, or use is strictly prohibited.
 Billify is a proprietary cash flow management and invoice tracking system designed 
 for small to medium-sized enterprises.
 
+## Our Philosophy: Move Fast and Break Things
+
+At Billify, we embrace the "move fast and break things" philosophy, which emphasizes rapid innovation and iterative development. This approach means:
+
+- **Speed over perfection**: We prioritize quick iterations and learning from real-world feedback over perfect but delayed solutions.
+- **Continuous innovation**: We're not afraid to try new approaches and pivot quickly when needed.
+- **Fail fast, learn faster**: We view failures as valuable learning opportunities that help us build better solutions.
+- **User-driven development**: We rapidly respond to user feedback, even if it means breaking existing patterns.
+
+This philosophy extends to our coding practices:
+
+- **Ship working code first**: We believe in getting functional code out quickly, then improving it later
+- **Features over perfection**: Perfect code shouldn't block shipping new features
+- **Embrace technical debt**: Technical debt is acceptable when intentional and tracked—we can refactor later
+- **Quick iterations**: We prioritize getting solutions to users fast, even if the implementation isn't ideal
+- **Dead code management**: We remove dead code when we notice it, but don't actively hunt for it
+- **Validate through usage**: This approach helps us validate ideas quickly and ensure we're building features that matter to users rather than spending time perfecting code that might not meet real-world needs
+
 ## Documentation
 
 For more detailed setup and development instructions, refer to:
