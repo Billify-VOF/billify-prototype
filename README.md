@@ -16,6 +16,7 @@ At Billify, we embrace the "move fast and break things" philosophy, which emphas
 - **Continuous innovation**: We're not afraid to try new approaches and pivot quickly when needed.
 - **Fail fast, learn faster**: We view failures as valuable learning opportunities that help us build better solutions.
 - **User-driven development**: We rapidly respond to user feedback, even if it means breaking existing patterns.
+- **Trial and error development**: We build through experimentation and learning from attempts, rather than trying to design everything perfectly upfront—using any available resources (documentation, StackOverflow, AI) to generate working solutions and iterating until we get it right
 
 This philosophy extends to our coding practices:
 
@@ -25,6 +26,7 @@ This philosophy extends to our coding practices:
 - **Quick iterations**: We prioritize getting solutions to users fast, even if the implementation isn't ideal
 - **Dead code management**: We remove dead code when we notice it, but don't actively hunt for it
 - **Validate through usage**: This approach helps us validate ideas quickly and ensure we're building features that matter to users rather than spending time perfecting code that might not meet real-world needs
+- 
 
 ## Documentation
 
