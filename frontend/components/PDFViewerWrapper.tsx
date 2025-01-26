@@ -133,37 +133,41 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
             <p className="text-sm">Click to select a PDF file</p>
           </div>
         ) : (
-          <div 
-            style={{ 
-              transform: `translate(${position.x}px, ${position.y}px)`,
-              transition: isDragging ? 'none' : 'transform 0.1s',
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}
-          >
-            <Document
-              file={pdfUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={(error) => {
-                console.error('PDF Load Error:', error);
-                setError(error.message);
-              }}
-              loading={<div className="text-gray-500">Loading PDF...</div>}
-            >
-              <Page 
-                pageNumber={pageNumber} 
-                width={400}
-                scale={scale}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                loading={<div className="text-gray-500">Loading page...</div>}
-              />
-            </Document>
+          <>
+            <div className="flex-1 overflow-auto">
+              <div 
+                style={{ 
+                  transform: `translate(${position.x}px, ${position.y}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.1s',
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}
+              >
+                <Document
+                  file={pdfUrl}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={(error) => {
+                    console.error('PDF Load Error:', error);
+                    setError(error.message);
+                  }}
+                  loading={<div className="text-gray-500">Loading PDF...</div>}
+                >
+                  <Page 
+                    pageNumber={pageNumber} 
+                    width={400}
+                    scale={scale}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    loading={<div className="text-gray-500">Loading page...</div>}
+                  />
+                </Document>
+              </div>
+            </div>
             {numPages && numPages > 1 && (
-              <div className="flex-shrink-0 flex justify-between items-center p-4 bg-white bg-opacity-90">
+              <div className="flex-shrink-0 flex justify-between items-center p-4 bg-white border-t border-gray-200">
                 <button
                   onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
                   disabled={pageNumber <= 1}
@@ -183,7 +187,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
                 </button>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
