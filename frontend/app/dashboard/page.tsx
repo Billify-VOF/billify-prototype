@@ -35,6 +35,12 @@ const BillifyDashboard = () => {
       }
     }, [isDialogOpen, uploadedInvoiceData]);
 
+    useEffect(() => {
+      if (!isDialogOpen) {
+        setUploadedInvoiceData(null);
+      }
+    }, [isDialogOpen]);
+
     //Add file handling functions
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (uploadedInvoiceData) {
@@ -166,7 +172,7 @@ const BillifyDashboard = () => {
                       <DialogTrigger asChild>
                         <button 
                           className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center gap-2"
-                          disabled={!!uploadedInvoiceData}
+                          disabled={isDialogOpen}
                         >
                           <Upload className="w-4 h-4" />
                           Upload
