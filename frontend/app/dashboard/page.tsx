@@ -197,6 +197,7 @@ const BillifyDashboard = () => {
                             ? (selectedFile ? 'w-[300px] h-[180px] p-3' : 'w-[300px] h-[140px] p-3')
                             : 'w-[1000px] h-[600px] p-6'
                         } resize-none overflow-auto`}
+                        onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside clicks
                       >
                         {!uploadedInvoiceData && (
                           <div className="space-y-4">
