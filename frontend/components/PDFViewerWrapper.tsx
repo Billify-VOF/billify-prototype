@@ -117,7 +117,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
       )}
       <div 
         ref={containerRef}
-        className={`flex-1 relative overflow-hidden flex items-center justify-center ${!filePath && 'border border-dashed border-gray-300 rounded-lg'}`}
+        className={`flex-1 relative overflow-hidden flex flex-col ${!filePath && 'border border-dashed border-gray-300 rounded-lg'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -163,7 +163,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
               />
             </Document>
             {numPages && numPages > 1 && (
-              <div className="absolute bottom-0 left-0 right-0 flex justify-between items-center p-4 bg-white bg-opacity-90">
+              <div className="flex-shrink-0 flex justify-between items-center p-4 bg-white bg-opacity-90">
                 <button
                   onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
                   disabled={pageNumber <= 1}
