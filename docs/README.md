@@ -7,6 +7,24 @@ Unauthorized copying, modification, distribution, or use is strictly prohibited.
 
 This central knowledge base serves as your comprehensive guide to understanding, using, and contributing to our cash flow management system. Whether you're a developer looking to contribute code, an integrator wanting to connect with our APIs, or a team member seeking to understand our system architecture, you'll find the information you need here.
 
+## Project Goals
+
+### Core Objectives
+- **User-Centric Design**: Easy to use and understand, with minimal technical jargon
+- **Visual Communication**: Clean, modern interface with intuitive data visualization
+- **Real-Time Insights**: Live cash flow dashboard with current financial position
+- **Seamless Integration**: Simple connection with financial software and banking services
+- **Centralized Platform**: Single source of truth for all financial data
+- **Smart Forecasting**: Predictive cash flow analysis and payment notifications
+
+### Out of Scope
+- Complete accounting software replacement
+- Advanced financial reporting and tax preparation
+- Complex VAT management
+- Custom invoice generation
+- Detailed budgeting tools
+- Advanced AI-driven analytics
+
 ## Documentation Structure
 
 ```
@@ -17,6 +35,24 @@ docs/
 ├── api/                   # API documentation
 │   ├── endpoints/         # API endpoint specifications
 │   └── guides/           # Integration guides
+├── design/               # Design documentation
+│   ├── GOALS.md          # Project goals and non-goals
+│   ├── PROBLEMS.MD       # Problem statements and challenges
+│   ├── SOLUTION.MD       # Solution architecture and approach
+│   ├── CURRENT_SOLUTIONS.md # Analysis of existing solutions
+│   ├── FUNCTIONAL_REQUIREMENTS.md # Core functional requirements
+│   ├── NON_FUNCTIONAL_REQUIREMENTS.md # Overview of NFRs
+│   └── nfr/              # Detailed non-functional requirements
+│       ├── AVAILABILITY.md
+│       ├── BACKUP.md
+│       ├── COMPLIANCE.md
+│       ├── INTEGRATION.md
+│       ├── MAINTAINABILITY.md
+│       ├── PERFORMANCE.md
+│       ├── SCALABILITY.md
+│       ├── SECURITY.md
+│       ├── SYSTEM_REQUIREMENTS.md
+│       └── USABILITY.md
 └── development/          # Development guides and standards
     ├── setup/            # Environment setup guides
     └── standards/        # Coding standards and guidelines
@@ -35,6 +71,21 @@ docs/
 - Authentication and authorization guides
 - Integration examples and patterns
 - Best practices for API usage
+
+### Design Documentation (`/docs/design/`)
+
+- Project goals and scope definition
+- Problem analysis and current market solutions
+- Comprehensive solution architecture
+- Functional requirements specification
+- Non-functional requirements:
+  - System requirements and architecture
+  - Security and compliance
+  - Performance and scalability
+  - Availability and backup strategies
+  - Integration specifications
+  - Maintainability guidelines
+  - Usability standards
 
 ### Development Documentation (`/docs/development/`)
 
