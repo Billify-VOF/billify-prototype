@@ -1,4 +1,4 @@
-# Billify Architecture Overview
+# Billify architecture overview
 
 ⚠️ **PROPRIETARY SOFTWARE NOTICE**: This documentation is part of Billify's proprietary software. All rights reserved.
 Unauthorized copying, modification, distribution, or use is strictly prohibited.
@@ -7,12 +7,12 @@ Unauthorized copying, modification, distribution, or use is strictly prohibited.
 
 Billify is a modern cash flow management system designed for small to medium-sized enterprises. This document provides a high-level overview of Billify's architecture and explains how our components work together to deliver core functionality.
 
-## System Components
+## System components
 
-### Frontend Architecture
+### Frontend architecture
 
 ```
-Technology Stack:
+Technology stack:
 - Next.js 14.2+ with App Router
 - React 18.3+ with TypeScript
 - Tailwind CSS for styling
@@ -26,10 +26,10 @@ Key features:
 - State management via React hooks and React Query
 - Modern UI with Shadcn/UI components
 
-### Backend Architecture
+### Backend architecture
 
 ```
-Technology Stack:
+Technology stack:
 - Django 5.0+ with REST Framework
 - PostgreSQL 15+
 - drf-spectacular for API docs
@@ -42,7 +42,7 @@ Design principles:
 - Clean architecture patterns
 - Separation of concerns across layers
 
-### Integration Layer
+### Integration layer
 
 Core integrations:
 - Tesseract OCR for document processing
@@ -50,9 +50,9 @@ Core integrations:
 - Third-party service connectors
 - CORS-enabled API endpoints
 
-## Core Workflows
+## Core workflows
 
-### Invoice Processing Pipeline
+### Invoice processing pipeline
 
 1. Document upload and validation
 2. OCR processing and text extraction (via Tesseract)
@@ -60,7 +60,7 @@ Core integrations:
 4. Database storage and indexing
 5. UI state updates via React Query
 
-### Authentication Flow
+### Authentication flow
 
 Current implementation:
 - Session-based authentication
@@ -68,7 +68,7 @@ Current implementation:
 - Development mode: AllowAny permissions
 - CORS configuration for frontend access
 
-### Data Management
+### Data management
 
 Storage strategy:
 - PostgreSQL for structured data
@@ -76,7 +76,7 @@ Storage strategy:
 - File-based session storage
 - Local filesystem for development
 
-## Architecture Principles
+## Architecture principles
 
 ### Scalability
 
@@ -101,16 +101,16 @@ Quality assurance:
 - Comprehensive documentation
 - Regular code reviews
 
-## System Integration
+## System integration
 
-### Internal Communication
+### Internal communication
 
 - RESTful APIs for data operations
 - React Query for state management
 - Session-based authentication
 - Database access via Django ORM
 
-### External Services
+### External services
 
 Current integrations:
 - OCR processing via Tesseract
@@ -118,31 +118,31 @@ Current integrations:
 - Future planned: Banking APIs
 - Future planned: Accounting software
 
-## Development Workflow
+## Development workflow
 
-### Testing Strategy
+### Testing strategy
 
 ```
-Testing Layers:
+Testing layers:
 - Unit tests: Jest (frontend), pytest (backend)
 - Integration tests: pytest
 - E2E tests: Cypress
 - API tests: drf-spectacular
 ```
 
-### Development Process
+### Development process
 
 ```
-Development Flow:
+Development flow:
 1. Local development
 2. Automated testing
 3. Code review
 4. Integration
 ```
 
-## Future Roadmap
+## Future roadmap
 
-### Planned Enhancements
+### Planned enhancements
 
 Short-term:
 - JWT authentication implementation

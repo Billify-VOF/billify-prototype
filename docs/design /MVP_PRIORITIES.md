@@ -1,6 +1,6 @@
 # MVP focus and priorities
 
-1. Focus on implementing and **validating the core value proposition**—real-time, easy-to-use, and understandable cash flow visibility—with as little complexity as possible. **Mitigate risks and manage limited resources by prioritising simplicity, reducing technical complexity and scope, and minimising third-party dependencies.** How can you simplify the core features of the pitch?
+1. Focus on implementing and **validating the core value proposition**—real-time, easy-to-use, and understandable cash flow visibility—with as little complexity as possible. **Mitigate risks and manage limited resources by prioritizing simplicity, reducing technical complexity and scope, and minimizing third-party dependencies.** How can you simplify the core features of the pitch?
 
 2. How can you develop a basic implementation of core features and facilitate iterative improvement and future feature development over time?
 
@@ -25,15 +25,15 @@
 7. Design a solid system architecture and use the following evaluation criteria for choosing the tech stack:
    1. Use the technology you are familiar with to move fast and focus on delivering value. Any time spent struggling with unfamiliar tech is precious time wasted.
    2. Use technology that is robust, stable and reliable:
-       1. The technology has processes in place to handle security releases;
-       2. There exists a lot of tooling and documentation;
-       3. There are options for high availability and backups;
-       4. There are options for scaling the technology that are clear and well-documented;
-       5. There is a strong community of users, documented best practices, and help available to solve edge cases.
+       1. The technology has processes in place to handle security releases
+       2. There exists a lot of tooling and documentation
+       3. There are options for high availability and backups
+       4. There are options for scaling the technology that are clear and well-documented
+       5. There is a strong community of users, documented best practices, and help available to solve edge cases
    3. Use technology that is proven and widely deployed:
        1. Are enough engineers and developers available who are knowledgeable and have experience working with the technology?
        2. Will it be difficult to migrate away from this technology if we decide to move away?
-       3. '*Boring old tech*' > *'Shiny newest toy tech'*.
+       3. '*Boring old tech*' > *'Shiny newest toy tech'*
    4. Using scalable technology and architecture enables the addition of new integrations relatively quickly later on.
    5. Use technology that does not add disproportionate operational or technical complexity and is relatively easy to maintain.
    6. Use technology that is not too expensive.
@@ -48,7 +48,7 @@
        3. Document key assumptions and validate them through user testing.
    2. Establish feedback loops.
        1. Create regular contact points between the development team and users.
-       2. Set up systems to collect, analyse, and prioritise user feedback.
+       2. Set up systems to collect, analyze, and prioritize user feedback.
        3. Schedule periodic requirement reviews to incorporate learnings.
    3. Balance vision with reality.
        1. Start with minimal viable requirements that demonstrate core value.

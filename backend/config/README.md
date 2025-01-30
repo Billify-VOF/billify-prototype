@@ -1,5 +1,3 @@
-# config/README.md
-
 # Configuration
 
 Project-wide configuration and environment settings.
@@ -23,8 +21,8 @@ Python package dependencies:
 - `base.txt` - Core dependencies including:
   - Django and DRF
   - Database (PostgreSQL)
-  - PDF Processing (Tesseract)
-  - Task Queue (Celery)
+  - PDF processing (Tesseract)
+  - Task queue (Celery)
   - Storage (AWS/S3)
 - `development.txt` - Development tools for:
   - Testing
@@ -33,7 +31,7 @@ Python package dependencies:
   - Documentation
 - `production.txt` - Production-specific requirements
 
-## Environment Variables
+## Environment variables
 
 Required variables:
 ```bash
@@ -72,7 +70,7 @@ export DJANGO_SETTINGS_MODULE=config.settings.development  # For development
 export DJANGO_SETTINGS_MODULE=config.settings.production   # For production
 ```
 
-## Security Considerations
+## Security considerations
 
 - Never commit sensitive data or credentials
 - Use strong SECRET_KEY in production

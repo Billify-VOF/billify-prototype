@@ -15,7 +15,7 @@
 
 ### 2. Accounting
 Users can connect and sync with the following accounting systems:
-* Exact online
+* Exact Online
 * Odoo accounting module
 * Yuki by Visma
 * Billit
@@ -43,8 +43,8 @@ Users can connect and sync with the following other systems:
 ### 5. Automatic invoice payment alerts
 * Notify users of upcoming payments that are due to avoid late fees or missed payments.
 
-### 6. Invoice categorisation
-* Invoices should be automatically categorised by the due date (e.g., due within 7, 30 days) with corresponding colour codes (e.g., red for urgent, orange for near due, green for not soon owing).
+### 6. Invoice categorization
+* Invoices should be automatically categorized by the due date (e.g., due within 7, 30 days) with corresponding color codes (e.g., red for urgent, orange for near due, green for not soon owing).
 
 ## Cash flow
 

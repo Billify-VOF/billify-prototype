@@ -1,6 +1,4 @@
-# apps/README.md
-
-# Django Applications
+# Django applications
 
 This directory contains Django application configurations. These apps handle framework-specific setup but should not contain business logic.
 

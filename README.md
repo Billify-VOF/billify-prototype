@@ -8,7 +8,7 @@ Unauthorized copying, modification, distribution, or use is strictly prohibited.
 Billify is a proprietary cash flow management and invoice tracking system designed 
 for small to medium-sized enterprises.
 
-## Our Philosophy: Move Fast and Break Things
+## Our philosophy: Move fast and break things
 
 At Billify, we embrace the "move fast and break things" philosophy, which emphasizes rapid innovation and iterative development. This approach means:
 
@@ -16,17 +16,16 @@ At Billify, we embrace the "move fast and break things" philosophy, which emphas
 - **Continuous innovation**: We're not afraid to try new approaches and pivot quickly when needed.
 - **Fail fast, learn faster**: We view failures as valuable learning opportunities that help us build better solutions.
 - **User-driven development**: We rapidly respond to user feedback, even if it means breaking existing patterns.
-- **Trial and error development**: We build through experimentation and learning from attempts, rather than trying to design everything perfectly upfront—using any available resources (documentation, StackOverflow, AI) to generate working solutions and iterating until we get it right
+- **Trial and error development**: We build through experimentation and learning from attempts, rather than trying to design everything perfectly upfront—using any available resources (documentation, StackOverflow, AI) to generate working solutions and iterating until we get it right.
 
 This philosophy extends to our coding practices:
 
-- **Ship working code first**: We believe in getting functional code out quickly, then improving it later
-- **Features over perfection**: Perfect code shouldn't block shipping new features
-- **Embrace technical debt**: Technical debt is acceptable when intentional and tracked—we can refactor later
-- **Quick iterations**: We prioritize getting solutions to users fast, even if the implementation isn't ideal
-- **Dead code management**: We remove dead code when we notice it, but don't actively hunt for it
-- **Validate through usage**: This approach helps us validate ideas quickly and ensure we're building features that matter to users rather than spending time perfecting code that might not meet real-world needs
-- 
+- **Ship working code first**: We believe in getting functional code out quickly, then improving it later.
+- **Features over perfection**: Perfect code shouldn't block shipping new features.
+- **Embrace technical debt**: Technical debt is acceptable when intentional and tracked—we can refactor later.
+- **Quick iterations**: We prioritize getting solutions to users fast, even if the implementation isn't ideal.
+- **Dead code management**: We remove dead code when we notice it, but don't actively hunt for it.
+- **Validate through usage**: This approach helps us validate ideas quickly and ensure we're building features that matter to users rather than spending time perfecting code that might not meet real-world needs.
 
 ## Documentation
 
@@ -39,7 +38,7 @@ For more detailed setup and development instructions, refer to:
 
 Before setting up the project, ensure you have the following installed:
 
-### System Requirements
+### System requirements
 These are the system-level packages that must be installed before the Python packages can work:
 
 - Python 3.11 or higher (required for backend)
@@ -47,7 +46,7 @@ These are the system-level packages that must be installed before the Python pac
 - PostgreSQL 15.x or higher (required for database)
 - Tesseract OCR (required for PDF text extraction)
 
-### System Package Installation
+### System package installation
 
 #### Windows:
 1. Install Python:
@@ -157,16 +156,16 @@ psql --version
 tesseract --version
 ```
 
-### Python Dependencies
+### Python dependencies
 The project's Python dependencies are managed through requirements files:
 - `backend/config/requirements/base.txt`: Core dependencies required to run the application
 - `backend/config/requirements/development.txt`: Additional tools for development (testing, debugging, etc.)
 
 These will be installed during the backend setup process.
 
-## Project Setup
+## Project setup
 
-### Database Setup
+### Database setup
 
 The project uses PostgreSQL to store invoice data, including:
 - Invoice metadata (number, amount, due date)
@@ -205,7 +204,7 @@ To set up the database:
    python manage.py migrate
    ```
 
-### Environment Configuration
+### Environment configuration
 
 1. Backend (`.env`):
    ```bash
@@ -224,7 +223,7 @@ To set up the database:
    NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
    ```
 
-## Backend Setup
+## Backend setup
 
 1. Create and activate a Python virtual environment:
    ```bash
@@ -257,7 +256,7 @@ To set up the database:
    python manage.py runserver
    ```
 
-## Frontend Setup
+## Frontend setup
 
 1. Install Node.js dependencies:
    ```bash
@@ -276,15 +275,15 @@ To set up the database:
    npm run dev
    ```
 
-## Development Guidelines
+## Development guidelines
 
-### Code Standards
+### Code standards
 - Follow PEP 8 for Python code
 - Use ESLint and Prettier for TypeScript
 - Write meaningful commit messages following conventional commits
 - Add type hints in Python and use TypeScript for frontend
 
-### Git Workflow
+### Git workflow
 1. Create feature branches from `main`:
    ```bash
    git checkout main
@@ -334,30 +333,30 @@ For detailed information about test organization, writing tests, and best practi
 
 ## Troubleshooting
 
-### Common Issues
+### Common issues
 
-1. **Database Connection Errors**:
+1. **Database connection errors**:
    - Verify PostgreSQL is running
    - Check database credentials in `.env`
    - Ensure database and user exist
 
-2. **Node.js/npm Issues**:
+2. **Node.js/npm issues**:
    - Clear npm cache: `npm cache clean --force`
    - Delete `node_modules` and reinstall
 
-3. **Python/pip Issues**:
+3. **Python/pip issues**:
    - Verify virtual environment is activated
    - Update pip: `python -m pip install --upgrade pip`
 
-4. **PDF Processing Issues**:
+4. **PDF processing issues**:
    - Verify Tesseract is in PATH
    - Check Tesseract installation
 
-## Accessing the Application
+## Accessing the application
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/api/docs/
-- Admin Interface: http://localhost:8000/admin/
+- API documentation: http://localhost:8000/api/docs/
+- Admin interface: http://localhost:8000/admin/
 
 For more detailed information, refer to the project wiki.

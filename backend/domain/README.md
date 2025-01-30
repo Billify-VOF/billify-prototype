@@ -1,6 +1,4 @@
-# domain/README.md
-
-# Domain Layer
+# Domain layer
 
 The domain layer contains the core business logic and rules of our application. It is completely independent of frameworks and technical implementations, following Domain-Driven Design principles.
 
@@ -29,33 +27,33 @@ Domain-specific exceptions:
 - `ValidationError` - Domain validation failures
 - `RepositoryError` - Data access issues
 
-## Domain Rules
+## Domain rules
 
-### Invoice Processing
+### Invoice processing
 - Validation rules for invoice data
 - Business rules for invoice states
 - Processing workflow requirements
 
-### Cash Flow (Planned)
+### Cash flow (planned)
 - Cash flow calculation rules
 - Projection and analysis logic
 - Financial reporting requirements
 
 ## Guidelines
 
-### Code Organization
+### Code organization
 - Keep business logic isolated from infrastructure
 - Use pure Python classes and type hints
 - Define clear interfaces for technical implementations
 - Maintain separation of concerns
 
-### Domain Model Design
+### Domain model design
 - Use rich domain models with behavior
 - Implement value objects for immutable concepts
 - Keep entities focused and cohesive
 - Follow Single Responsibility Principle
 
-### Error Handling
+### Error handling
 - Use domain-specific exceptions
 - Validate business rules at the domain level
 - Maintain clear error messages
@@ -67,9 +65,9 @@ Domain-specific exceptions:
 - Mock external dependencies
 - Focus on behavior, not implementation
 
-## Best Practices
+## Best practices
 
-1. **Dependency Rule**: Domain layer should not depend on outer layers
+1. **Dependency rule**: Domain layer should not depend on outer layers
 2. **Immutability**: Use immutable objects where possible
 3. **Validation**: Enforce invariants at object creation
 4. **Encapsulation**: Hide implementation details

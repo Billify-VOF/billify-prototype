@@ -1,4 +1,4 @@
-# API Layer
+# API layer
 
 The API layer handles HTTP-related concerns and serves as the interface between our frontend and backend services.
 
@@ -12,11 +12,11 @@ The API layer handles HTTP-related concerns and serves as the interface between 
 - `serializers.py` - Data transformation for API requests/responses
 - `urls.py` - API routing configuration
 
-## API Documentation
+## API documentation
 
-- API Root: `http://localhost:8000/` (provides overview and health check)
+- API root: `http://localhost:8000/` (provides overview and health check)
 
-## Available Endpoints
+## Available endpoints
 
 - `/api/invoices/` - Invoice management
   - `POST`: Upload and process new invoices
@@ -38,12 +38,12 @@ Future endpoints (planned):
 ## Authentication
 
 Currently using:
-- Session Authentication
-- Basic Authentication
+- Session authentication
+- Basic authentication
 
 Authentication is optional during development (AllowAny permission class).
 
-## Error Handling
+## Error handling
 
 Maintain consistent error responses:
 ```json
@@ -54,7 +54,7 @@ Maintain consistent error responses:
 }
 ```
 
-## CORS Configuration
+## CORS configuration
 
 CORS is enabled for development with:
 - Default origin: `http://localhost:3000`
