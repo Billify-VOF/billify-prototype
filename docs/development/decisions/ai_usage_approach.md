@@ -135,6 +135,3 @@ Cons:
 - [Database choice](./database_choice.md)
 - [Domain vs Django models](./domain_vs_django_models.md)
 - [Urgency field type](./urgency_field_type.md)
-
-## Notes
-This decision reflects our commitment to building a strong, knowledgeable engineering team while still leveraging AI's capabilities. The mentor-based approach ensures we maintain deep understanding of our codebase while benefiting from AI's insights and guidance.

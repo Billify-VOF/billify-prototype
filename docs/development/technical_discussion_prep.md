@@ -23,10 +23,6 @@ Key considerations:
 - Integration scaling strategy defined [see [INTEGRATION.md](../design%20/nfr/INTEGRATION.md)]
 - Performance metrics established [see [PERFORMANCE.md](../design%20/nfr/PERFORMANCE.md)]
 
-Current approach:
-- Vertical scaling for MVP phase
-- Single region deployment
-- Monitoring for scaling triggers
 
 For detailed analysis of limitations and planned optimizations, see:
 - [Scalability analysis](../design%20/nfr/SCALABILITY.md)
@@ -78,19 +74,11 @@ We chose batch synchronization (1-minute intervals) over event-driven architectu
 
 For detailed analysis and rationale, see [sync strategy ADR](decisions/sync_strategy.md).
 
-### 1.4 Technical Architecture Decisions
+### 1.4 Technical architecture decisions
 
-#### Architecture: Monolith vs microservices
+#### Architecture: monolith vs microservices
 See our detailed analysis and decision in the [monolith vs microservices ADR](decisions/monolith_vs_microservices.md).
 
-## 2. Production and Operations
+## 2. Production and operations
 
-See our detailed [production readiness guide](../operations/production_readiness.md) for comprehensive information about:
-- Caching strategy and implementation
-- Container orchestration and deployment
-- Monitoring and observability setup
-- Security measures and compliance
-
-For information about enterprise deployment requirements and potential architecture improvements, see our [future considerations guide](future_considerations.md).
-
-For detailed production scenarios and analysis, see our [production scenarios guide](../operations/production_scenarios.md).
+For production deployment details and considerations, see our [production readiness guide](../operations/production_readiness.md) and [enterprise deployment guide](../operations/enterprise_deployment.md).
