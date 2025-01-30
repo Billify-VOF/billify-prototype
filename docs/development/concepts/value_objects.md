@@ -68,7 +68,24 @@ These are considered the same because:
 
 ## Best practices
 1. Always make value objects immutable
+   Why: Prevents bugs from unexpected state changes. Example: Our UrgencyLevel can't be modified after creation, ensuring consistent behavior
+
 2. Implement value-based equality
+   Why: Two value objects with same data should be equal. Example: Two UrgencyLevel(2) objects are equal regardless of when they were created
+
 3. Use factory methods for complex creation logic
+   Why: Special class methods that create objects, hiding complex initialization logic. Example: Instead of calculating urgency directly:
+   ```python
+   # Without factory method - complex logic exposed:
+   days_until_due = (due_date - today).days
+   urgency = UrgencyLevel(2 if days_until_due <= 7 else 3)
+
+   # With factory method - logic hidden and reusable:
+   urgency = UrgencyLevel.from_due_date(due_date)
+   ```
+
 4. Consider using value objects for concepts that don't need identity
-5. Document the rationale for choosing between entities and value objects 
+   Why: Simpler than full entities when identity isn't important. Example: An invoice's urgency level doesn't need its own ID
+
+5. Document the rationale for choosing between entities and value objects
+   Why: Makes design decisions clear for the team. Example: We document why Invoice is an entity but UrgencyLevel is a value object 

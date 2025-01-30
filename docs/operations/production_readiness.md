@@ -161,5 +161,3 @@ Note: Our security measures will evolve based on:
   Example: GDPR compliance when we expand to EU customers
   Example: Financial regulations in new markets
   Example: Industry-specific compliance requirements
-
-For detailed implementation strategies of these components, see our [production scenarios guide](production_scenarios.md). 
