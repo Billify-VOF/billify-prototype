@@ -4,11 +4,11 @@
 
 ### 1.1 Domain-driven design approach
 
-#### Why we chose DDD [Implemented - [ADR](docs/development/decisions/domain_vs_django_models.md)]
+#### Why we chose DDD [Implemented - [ADR](../decisions/domain_vs_django_models.md)]
 - Clear separation between business logic and infrastructure [Implemented - [domain/models/](backend/domain/models/)]
 - Business rules expressed in domain language [Implemented - [domain/models/](backend/domain/models/)]
 - Easier onboarding for new developers [Implemented - [docs/development/concepts/domain_modeling.md](docs/development/concepts/domain_modeling.md)]
-- Future-proof for business requirement changes [Ongoing - [ADR](docs/development/decisions/domain_vs_django_models.md)]
+- Future-proof for business requirement changes [Ongoing - [ADR](../decisions/domain_vs_django_models.md)]
 
 #### Key benefits
 - **Maintainability**: Business logic changes don't affect persistence [Implemented - [domain/models/invoice.py](backend/domain/models/invoice.py)]
@@ -50,13 +50,13 @@ class Invoice(models.Model):
 
 ### 1.2 Database Choice (PostgreSQL vs MongoDB)
 
-#### Why PostgreSQL [Implemented - [ADR](docs/development/decisions/database_choice.md)]
+#### Why PostgreSQL [Implemented - [ADR](../decisions/database_choice.md)]
 - ACID compliance crucial for financial data [Implemented - [infrastructure/django/models/](backend/infrastructure/django/models/)]
 - Complex financial calculations requiring joins [Partially Implemented - [domain/services/financial_calculations.py](backend/domain/services/financial_calculations.py)]
 - Clear relational patterns between entities [Implemented - [SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM_ARCHITECTURE.md)]
-- Strong data integrity requirements [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+- Strong data integrity requirements [Implemented - [database_choice.md](../decisions/database_choice.md)]
 
-#### Trade-offs Considered [Analysis Phase - [database_choice.md](docs/development/decisions/database_choice.md)]
+#### Trade-offs Considered [Analysis Phase - [database_choice.md](../decisions/database_choice.md)]
 - MongoDB advantages:
   - Schema flexibility [Analysis Only - See ADR]
   - Horizontal scaling [Analysis Only - See ADR]
@@ -352,11 +352,11 @@ async def handle_updates(websocket, path):
 
 #### Architecture Decisions [Implemented - [ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)]
 - Why layered architecture [Implemented - [ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)]
-- Domain model separation [Implemented - [domain_vs_django_models.md](docs/development/decisions/domain_vs_django_models.md)]
-- Database selection process [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+- Domain model separation [Implemented - [domain_vs_django_models.md](../decisions/domain_vs_django_models.md)]
+- Database selection process [Implemented - [database_choice.md](../decisions/database_choice.md)]
 - Integration patterns choice [Implemented - [INTEGRATION.md](docs/design/nfr/INTEGRATION.md)]
 
-Example from our ADR: [Implemented - [domain_vs_django_models.md](docs/development/decisions/domain_vs_django_models.md)]
+Example from our ADR: [Implemented - [domain_vs_django_models.md](../decisions/domain_vs_django_models.md)]
 ```markdown
 # ADR: Separating domain and infrastructure models
 
@@ -397,7 +397,7 @@ Negative:
 - Trade-off considerations [Implemented - [TRADE_OFFS.md](docs/development/decisions/TRADE_OFFS.md)]
 - Future impact assessment [Implemented - [FUTURE_IMPACT.md](docs/development/decisions/FUTURE_IMPACT.md)]
 
-Example decision process: [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+Example decision process: [Implemented - [database_choice.md](../decisions/database_choice.md)]
 ```markdown
 Criteria:
 1. Financial data integrity
@@ -646,7 +646,7 @@ A:
 ##### Explaining Technical Decisions
 - Reference architecture decisions [Implemented - [ARCHITECTURE_DECISIONS.md](docs/architecture/ARCHITECTURE_DECISIONS.md)]:
   - Batch vs real-time sync trade-offs [Implemented - [SYNC_STRATEGY.md](docs/architecture/SYNC_STRATEGY.md)]
-  - Database choice rationale [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+  - Database choice rationale [Implemented - [database_choice.md](../decisions/database_choice.md)]
   - Integration patterns [Implemented - [INTEGRATION_ARCHITECTURE.md](docs/architecture/INTEGRATION_ARCHITECTURE.md)]
 
 Example Response:
@@ -679,7 +679,7 @@ Security Decisions:
 Technology Choices:
 - Django vs FastAPI [Implemented - [FRAMEWORK_CHOICE.md](docs/development/decisions/FRAMEWORK_CHOICE.md)]
 - Next.js adoption [Implemented - [FRONTEND_CHOICE.md](docs/development/decisions/FRONTEND_CHOICE.md)]
-- Database selection [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+- Database selection [Implemented - [database_choice.md](../decisions/database_choice.md)]
 
 ##### Future Roadmap & Technical Debt [Implemented - [ROADMAP.md](docs/design/ROADMAP.md)]
 
@@ -915,7 +915,7 @@ Focus areas [Implemented - [TECH_STACK_PRESENTATION.md](docs/development/TECH_ST
    - Service layer abstractions [Implemented - [SERVICE_LAYER.md](docs/architecture/SERVICE_LAYER.md)]
 
 3. Data Management:
-   - SQL database justification [Implemented - [database_choice.md](docs/development/decisions/database_choice.md)]
+   - SQL database justification [Implemented - [database_choice.md](../decisions/database_choice.md)]
    - Data integrity measures [Implemented - [DATA_INTEGRITY.md](docs/architecture/DATA_INTEGRITY.md)]
    - Performance optimization [Implemented - [PERFORMANCE.md](docs/design/nfr/PERFORMANCE.md)]
 
