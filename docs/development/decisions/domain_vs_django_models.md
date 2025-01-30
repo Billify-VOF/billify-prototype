@@ -1,46 +1,45 @@
-# Adr: Separating domain and infrastructure models
+# ADR: Separating domain and infrastructure models
 
 ## Status
 Accepted
 
 ## Context
-Decision to make: Combine business logic and persistence in Django models or separate them into distinct domain and infrastructure layers.
+Decision to make: combine business logic and persistence in Django models or separate them into distinct domain and infrastructure layers.
 
 ## Decision made
 We decided to maintain two separate models:
-1. Domain model (`domain/models/invoice.py`): Business logic and rules
-2. Django model (`infrastructure/django/models/invoice.py`): Data persistence
+1. Domain model (`domain/models/invoice.py`): business logic and rules
+2. Django model (`infrastructure/django/models/invoice.py`): data persistence
 
 We're using the repository pattern (see [Understanding the Repository Pattern](#understanding-the-repository-pattern)) to bridge these models.
 
-## Key Principles
+## Key principles
 Throughout this decision and its implementation, we follow these core principles:
 1. Keep interfaces focused on business operations
 2. Implement conversion logic in repository implementations
 3. Keep domain models clean of infrastructure concerns
 
-## Benefits and Rationale
-
+## Benefits and rationale
 Our approach provides several key benefits:
 
-1. **Clean Separation of Concerns**
+1. **Clean separation of concerns**
    - Domain model focuses purely on business rules
    - Infrastructure model handles only persistence (see [Understanding persistence](#understanding-persistence))
    - No mixing of storage details with business logic
    - Storage details isolated in repository implementation
 
-2. **Flexibility and Maintainability**
+2. **Flexibility and maintainability**
    - Can change database without affecting business logic (see [Technology independence](#technology-independence))
    - Can modify business rules without touching persistence (database)
-   - Support for multiple data sources behind same interface 
-   - Future changes require minimal code modifications 
+   - Support for multiple data sources behind same interface
+   - Future changes require minimal code modifications
    - Multiple implementations can coexist (e.g., cached, audited versions)
 
-3. **Enhanced Testing**
-   - Comprehensive testing benefits detailed in [Understanding Simplified Unit Testing Setup](#understanding-simplified-unit-testing-setup)
+3. **Enhanced testing**
+   - Comprehensive testing benefits detailed in [Understanding simplified unit testing setup](#understanding-simplified-unit-testing-setup)
    - Enables clean separation of business logic testing from infrastructure (see [Understanding the layers](#understanding-the-layers))
 
-4. **Business Focus**
+4. **Business focus**
    - Domain model speaks business language
    - Business rules are explicit and centralized
    - Easier for new developers to understand requirements
@@ -48,10 +47,10 @@ Our approach provides several key benefits:
 ## Understanding the layers
 
 ### Domain layer 
-- Represents our business domain (invoice management, cash flow, etc.) 
+- Represents our business domain (invoice management, cash flow, etc.)
 - Contains core business concepts, rules, and logic
 - Uses business language that stakeholders understand
-- Example: Concepts like "invoice urgency" and "due date" are domain concepts
+- Example: concepts like "invoice urgency" and "due date" are domain concepts
 
 ### Infrastructure layer
 - Provides technical infrastructure to support the domain
@@ -60,14 +59,14 @@ Our approach provides several key benefits:
   - External API communications (Yuki, Ponto)
   - File systems
   - Email services
-- Example: How we store an invoice in PostgreSQL is an infrastructure concern
+- Example: how we store an invoice in PostgreSQL is an infrastructure concern
 
 ## Understanding persistence
 
 We separate our models into two distinct responsibilities:
 
-1. Domain Model: Handles business rules (like calculating invoice urgency)
-2. Django Model: Handles persistence (database operations)
+1. Domain model: handles business rules (like calculating invoice urgency)
+2. Django model: handles persistence (database operations)
 
 Key differences:
 - Domain model focuses on behavior and business rules
@@ -75,12 +74,12 @@ Key differences:
 - No business logic in the Django model
 - No database concerns in the domain model
 
-## Understanding the Repository Pattern
+## Understanding the repository pattern
 
 In Billify, we use the Repository Pattern to bridge between our domain models and database storage. 
 
-### What is the Repository Pattern?
-The Repository Pattern acts as a translator between two parts of our system:
+### What is the repository pattern?
+The repository pattern acts as a translator between two parts of our system:
 1. Business Logic: The code that handles business rules (like calculating invoice urgency)
 2. Data Storage: The code that saves and loads data from the database
 
@@ -209,7 +208,7 @@ def list_overdue(self, as_of: date = None) -> List[DomainInvoice]:
 3. `& Q(status='pending')`: Only includes pending invoices
 4. Returns list of converted domain models
 
-### How it Works
+### How it works
 Here's how data flows through our system when working with invoices:
 
 1. **Creating/Updating an Invoice:**
@@ -224,7 +223,7 @@ Here's how data flows through our system when working with invoices:
  (Storage)    (Persistence)      (Conversion)              (Business)
 ```
 
-### Practical Example
+### Practical example
 ```python
 # Without Repository Pattern (Direct Database Access):
 invoice = Invoice.objects.get(id=123)  # Directly coupled to Django ORM
@@ -240,16 +239,16 @@ invoice_repository.save(invoice)  # Repository handles persistence
 ### Combined approach and alternatives considered
 We considered several alternative approaches:
    
-1. **Single Django Model/Active Record Pattern** (Traditional Django approach)
+1. **Single Django model/Active record pattern** (Traditional Django approach)
    - Combines data access and business logic in one model
    - Problems:
-     * Mixed Concerns: Database details get mixed with business rules
-     * Testing Difficulty: Can't test business logic without database
-     * Less Flexible: Changing database structure affects business logic
-     * Framework Lock-in: Business logic becomes tied to Django
+     * Mixed concerns: database details get mixed with business rules
+     * Testing difficulty: can't test business logic without database
+     * Less flexible: changing database structure affects business logic
+     * Framework lock-in: business logic becomes tied to Django
    - While simpler initially, becomes harder to maintain as complexity grows
-   - Pros: Simpler, less code initially
-   - Cons: Tighter coupling, harder to change, mixed concerns
+   - Pros: simpler, less code initially
+   - Cons: tighter coupling, harder to change, mixed concerns
 
 Here's how it would look if we combined business logic and persistence (the Active Record Pattern):
 
@@ -270,13 +269,13 @@ class Invoice(models.Model):
         # ... etc
 ```
    
-2. **Direct Database Access**
+2. **Direct database access**
    - Business logic directly uses database queries
    - Leads to tight coupling between business logic and storage
    - Makes testing and maintenance more difficult
    - Offers no abstraction for different storage strategies
-   - Pros: More straightforward, familiar to many developers
-   - Cons: Tight coupling, difficult testing, no abstraction layer
+   - Pros: more straightforward, familiar to many developers
+   - Cons: tight coupling, difficult testing, no abstraction layer
 
 Here's how it would look with direct database access:
 
@@ -316,7 +315,7 @@ def calculate_invoice_urgency(invoice_id: int) -> int:
 
 ### Technology independence
 - Business logic remains independent of storage technology
-- Can switch databases without changing domain code (e.g. PostgreSQL to SQL Server)
+- Can switch databases without changing domain code (e.g., PostgreSQL to SQL Server)
 - Multiple implementations can coexist (e.g., cached, audited versions)
 
 Below are conceptual examples to illustrate how different storage implementations could work while maintaining the same interface. Note that these are not actual implementations but rather pseudocode to demonstrate the concepts:
@@ -374,34 +373,34 @@ These conceptual examples demonstrate how:
 
 Note: The actual implementation would require proper error handling, validation, and additional methods to fully implement the interface.
 
-## Understanding Simplified Unit Testing Setup
+## Understanding simplified unit testing setup
 
 Our approach enables streamlined testing through mock repositories - simplified implementations used specifically for testing. This setup provides several key advantages:
 
-1. **Mock Repository Benefits**
+1. **Mock repository benefits**
    - Control test scenarios easily
    - Test business logic without database dependencies
    - Make tests run faster and more reliably
    - Simulate edge cases and error conditions
 
-2. **Simplified Test Structure**
+2. **Simplified test structure**
    - Easier to write and understand tests
    - More focused on business logic
    - Less dependent on infrastructure
    - Clearer test intent
 
-3. **Practical Advantages**
-   - No Database Setup Required
+3. **Practical advantages**
+   - No database setup required
      * No need to create test databases
      * No need to run migrations
      * No need to clean up after tests
    
-   - Faster Test Execution
+   - Faster test execution
      * Tests run in memory
      * No database operations
      * No network calls
    
-   - Easier Maintenance
+   - Easier maintenance
      * Less code to maintain
      * Fewer moving parts
      * Less likely to break due to infrastructure changes
