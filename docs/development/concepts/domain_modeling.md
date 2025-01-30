@@ -364,16 +364,47 @@ Benefits of rich domain models:
    
   # Don't need to know how urgency is calculated
   print(invoice.urgency)  # Just works!
-   
+
   # Don't need to know valid state transitions
   invoice.mark_as_paid()  # Handles all validation internally
-   
+
   # Don't need to know about manual urgency override implementation
   invoice.set_urgency_manually(UrgencyLevel.HIGH)  # Encapsulates the details
   ```
 
 This makes the code:
-- Easier to use correctly (the API guides you)
-- Harder to use incorrectly (invalid operations are prevented)
-- More maintainable (implementation details can change without affecting users)
-- Self-documenting (methods tell you what they do)
+- Easier to use correctly through both the class interface and IDE support:
+  ```python
+  # Bad: Using primitive types for business concepts
+  class Invoice:
+      def __init__(self, amount: float, status: str):
+          self.amount = amount    # Float has rounding issues
+          self.status = status    # Any string is allowed
+
+  # Problems with primitive types:
+  invoice1 = Invoice(99.99999, "NEW")     # Float rounding issues
+  invoice2 = Invoice(-50.0, "pending")    # Negative amount allowed
+  invoice3 = Invoice(100.0, "DANCING")    # Invalid status allowed
+
+  # Better: Using proper types for business concepts
+  class Invoice:
+      def __init__(self, amount: Decimal, status: InvoiceStatus):
+          self.amount = amount    # Decimal for precise money values
+          self.status = status    # Only valid statuses allowed
+
+      def validate(self):
+          if self.amount <= 0:
+              raise InvalidInvoiceError("Amount must be positive")
+
+  # Now invalid values are caught immediately:
+  invoice = Invoice(
+      amount=Decimal("100.00"),        # Precise decimal amount
+      status=InvoiceStatus.PENDING     # Only valid statuses allowed
+  )
+  ```
+
+Using proper types and rich domain models makes the code:
+- Easier to use correctly (the class interface and IDE guide you)
+- Harder to use incorrectly (the class enforces its rules)
+- More maintainable (internal changes don't affect how others use the class)
+- Self-documenting (clear method names and type hints explain the usage)
