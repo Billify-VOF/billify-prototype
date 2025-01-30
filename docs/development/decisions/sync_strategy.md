@@ -13,7 +13,7 @@ Implement batch synchronization with 1-minute intervals for MVP phase.
 
 ## Rationale
 
-### Batch Synchronization (Chosen Approach)
+### Batch synchronization (chosen approach)
 What it is:
 - Simple scheduled task that runs every minute
 - Directly calls Yuki and Ponto APIs to check for updates
@@ -35,7 +35,7 @@ Why we chose it:
    - 10MB memory per sync
    - Runs fine on basic server (512MB RAM, 1 CPU)
 
-### Event-Driven (Considered but Deferred)
+### Event-driven (considered but deferred)
 What it is:
 - System that gets immediate updates when data changes
 - Uses a "post office" (message broker) to handle updates
@@ -52,7 +52,7 @@ Why we didn't choose it:
    - 1-minute delay is acceptable
    - Extra complexity isn't justified
 
-## Key Constraints
+## Key constraints
 - Initial target: 10 users (max 100)
 - Belgium only, business hours (9AM-5PM)
 - Web platform only
