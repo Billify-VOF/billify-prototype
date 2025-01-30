@@ -4,7 +4,7 @@
 
 ### 1.1 Domain-driven design approach
 
-#### Why we chose DDD [Implemented - [ADR](billify-prototype/docs/development/decisions/domain_vs_django_models.md)]
+#### Why we chose DDD [Implemented - [ADR](docs/development/decisions/domain_vs_django_models.md)]
 - Clear separation between business logic and infrastructure [Implemented - [domain/models/](backend/domain/models/)]
 - Business rules expressed in domain language [Implemented - [domain/models/](backend/domain/models/)]
 - Easier onboarding for new developers [Implemented - [docs/development/concepts/domain_modeling.md](docs/development/concepts/domain_modeling.md)]
