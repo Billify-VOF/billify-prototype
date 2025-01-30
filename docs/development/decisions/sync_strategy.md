@@ -8,6 +8,8 @@ Need to choose between two approaches for keeping our system in sync with Yuki a
 1. Batch synchronization: Check for updates every minute
 2. Event-driven: Get immediate updates when they happen
 
+For detailed integration requirements, see [INTEGRATION.md](../../design%20/nfr/INTEGRATION.md).
+
 ## Decision
 Implement batch synchronization with 1-minute intervals for MVP phase.
 
@@ -24,16 +26,19 @@ Why we chose it:
    - Just a scheduled task making API calls
    - Basic error handling (retry next minute if fails)
    - Easy to monitor (clear success/failure)
+   See [SYSTEM_ARCHITECTURE.md](../../architecture/SYSTEM_ARCHITECTURE.md#batch-sync-advantages) for details.
 
 2. **Sufficient for MVP needs**
    - 1-minute delay acceptable for SMEs
    - Handles our target of 10-100 users
    - Works within free API limits (1000 calls/day)
+   See [PERFORMANCE.md](../../design%20/nfr/PERFORMANCE.md#api-rate-limits-and-price) for API limits.
 
 3. **Resource needs are clear**
    - 500ms processing time per user
    - 10MB memory per sync
    - Runs fine on basic server (512MB RAM, 1 CPU)
+   See [SCALABILITY.md](../../design%20/nfr/SCALABILITY.md#server-specifications) for detailed metrics.
 
 ### Event-driven (considered but deferred)
 What it is:
@@ -46,16 +51,19 @@ Why we didn't choose it:
    - Requires message queue setup
    - More complicated error handling
    - Harder to debug issues
+   See [SYSTEM_ARCHITECTURE.md](../../architecture/SYSTEM_ARCHITECTURE.md#event-driven-requirements-deferred) for details.
 
 2. **Not needed yet**
    - SMEs don't need real-time updates
    - 1-minute delay is acceptable
    - Extra complexity isn't justified
+   See [AVAILABILITY.md](../../design%20/nfr/AVAILABILITY.md#estimated-usage-patterns) for usage patterns.
 
 ## Key constraints
 - Initial target: 10 users (max 100)
 - Belgium only, business hours (9AM-5PM)
 - Web platform only
+See [AVAILABILITY.md](../../design%20/nfr/AVAILABILITY.md#weekly-uptime-calculation) for business hours impact.
 
 ## Consequences
 
@@ -71,6 +79,8 @@ Why we didn't choose it:
   * No additional infrastructure needed
 - Easy to maintain with clear success/failure states
 
+For detailed cost analysis, see [PERFORMANCE.md](../../design%20/nfr/PERFORMANCE.md#api-rate-limits-and-price).
+
 ### Negative:
 - Data freshness delay up to 1 minute (acceptable for MVP)
 - Future real-time features will require:
@@ -84,6 +94,8 @@ Why we didn't choose it:
 - Performance limitations at scale:
   * Max 100 users with current design
   * Need different approach beyond MVP scale
+
+For detailed scaling analysis, see [SCALABILITY.md](../../design%20/nfr/SCALABILITY.md#scaling-limitations).
 
 ## Future considerations
 
@@ -100,6 +112,8 @@ Only two factors would require switching to event-driven:
    - Example: More users → More/better servers
    - Example: More API calls → Upgrade Yuki/Ponto tiers
 
+For detailed upgrade paths, see [database_choice.md](database_choice.md#scaling-limitations-and-options).
+
 ### Performance optimization path
 If performance issues arise:
 
@@ -107,11 +121,13 @@ If performance issues arise:
    - Increase RAM (currently 512MB)
    - Upgrade CPU
    - Scale vertically as needed
+   See [SCALABILITY.md](../../design%20/nfr/SCALABILITY.md#ram-limitations) for RAM upgrade impact.
 
 2. **Then: Software optimization**
    - Optimize database queries
    - Add caching where beneficial
    - Improve sync efficiency
+   See [database_choice.md](database_choice.md#potential-optimizations) for options.
 
 3. **Finally: Architecture changes**
    - Only if steps 1 and 2 insufficient
