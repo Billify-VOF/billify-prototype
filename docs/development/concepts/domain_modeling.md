@@ -4,9 +4,10 @@
 Domain modeling is the process of creating a conceptual model of the business domain. In Billify, this involves understanding and representing core business concepts in our code.
 
 For implementation details, see:
-- [Domain layer implementation](../../backend/domain/README.md)
-- [Infrastructure layer implementation](../../backend/infrastructure/README.md)
-- [Domain vs Django models](../decisions/domain_vs_django_models.md)
+- [Backend overview](../../../backend/backend-readme.md)
+- [Domain layer](../../../backend/domain/README.md)
+- [Infrastructure layer](../../../backend/infrastructure/README.md)
+- [Domain vs Django models ADR](../decisions/domain_vs_django_models.md)
 
 ### Current implementation status
 
@@ -50,7 +51,7 @@ class UrgencyLevel(Enum):
 ```
 
 ### Entities
-Example from our codebase ([invoice.py](../../backend/domain/models/invoice.py)):
+Example from our codebase ([Invoice](../../../backend/domain/models/invoice.py)):
 ```python
 class Invoice:
     def __init__(
