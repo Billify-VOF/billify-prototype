@@ -31,7 +31,7 @@ For implementation details, see:
 ### Value objects
 For detailed documentation of value objects, see [Value objects](./value_objects.md)
 
-Example from our codebase ([value_objects.py](../../backend/domain/models/value_objects.py)):
+Example from our codebase ([value_objects.py](../../../backend/domain/models/value_objects.py)):
 ```python
 class UrgencyLevel(Enum):
     """Value object representing invoice urgency with color codes."""
@@ -89,8 +89,8 @@ class Invoice:
    - **Entities**: Two entities with identical data are still different entities
    ```python
      # Example: Two invoices for €100 to the same customer are different invoices
-   invoice1 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-001")
-   invoice2 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-002")
+    invoice1 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-001")
+    invoice2 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-002")
      # Even with same data, invoice1 ≠ invoice2 because they have different IDs
      ```
    - **Value Objects**: Two value objects with the same values are considered equal
@@ -99,46 +99,46 @@ class Invoice:
      urgency1 = UrgencyLevel.HIGH  # Orange, 8-14 days
      urgency2 = UrgencyLevel.HIGH  # Same object, same values
      assert urgency1 is urgency2  # True - they are the same object
-   ```
+    ```
 
 2. **Mutability vs Immutability**:
    - **Entities**: Can be changed while remaining the same entity
-   ```python
+    ```python
      # Example: An invoice's status can change, but it's still the same invoice
      invoice = Invoice(amount=100, due_date=date.today(), invoice_number="INV-001")
      invoice.status = 'pending'  # Initially pending
      # Later...
      invoice.status = 'paid'     # Status changed, but same invoice
-     ```
+    ```
    - **Value Objects**: Cannot be changed after creation
-     ```python
+    ```python
      # Example: UrgencyLevel values are fixed
      urgency = UrgencyLevel.HIGH
      # Can't modify urgency.color_code or urgency.day_range
      # To use a different urgency, you must use a different enum value:
      new_urgency = UrgencyLevel.LOW
-   ```
+    ```
 
 3. **Lifecycle vs State**:
    - **Entities**: Have a lifecycle that needs tracking
-   ```python
+    ```python
      # Example: An invoice goes through various states
-   invoice = Invoice(...)
+    invoice = Invoice(...)
      # We track its history:
      # 1. Created as pending
      assert invoice.status == 'pending'
      # 2. Marked as paid
      invoice.status = 'paid'
      # 3. Each state change is important for business logic
-     ```
+    ```
    - **Value Objects**: Represent a specific value at a point in time
-     ```python
+    ```python
      # Example: UrgencyLevel just represents current urgency
      urgency = UrgencyLevel.calculate_from_days(10)  # HIGH
      # We don't track how it became HIGH
      # We don't care about its previous values
      # We only care about what it is right now
-   ```
+    ```
 
 Why this matters in practice:
 - When designing a new concept, ask:
@@ -249,19 +249,19 @@ While type safety prevents incorrect types, validation enforces business rules w
 Different types of validation in our codebase:
 
 1. **Domain rules**:
-```python
-def validate(self):
-    """Apply business rules to validate invoice data."""
-    if self.amount <= 0:
-        raise InvalidInvoiceError("Invoice amount must be positive")
-       
-       # Future validation rules can be added here:
-       # if self.due_date < date.today():
-       #     raise InvalidInvoiceError("Due date cannot be in the past")
-```
-   - Ensures business rules are followed
-   - Provides clear error messages about what's wrong
-   - Centralized in the domain object that owns the rules
+  ```python
+  def validate(self):
+      """Apply business rules to validate invoice data."""
+      if self.amount <= 0:
+          raise InvalidInvoiceError("Invoice amount must be positive")
+        
+        # Future validation rules can be added here:
+        # if self.due_date < date.today():
+        #     raise InvalidInvoiceError("Due date cannot be in the past")
+  ```
+  - Ensures business rules are followed
+  - Provides clear error messages about what's wrong
+  - Centralized in the domain object that owns the rules
 
 2. **Range/boundary validation**:
    ```python
@@ -280,15 +280,15 @@ def validate(self):
    - Fails early if values don't make sense
 
 3. **State transition validation**:
-   ```python
-   def mark_as_paid(self):
-       """Mark invoice as paid if in valid state."""
-       if self.status not in ['pending', 'overdue']:
-           raise InvalidStateTransition(
-               f"Cannot mark as paid from status: {self.status}"
-           )
-       self.status = 'paid'
-   ```
+  ```python
+  def mark_as_paid(self):
+      """Mark invoice as paid if in valid state."""
+      if self.status not in ['pending', 'overdue']:
+          raise InvalidStateTransition(
+              f"Cannot mark as paid from status: {self.status}"
+          )
+      self.status = 'paid'
+  ```
    - Ensures objects only change state in valid ways
    - Prevents impossible state transitions
    - Makes business rules explicit in code
@@ -358,19 +358,19 @@ Benefits of rich domain models:
    - Complex calculations are encapsulated
 
 3. **Clear usage**: Other code doesn't need to know implementation details:
-   ```python
-   # Simple to use because Invoice knows what to do
-   invoice = Invoice(amount=Decimal("100.00"), due_date=date.today(), invoice_number="INV-001")
+  ```python
+  # Simple to use because Invoice knows what to do
+  invoice = Invoice(amount=Decimal("100.00"), due_date=date.today(), invoice_number="INV-001")
    
-   # Don't need to know how urgency is calculated
-   print(invoice.urgency)  # Just works!
+  # Don't need to know how urgency is calculated
+  print(invoice.urgency)  # Just works!
    
-   # Don't need to know valid state transitions
-   invoice.mark_as_paid()  # Handles all validation internally
+  # Don't need to know valid state transitions
+  invoice.mark_as_paid()  # Handles all validation internally
    
-   # Don't need to know about manual urgency override implementation
-   invoice.set_urgency_manually(UrgencyLevel.HIGH)  # Encapsulates the details
-   ```
+  # Don't need to know about manual urgency override implementation
+  invoice.set_urgency_manually(UrgencyLevel.HIGH)  # Encapsulates the details
+  ```
 
 This makes the code:
 - Easier to use correctly (the API guides you)
