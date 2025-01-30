@@ -1,52 +1,50 @@
-# integrations/README.md
-
-# Integrations Layer
+# Integrations layer
 
 The integrations layer manages connections and communications with external services and data transformations. This layer is responsible for adapting external data formats and services to our domain model.
 
 ## Structure
 
-### PDF Processing (`transformers/pdf/`)
+### PDF processing (`transformers/pdf/`)
 PDF document processing pipeline:
 - `transformer.py` - Main PDF transformation pipeline
 - `text_analysis.py` - Text extraction and analysis
 - `ocr.py` - Optical Character Recognition service
 
-### External Service Providers (`providers/`)
+### External service providers (`providers/`)
 External service integrations (planned):
 - `ponto.py` - Banking service integration
 - `yuki.py` - Accounting service integration
 
-### Data Synchronization (`sync/`)
+### Data synchronization (`sync/`)
 Background processing and synchronization:
 - `manager.py` - Sync orchestration (planned)
 - `tasks.py` - Celery background tasks
 
-### Data Transformers (`transformers/`)
+### Data transformers (`transformers/`)
 Data transformation services:
 - `pdf/` - PDF processing pipeline
 - `ponto_transformer.py` - Bank data transformation (planned)
 - `yuki_transformer.py` - Accounting data transformation (planned)
 
-## Technical Details
+## Technical details
 
-### PDF Processing Pipeline
-1. **Document Upload**
+### PDF processing pipeline
+1. **Document upload**
    - File validation
    - Format verification
    - Storage management
 
-2. **Text Extraction**
+2. **Text extraction**
    - OCR processing
    - Text analysis
    - Data structuring
 
-3. **Data Transformation**
+3. **Data transformation**
    - Invoice data extraction
    - Field mapping
    - Validation rules
 
-### External Integrations (Planned)
+### External integrations (planned)
 - Banking data synchronization
 - Accounting system integration
 - Secure API communications
@@ -54,13 +52,13 @@ Data transformation services:
 
 ## Guidelines
 
-### Code Organization
+### Code organization
 - Isolate external service specifics
 - Use adapter pattern for integrations
 - Implement retry mechanisms
 - Handle API versioning
 
-### Error Handling
+### Error handling
 - Implement graceful degradation
 - Handle API failures
 - Log integration errors
@@ -78,7 +76,7 @@ Data transformation services:
 - Optimize large file processing
 - Manage resource usage
 
-## Best Practices
+## Best practices
 
 1. **Resilience**: Implement circuit breakers and fallbacks
 2. **Monitoring**: Track integration health and performance
@@ -86,7 +84,7 @@ Data transformation services:
 4. **Testing**: Mock external services in tests
 5. **Documentation**: Maintain API integration details
 
-## Development Guidelines
+## Development guidelines
 
 - Use appropriate design patterns for integrations
 - Document external service dependencies

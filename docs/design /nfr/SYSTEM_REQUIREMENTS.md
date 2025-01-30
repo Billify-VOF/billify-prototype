@@ -2,7 +2,7 @@
 
 ## Web-based system
 
-Billify should operate as a web-based application accessible through standard web browsers (Chrome, Firefox, Safari, Edge) on desktop and tablet (mobile optimisation post-MVP)
+Billify should operate as a web-based application accessible through standard web browsers (Chrome, Firefox, Safari, Edge) on desktop and tablet (mobile optimization post-MVP)
 
 ## Web server requirements
 
@@ -19,20 +19,20 @@ The web server deploying the Billify MVP **assuming 10 initial users** should me
     1. API sync, JSON payload: 
         1. 100KB/sync → 144MB/day → 4GB/month
 
-**A basic digital ocean droplet** with the following system specifications meets these initial requirements:
+**A basic Digital Ocean droplet** with the following system specifications meets these initial requirements:
 - 512MB RAM
 - 1 virtual CPU, shared
 - 500GB outbound data transfer/month
 - 10GB SSD
 
 Over time, the web server requirements will need to be scaled with more users and data.
-- Digital ocean allows to resize droplets as the demands of the application increase.
-- For a small user base (10-100 users) and a basic feature set, upgrading hardware is more cost-effective than spending developer time on optimisation:
+- Digital Ocean allows to resize droplets as the demands of the application increase.
+- For a small user base (10-100 users) and a basic feature set, upgrading hardware is more cost-effective than spending developer time on optimization:
     - Hardware costs are predictable and relatively low at this scale.
     - Developer time is expensive and could be better spent on features.
-    - Early optimisation can be premature without real usage patterns.
+    - Early optimization can be premature without real usage patterns.
     - Droplet upgrades are quick and straightforward.
-- However, this approach has limits - at larger scales (1000+ users), optimisation becomes necessary as hardware costs grow exponentially.
+- However, this approach has limits - at larger scales (1000+ users), optimization becomes necessary as hardware costs grow exponentially.
 
 ## Database server requirements
 
@@ -64,22 +64,22 @@ The database server storing the Billify MVP data **assuming 10 initial users** s
         - WAL logs ~500MB
         - Indexes (~30%) ~ 100MB/month
 
-**A basic, regular digital ocean PostgreSQL database server** with the following system specifications meets these initial requirements:
+**A basic, regular Digital Ocean PostgreSQL database server** with the following system specifications meets these initial requirements:
 - 1GB RAM
 - 1vCPU
 - 10GB disk space
 
 Over time, the database server requirements will need to be scaled with more users and data.
-- Digital ocean allows to scale up CPUs, RAM and storage at any time to support growth.
+- Digital Ocean allows to scale up CPUs, RAM and storage at any time to support growth.
 
 ## Object storage requirements
 
-The object storage requirements for the the Billify MVP **assuming 10 initial users** should meet the following requirements:
+The object storage requirements for the Billify MVP **assuming 10 initial users** should meet the following requirements:
 - File storage: 600MB (monthly)
 - Upload/download of files: 1800MB (monthly)
     - 600MB/month uploads
     - 1.2GB/month downloads (assuming each file is accessed twice)
 
-**One digital ocean spaces bucket** with the following specifications meet these initial requirements:
+**One Digital Ocean spaces bucket** with the following specifications meet these initial requirements:
 - 250GB storage
 - 1TB outbound transfer

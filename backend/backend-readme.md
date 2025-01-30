@@ -1,4 +1,4 @@
-# Billify Backend
+# Billify backend
 
 Django-based backend for the Billify application, designed with a clean separation of concerns across various layers for better scalability and maintainability.
 
@@ -11,7 +11,7 @@ Ensure you have the following installed:
 
 For installation instructions, refer to the main README.md.
 
-## Quick Start
+## Quick start
 
 1. Create and activate a virtual environment:
    ```bash
@@ -59,7 +59,7 @@ For installation instructions, refer to the main README.md.
    python manage.py runserver
    ```
 
-## Project Structure
+## Project structure
 
 ```
 backend/
@@ -132,63 +132,63 @@ backend/
 └── setup.py        # Package setup
 ```
 
-## Architecture Overview
+## Architecture overview
 
 The backend follows a layered architecture with clear separation of concerns:
 
-### 1. API Layer (`apps/api/`)
+### 1. API layer (`apps/api/`)
 - REST endpoints
 - Request/response handling
 - Authentication & permissions
 - Data validation
 
-### 2. Domain Layer (`domain/`)
-- Core of the application, encapsulating business rules and logic.
-- Framework-agnostic and independent of storage or API concerns.
+### 2. Domain layer (`domain/`)
+- Core of the application, encapsulating business rules and logic
+- Framework-agnostic and independent of storage or API concerns
 - Key components:
-   - Models: Pure Python representations of business entities.
-   - Services: Business logic for financial calculations and validations.
-   - Exceptions: Domain-specific error handling.
+   - Models: Pure Python representations of business entities
+   - Services: Business logic for financial calculations and validations
+   - Exceptions: Domain-specific error handling
 - Domain models
 - Domain services  
 
-### 3. Infrastructure Layer (`infrastructure/`)
+### 3. Infrastructure layer (`infrastructure/`)
 - Django-specific implementations
 - ORM models
 - Data access
 
-### 4. Integration Layer (`integrations/`)
+### 4. Integration layer (`integrations/`)
 - External service integration
 - Data transformation
 - File processing
 - Synchronization tasks
 
-### Code Style
+### Code style
 - Follow PEP 8
 - Use type hints
 - Document functions and classes
 - Keep functions focused and small
 
-## Domain Organization
+## Domain organization
 
 Each domain represents a core business area and is structured as follows:
 
 ```
 domain/
 ├── models/                   # Domain models (not tied to Django ORM)
-├── services/                 # Business logic
+├── services/                # Business logic
 ├── repositories/             # Abstract data access interfaces
 └── exceptions.py             # Domain-specific exceptions
 ```
 
-### Why Use a Domain-Driven Design?
+### Why use a domain-driven design?
 
-- **Separation of Concerns**: Each domain encapsulates its logic, keeping unrelated concerns isolated.
-- **Reusable Logic**: Domain services can be reused across multiple parts of the application.
-- **Testability**: Framework-independent code is easier to test and maintain.
-- **Scalability**: Clean boundaries between domains make it easier to scale features independently.
+- **Separation of concerns**: Each domain encapsulates its logic, keeping unrelated concerns isolated
+- **Reusable logic**: Domain services can be reused across multiple parts of the application
+- **Testability**: Framework-independent code is easier to test and maintain
+- **Scalability**: Clean boundaries between domains make it easier to scale features independently
 
-## Domain Organization
+## Domain organization
 
 The Billify backend is organized by business domains rather than technical functions or UI features. Each domain is a self-contained module handling all aspects of a specific business capability:
 
@@ -196,7 +196,7 @@ The Billify backend is organized by business domains rather than technical funct
 - `invoices`: Complete invoice lifecycle management and document processing
 - `cashflow`: Financial calculations, projections, and cash flow analytics
 
-### Why Domains Instead of Features?
+### Why domains instead of features?
 
 Consider a dashboard that shows cash flow summaries, recent invoices, and account balances. Rather than creating a "dashboard" app that either contains business logic or becomes a thin wrapper around other apps, we keep all related functionality within its respective domain. For example, cash flow calculations live in the cashflow domain regardless of where they're displayed in the UI.
 
@@ -210,12 +210,12 @@ This organization provides:
 
 ## Development
 
-- **Run Tests**:
+- **Run tests**:
    ```bash
    pytest
    ```
 
-- **Code Formatting**:
+- **Code formatting**:
    ```bash
    black .
    ```
@@ -227,12 +227,12 @@ This organization provides:
 
 ---
 
-## Environment-Specific Settings
+## Environment-specific settings
 
-- Base settings are defined in `billify/settings/base.py`.
+- Base settings are defined in `billify/settings/base.py`
 - Environment overrides are in:
   - `billify/settings/development.py` (for local development)
-  - `billify/settings/production.py` (for production).
+  - `billify/settings/production.py` (for production)
 
 To specify the environment, set the `DJANGO_SETTINGS_MODULE` environment variable:
 ```bash
@@ -251,7 +251,7 @@ export DJANGO_SETTINGS_MODULE=billify.settings.development
 
 ## Testing
 
-### Directory Structure
+### Directory structure
 
 ```
 backend/
@@ -268,24 +268,24 @@ backend/
     └── cashflow/tests/
 ```
 
-### Test Categories
+### Test categories
 
-1. **Unit Tests** (`apps/*/tests/`)
+1. **Unit tests** (`apps/*/tests/`)
    - Component isolation
    - Fast execution
    - No external dependencies
 
-2. **Integration Tests** (`tests/integration/`)
+2. **Integration tests** (`tests/integration/`)
    - Component interaction
    - Database operations
    - API endpoints
 
-3. **End-to-End Tests** (`tests/e2e/`)
+3. **End-to-end tests** (`tests/e2e/`)
    - Complete workflows
    - External services
    - User scenarios
 
-### Running Tests
+### Running tests
 
 ```bash
 # Run all tests
@@ -300,7 +300,7 @@ pytest apps/
 pytest --cov=backend
 ```
 
-### Best Practices
+### Best practices
 1. Follow AAA pattern (Arrange, Act, Assert)
 2. Use meaningful test names
 3. One assertion per test when possible
@@ -308,7 +308,7 @@ pytest --cov=backend
 5. Use fixtures for setup
 6. Keep tests focused and isolated
 
-## Environment Configuration
+## Environment configuration
 
 The project uses different settings for different environments:
 
@@ -321,30 +321,30 @@ To specify the environment:
 export DJANGO_SETTINGS_MODULE=config.settings.development
 ```
 
-## API Documentation
+## API documentation
 
 Access the API documentation at:
 - Swagger UI: http://localhost:8000/api/docs/
-- Admin Interface: http://localhost:8000/admin/
+- Admin interface: http://localhost:8000/admin/
 
 ## Troubleshooting
 
-1. **Database Issues**
+1. **Database issues**
    - Verify PostgreSQL is running
    - Check credentials in `.env`
    - Ensure migrations are applied
 
-2. **Environment Issues**
+2. **Environment issues**
    - Verify virtual environment is active
    - Check `DJANGO_SETTINGS_MODULE`
    - Validate environment variables
 
-3. **PDF Processing**
+3. **PDF processing**
    - Verify Tesseract installation
    - Check PATH configuration
    - Validate file permissions
 
-### Git Workflow
+### Git workflow
 1. Create feature branches from `main`
 2. Write descriptive commit messages
 3. Get code review before merging

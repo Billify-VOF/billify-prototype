@@ -1,4 +1,4 @@
-# Billify Architecture Documentation
+# Billify architecture documentation
 
 ⚠️ **PROPRIETARY SOFTWARE NOTICE**: This documentation is part of Billify's proprietary software. All rights reserved.
 Unauthorized copying, modification, distribution, or use is strictly prohibited.
@@ -7,7 +7,7 @@ Unauthorized copying, modification, distribution, or use is strictly prohibited.
 
 This directory contains comprehensive documentation about Billify's system architecture and design decisions. Our architecture documentation serves as both a reference and a guide for understanding how Billify works at a technical level.
 
-## Directory Structure
+## Directory structure
 
 ```
 architecture/
@@ -16,30 +16,30 @@ architecture/
 └── overview.md         # High-level architecture overview
 ```
 
-### Process Flows (`/flows/`)
+### Process flows (`/flows/`)
 
 - Invoice processing pipeline documentation
 - Visual diagrams for each major flow
 
-### System Diagrams (`/flows/diagrams/`)
+### System diagrams (`/flows/diagrams/`)
 
 - Process flowcharts in Mermaid format
 - System architecture visualizations
 - Component interaction diagrams
 - Database schema representations
 
-## Core Architecture
+## Core architecture
 
-### Clean Architecture Design
+### Clean architecture design
 
 Our system implements clean architecture with clear separation of concerns:
 
-- Domain Layer: Core business logic and rules
-- Application Layer: Use case implementations
-- Interface Layer: UI and API endpoints
-- Infrastructure Layer: External service integrations
+- Domain layer: Core business logic and rules
+- Application layer: Use case implementations
+- Interface layer: UI and API endpoints
+- Infrastructure layer: External service integrations
 
-### Microservices Readiness
+### Microservices readiness
 
 Architecture designed for future microservices transition:
 
@@ -48,7 +48,7 @@ Architecture designed for future microservices transition:
 - Standardized interfaces
 - Loose component coupling
 
-### Security Architecture
+### Security architecture
 
 Built-in security measures:
 
@@ -57,7 +57,7 @@ Built-in security measures:
 - Comprehensive audit logging
 - Regular security assessments
 
-## Technology Stack
+## Technology stack
 
 ```
 Frontend:
@@ -76,14 +76,14 @@ Infrastructure:
 - Tesseract OCR with enhancements
 ```
 
-## Getting Started
+## Getting started
 
 1. Read `overview.md` for high-level architecture
 2. Review process flows in `/flows/`
 3. Study component interactions
 4. Examine integration patterns
 
-## Contributing Guidelines
+## Contributing guidelines
 
 When making architectural changes:
 
