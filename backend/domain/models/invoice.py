@@ -4,13 +4,23 @@ from decimal import Decimal
 from datetime import date
 from typing import Optional
 from domain.exceptions import InvalidInvoiceError
-from .value_objects import UrgencyLevel
+from .value_objects import UrgencyLevel, InvoiceStatus
+from django.utils import timezone
 
 
 class Invoice:
     """
     Represents an invoice in our system, containing all relevant
     business data and validation rules.
+
+    Attributes:
+        id (Optional[int]): Database ID if persisted
+        amount (Decimal): Invoice amount (must be positive)
+        due_date (date): When payment is due
+        invoice_number (str): Unique identifier
+        file_path (str): Path to stored PDF file
+        status (InvoiceStatus): Current payment status
+        _manual_urgency (Optional[UrgencyLevel]): Manual urgency override
     """
 
     def __init__(
@@ -21,15 +31,15 @@ class Invoice:
         file_path: str,
         invoice_id: Optional[int] = None
     ):
-        self.id = invoice_id
-        self.amount = amount
-        self.due_date = due_date
-        self.invoice_number = invoice_number
-        self.file_path = file_path
-        self.status = 'pending'
-        self._manual_urgency = None  # Default: no override
+        self.id: Optional[int] = invoice_id
+        self.amount: Decimal = amount
+        self.due_date: date = due_date
+        self.invoice_number: str = invoice_number
+        self.file_path: str = file_path
+        self.status: InvoiceStatus = InvoiceStatus.PENDING
+        self._manual_urgency: Optional[UrgencyLevel] = None
 
-    def validate(self):
+    def validate(self) -> None:
         """Apply business rules to validate invoice data."""
         if self.amount <= 0:
             raise InvalidInvoiceError("Invoice amount must be positive")
@@ -38,12 +48,37 @@ class Invoice:
 
     def get_status_display(self) -> str:
         """Return a human-readable status description."""
-        statuses = {
-            'pending': 'Pending Payment',
-            'paid': 'Payment Received',
-            'overdue': 'Payment Overdue'
-        }
-        return statuses.get(self.status, self.status)
+        return self.status.display_name
+
+    def is_overdue(self) -> bool:
+        """Check if the invoice is past its due date.
+        
+        Returns:
+            bool: True if the invoice is past its due date, False otherwise.
+        """
+        return self.due_date < timezone.now().date()
+
+    def mark_as_overdue(self) -> None:
+        """Mark the invoice as overdue if it's past due date and pending.
+        
+        This method will only mark the invoice as overdue if:
+        1. The invoice is past its due date
+        2. The current status is 'pending'
+        
+        The status change will be persisted through the repository pattern.
+        """
+        if self.is_overdue() and self.status == InvoiceStatus.PENDING:
+            self.status = InvoiceStatus.OVERDUE
+            # Note: Persistence handled by repository
+
+    def validate_status(self) -> None:
+        """Validate invoice status against business rules.
+        
+        Raises:
+            InvalidInvoiceError: If status violates business rules
+        """
+        if self.status == InvoiceStatus.OVERDUE and self.due_date > timezone.now().date():
+            raise InvalidInvoiceError('Invoice cannot be overdue if due date is in the future')
 
     @property
     def urgency(self) -> 'UrgencyLevel':
@@ -76,13 +111,10 @@ class Invoice:
             new_urgency (UrgencyLevel): The urgency level to set manually
 
         Raises:
-            ValueError: If new_urgency is not a UrgencyLevel instance
+            InvalidInvoiceError: If new_urgency is not a UrgencyLevel instance
         """
-        # Runtime type check for defensive programming.
-        # While the type hint suggests this is unreachable,
-        # we keep it to guard against runtime type violations.
         if not isinstance(new_urgency, UrgencyLevel):
-            raise ValueError(f"Expected UrgencyLevel, got {type(new_urgency)}")
+            raise InvalidInvoiceError(f"Expected UrgencyLevel, got {type(new_urgency)}")
         self._manual_urgency = new_urgency
 
     def clear_manual_urgency(self) -> None:

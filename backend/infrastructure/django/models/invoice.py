@@ -2,79 +2,159 @@
 
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
+from decimal import Decimal
+from datetime import date
+from django.core.exceptions import ValidationError
+from domain.models.value_objects import InvoiceStatus, UrgencyLevel
 
 
 class Invoice(models.Model):
-    """Database model for storing invoice information."""
+    """Database model for storing invoice information.
+    
+    This model handles the persistence of invoice data extracted from PDF files.
+    It focuses on data integrity and storage, while business logic is handled
+    in the domain model.
+
+    Key Assumptions:
+        - Invoices can only be created from PDF files
+        - Maximum invoice amount is 99,999,999.99
+        - Invoice numbers are unique but format varies by country
+        - Status transitions are managed by the domain model
+        - Timestamps are automatically managed by Django
+    """
 
     objects = models.Manager()
 
-    STATUS_CHOICES = [
-        ('pending', 'Pending Payment'),
-        ('paid', 'Payment Received'),
-        ('overdue', 'Payment Overdue'),
-    ]
-
     # Core invoice data
-    invoice_number = models.CharField(max_length=100, unique=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
-    file_path = models.CharField(max_length=255)
+    invoice_number = models.CharField(
+        max_length=100, 
+        unique=True,
+        help_text="Unique identifier for the invoice. "
+                  "Can contain special characters and varies by country format."
+    )
+    amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        help_text="Total invoice amount. "
+                  "Maximum 99,999,999.99. "
+                  "Negative amounts not allowed."
+    )
+    due_date = models.DateField(
+        help_text="Date when payment is due. "
+                  "Used for overdue calculations and urgency levels."
+    )
 
     # Metadata
+    # Status
+    STATUS_CHOICES = InvoiceStatus.choices()
+
+    URGENCY_LEVELS = [(i, level.name) for i, level in enumerate(UrgencyLevel, 1)]
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='pending'
+        default='pending',
+        help_text="Current payment status of the invoice. "
+                  "Automatically updated based on payment and due date."
     )
+    manual_urgency = models.IntegerField(
+        choices=URGENCY_LEVELS,
+        null=True,
+        blank=True,
+        help_text="Manual override for invoice urgency. "
+                  "If not set, urgency is calculated from due date."
+    )
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # File handling
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT
+        on_delete=models.PROTECT,
+        help_text="User who uploaded the invoice PDF. "
+                  "Protected from deletion."
+    )
+    file_path = models.CharField(
+        max_length=255,
+        help_text="Relative path to the stored invoice PDF file in the system."
     )
 
     class Meta:
-        """Model configuration for database behavior and indexing."""
+        """Model configuration for database behavior and indexing.
+        
+        Indexes are created for:
+            - invoice_number: For unique constraint lookups
+            - status: For filtering and status-based queries
+            - due_date: For overdue calculations and date-based filtering
+        """
         app_label = 'infrastructure'
         ordering = ['-created_at']
+        verbose_name = 'Invoice'
+        verbose_name_plural = 'Invoices'
         indexes = [
             models.Index(fields=['invoice_number']),
             models.Index(fields=['status']),
             models.Index(fields=['due_date']),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Invoice {self.invoice_number} ({self.status})"
 
-    def is_overdue(self) -> bool:
-        """Check if the invoice is past its due date."""
-        return self.due_date < timezone.now().date()
+    def __init__(
+            self,
+            invoice_number: str, 
+            amount: Decimal,
+            due_date: date,
+            uploaded_by_id: int,
+            file_path: str,
+            *args, 
+            **kwargs
+    ):
+        """Initialize a new Invoice instance.
 
-    def mark_as_overdue(self) -> None:
-        """Mark the invoice as overdue if past due date."""
-        if self.is_overdue() and self.status == 'pending':
-            self.status = 'overdue'
-            self.save(update_fields=['status', 'updated_at'])
+        Args:
+            invoice_number (str): Unique identifier extracted from PDF
+            amount (Decimal): Invoice amount extracted from PDF
+            due_date (date): Due date extracted from PDF
+            uploaded_by_id (int): ID of the user who uploaded the invoice
+            file_path (str): Path to the stored PDF file
+            *args: Additional positional arguments for Django model
+            **kwargs: Additional keyword arguments for Django model
 
-    def __init__(self, *args, **kwargs):
-        # Extract domain model attributes
-        domain_attrs = {}
-        for field in ['amount', 'due_date', 'invoice_number', 'file_path']:
-            if field in kwargs:
-                domain_attrs[field] = kwargs.pop(field)
-
+        Note:
+            All parameters are required as we only support PDF-based invoice creation.
+            Status and urgency are handled automatically and should not be provided.
+            Business rule validation happens in the domain model before reaching this class.
+        """
         # Initialize Django model
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            invoice_number = invoice_number,
+            amount = amount,
+            due_date = due_date,
+            uploaded_by_id = uploaded_by_id,
+            file_path = file_path,
+            *args, 
+            **kwargs
+        )
 
-        # Set domain attributes if provided
-        if domain_attrs:
-            self.amount = domain_attrs.get('amount', self.amount)
-            self.due_date = domain_attrs.get('due_date', self.due_date)
-            self.invoice_number = domain_attrs.get(
-                'invoice_number',
-                self.invoice_number
-            )
-            self.file_path = domain_attrs.get('file_path', self.file_path)
-            self.status = 'pending'
+    def clean(self) -> None:
+        """Validate the model as a whole.
+        
+        Validates only data integrity constraints. Business rules are handled in the domain model.
+        
+        Raises:
+            ValidationError: If any validation fails
+        """
+        # Run base parent model validations before custom validations
+        super().clean()
+        self._validate_urgency_level()
+
+    def _validate_urgency_level(self) -> None:
+        """Validate urgency level constraints."""
+        if self.manual_urgency is not None:
+            valid_levels = [level[0] for level in self.URGENCY_LEVELS]
+            if self.manual_urgency not in valid_levels:
+                raise ValidationError({
+                    'manual_urgency': f'Invalid urgency level. Must be one of: {valid_levels}'
+                })
