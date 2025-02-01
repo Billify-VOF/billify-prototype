@@ -9,6 +9,7 @@ Currently includes:
   due dates.
 """
 from enum import Enum
+from typing import Optional
 
 
 class UrgencyLevel(Enum):
@@ -23,6 +24,8 @@ class UrgencyLevel(Enum):
     HIGH = ("#FFA500", (8, 14))
     MEDIUM = ("#FFD700", (15, 30))
     LOW = ("#008000", (31, None))
+
+    value: tuple[str, tuple[Optional[int], Optional[int]]]
 
     @property
     def color_code(self) -> str:
@@ -63,3 +66,29 @@ class UrgencyLevel(Enum):
         if days >= 31:
             return cls.LOW
         raise ValueError(f"Invalid days value: {days}")
+
+
+class InvoiceStatus(Enum):
+    """Value object representing the payment status of an invoice.
+    
+    Provides status values and display names for invoice payment states.
+    Used by both domain and infrastructure layers.
+    """
+    PENDING = 'pending'
+    PAID = 'paid'
+    OVERDUE = 'overdue'
+
+    value: str
+
+    @property
+    def display_name(self) -> str:
+        return {
+            'pending': 'Pending Payment',
+            'paid': 'Payment Received',
+            'overdue': 'Payment Overdue'
+        }[self.value]
+
+    @classmethod
+    def choices(cls) -> list[tuple[str, str]]:
+        """Return choices in Django format."""
+        return [(status.value, status.display_name) for status in cls]
