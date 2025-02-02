@@ -22,6 +22,39 @@ class Invoice:
         status (InvoiceStatus): Current payment status
         _manual_urgency (Optional[UrgencyLevel]): Manual urgency override
     """
+    
+    @classmethod
+    def create(cls, 
+               amount: Decimal, 
+               due_date: date, 
+               invoice_number: str, 
+               file_path: str, 
+               status: InvoiceStatus = InvoiceStatus.PENDING
+        ) -> 'Invoice':
+        """Create a new valid invoice.
+        
+        Factory method that creates and validates a new invoice instance.
+        Use this method instead of constructor for normal invoice creation.
+        
+        Args:
+            amount (Decimal): Invoice amount (must be positive)
+            due_date (date): When payment is due
+            invoice_number (str): Unique identifier
+            file_path (str): Path to stored PDF file
+            status (InvoiceStatus, optional): Initial status. Defaults to PENDING.
+        
+        Returns:
+            Invoice: A validated invoice instance
+            
+        Raises:
+            InvalidInvoiceError: If any of the data is invalid:
+                - Amount is not positive
+                - Status is not a valid InvoiceStatus
+                - Other validation rules
+        """
+        invoice = cls(amount, due_date, invoice_number, file_path, status=status)
+        invoice.validate()
+        return invoice
 
     def __init__(
         self,
@@ -29,47 +62,22 @@ class Invoice:
         due_date: date,
         invoice_number: str,
         file_path: str,
-        invoice_id: Optional[int] = None
-    ):
+        invoice_id: Optional[int] = None,
+        status: InvoiceStatus = InvoiceStatus.PENDING
+    ) -> 'Invoice':
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
         self.invoice_number: str = invoice_number
         self.file_path: str = file_path
-        self.status: InvoiceStatus = InvoiceStatus.PENDING
+        self.status: InvoiceStatus = status
         self._manual_urgency: Optional[UrgencyLevel] = None
-
+    
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""
         if self.amount <= 0:
             raise InvalidInvoiceError("Invoice amount must be positive")
-        # if self.due_date < date.today():
-        # raise InvalidInvoiceError("Due date cannot be in the past")
-
-    def get_status_display(self) -> str:
-        """Return a human-readable status description."""
-        return self.status.display_name
-
-    def is_overdue(self) -> bool:
-        """Check if the invoice is past its due date.
-        
-        Returns:
-            bool: True if the invoice is past its due date, False otherwise.
-        """
-        return self.due_date < timezone.now().date()
-
-    def mark_as_overdue(self) -> None:
-        """Mark the invoice as overdue if it's past due date and pending.
-        
-        This method will only mark the invoice as overdue if:
-        1. The invoice is past its due date
-        2. The current status is 'pending'
-        
-        The status change will be persisted through the repository pattern.
-        """
-        if self.is_overdue() and self.status == InvoiceStatus.PENDING:
-            self.status = InvoiceStatus.OVERDUE
-            # Note: Persistence handled by repository
+        self.validate_status()
 
     def validate_status(self) -> None:
         """Validate invoice status against business rules.
@@ -79,6 +87,27 @@ class Invoice:
         """
         if self.status == InvoiceStatus.OVERDUE and self.due_date > timezone.now().date():
             raise InvalidInvoiceError('Invoice cannot be overdue if due date is in the future')
+        if not isinstance(self.status, InvoiceStatus):
+            raise InvalidInvoiceError("Status must be an InvoiceStatus enum")
+        if self.status not in (InvoiceStatus.PENDING, InvoiceStatus.OVERDUE, InvoiceStatus.PAID):
+            raise InvalidInvoiceError(f"Invalid status: {self.status}")
+    
+    @property
+    def is_paid(self) -> bool:
+        """Check if the invoice has been paid.
+        
+        Returns:
+            bool: True if the invoice status is PAID, False otherwise.
+        
+        Example:
+            invoice = Invoice(...)
+            invoice.mark_as_paid()
+            invoice.is_paid  # Returns True
+            
+            invoice = Invoice(...)  # New invoice
+            invoice.is_paid  # Returns False (PENDING by default)
+        """
+        return self.status == InvoiceStatus.PAID
 
     @property
     def urgency(self) -> 'UrgencyLevel':
@@ -116,7 +145,46 @@ class Invoice:
         due_date_timedelta = self.due_date - today
         days_until_due = due_date_timedelta.days
         return UrgencyLevel.calculate_from_days(days_until_due)
+    
+    def get_status_display(self) -> str:
+        """Return a human-readable status description."""
+        return self.status.display_name
+    
+    def mark_as_paid(self) -> None:
+        """Mark the invoice as paid.
 
+        This method will only mark the invoice as paid if:
+        1. The current status is 'pending' or 'overdue'
+        2. The invoice hasn't been paid yet
+
+        Raises:
+            InvalidStatusTransition: If invoice is already paid
+
+        The status change will be persisted through the repository pattern.
+        """
+        if self.status == InvoiceStatus.PENDING or self.status == InvoiceStatus.OVERDUE:
+            self.status = InvoiceStatus.PAID
+    
+    def is_overdue(self) -> bool:
+        """Check if the invoice is past its due date.
+        
+        Returns:
+            bool: True if the invoice is past its due date, False otherwise.
+        """
+        return self.due_date < timezone.now().date()
+
+    def mark_as_overdue(self) -> None:
+        """Mark the invoice as overdue if it's past due date and pending.
+        
+        This method will only mark the invoice as overdue if:
+        1. The invoice is past its due date
+        2. The current status is 'pending'
+        
+        The status change will be persisted through the repository pattern.
+        """
+        if self.is_overdue() and self.status == InvoiceStatus.PENDING:
+            self.status = InvoiceStatus.OVERDUE
+    
     def set_urgency_manually(self, new_urgency: UrgencyLevel) -> None:
         """Set a manual override for the invoice's urgency level.
 
