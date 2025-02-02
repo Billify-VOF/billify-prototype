@@ -82,19 +82,33 @@ class Invoice:
 
     @property
     def urgency(self) -> 'UrgencyLevel':
-        """
-        Returns the Urgency Level of an Invoice instance based on the due date.
+        """Returns the current urgency level, either manual override or calculated.
 
-        Urgency levels are calculated based on days until due:
-        - OVERDUE: Past due date (Dark Red)
-        - CRITICAL: Due within 7 days (Red)
-        - HIGH: Due in 8-14 days (Orange)
-        - MEDIUM: Due in 15-30 days (Yellow)
-        - LOW: Due in 31+ days (Green)
+        The urgency level can be either:
+        1. A manually set override (if _manual_urgency is not None)
+        2. Automatically calculated based on days until due date
+
+        Calculation Rules:
+        - OVERDUE:  Past due date (days < 0)
+        - CRITICAL: Due within 7 days (0-7 days)
+        - HIGH:     Due in 8-14 days
+        - MEDIUM:   Due in 15-30 days
+        - LOW:      Due in 31+ days
+
+        Technical Details:
+        - Uses UrgencyLevel.calculate_from_days() for automatic calculation
+        - Calculates days as (due_date - today).days
+        - Returns _manual_urgency directly if set
 
         Returns:
-            UrgencyLevel: The calculated urgency level based on days until
-            due date.
+            UrgencyLevel: The current urgency level enum instance
+
+        Example:
+            invoice = Invoice(due_date=date.today() + timedelta(days=5))
+            invoice.urgency  # Returns UrgencyLevel.CRITICAL
+            
+            invoice.set_urgency_manually(UrgencyLevel.HIGH)
+            invoice.urgency  # Returns UrgencyLevel.HIGH (manual override)
         """
         if self._manual_urgency is not None:
             return self._manual_urgency
@@ -104,14 +118,27 @@ class Invoice:
         return UrgencyLevel.calculate_from_days(days_until_due)
 
     def set_urgency_manually(self, new_urgency: UrgencyLevel) -> None:
-        """
-        Set a manual override for the invoice's urgency level.
+        """Set a manual override for the invoice's urgency level.
+
+        This method allows overriding the automatically calculated urgency
+        with a manually specified level. The override remains in effect until
+        clear_manual_urgency() is called.
 
         Args:
-            new_urgency (UrgencyLevel): The urgency level to set manually
+            new_urgency (UrgencyLevel): The urgency level to set manually.
+                Must be a valid UrgencyLevel enum instance.
 
         Raises:
             InvalidInvoiceError: If new_urgency is not a UrgencyLevel instance
+
+        Example:
+            invoice = Invoice(...)
+            # Set manual urgency
+            invoice.set_urgency_manually(UrgencyLevel.HIGH)
+            invoice.urgency  # Returns UrgencyLevel.HIGH regardless of due date
+            
+            # Trying to set invalid urgency
+            invoice.set_urgency_manually("HIGH")  # Raises InvalidInvoiceError
         """
         if not isinstance(new_urgency, UrgencyLevel):
             raise InvalidInvoiceError(f"Expected UrgencyLevel, got {type(new_urgency)}")
@@ -121,9 +148,21 @@ class Invoice:
         """Clear the manual override for the invoice's urgency level.
 
         After clearing, the urgency will be automatically calculated
-        based on the due date.
+        based on the due date using UrgencyLevel.calculate_from_days().
 
-        Returns:
-            None
+        This method:
+        1. Sets _manual_urgency to None
+        2. Allows automatic urgency calculation to resume
+        3. Takes effect immediately (next urgency property access)
+
+        Example:
+            invoice = Invoice(due_date=date.today() + timedelta(days=5))
+            invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic)
+            
+            invoice.set_urgency_manually(UrgencyLevel.LOW)
+            invoice.urgency  # Returns UrgencyLevel.LOW (manual override)
+            
+            invoice.clear_manual_urgency()
+            invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic again)
         """
         self._manual_urgency = None
