@@ -47,8 +47,6 @@ class Invoice(models.Model):
     # Metadata
     # Status
     STATUS_CHOICES = InvoiceStatus.choices()
-
-    URGENCY_LEVELS = [(i, level.name) for i, level in enumerate(UrgencyLevel, 1)]
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -56,6 +54,8 @@ class Invoice(models.Model):
         help_text="Current payment status of the invoice. "
                   "Automatically updated based on payment and due date."
     )
+
+    URGENCY_LEVELS = UrgencyLevel.choices()
     manual_urgency = models.IntegerField(
         choices=URGENCY_LEVELS,
         null=True,
@@ -151,9 +151,16 @@ class Invoice(models.Model):
         self._validate_urgency_level()
 
     def _validate_urgency_level(self) -> None:
-        """Validate urgency level constraints."""
+        """Validate urgency level constraints.
+        
+        Validates that if a manual urgency override is set, it uses a valid
+        urgency level value from the UrgencyLevel enum.
+        
+        Raises:
+            ValidationError: If manual_urgency is set but not a valid UrgencyLevel db_value
+        """
         if self.manual_urgency is not None:
-            valid_levels = [level[0] for level in self.URGENCY_LEVELS]
+            valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
                 raise ValidationError({
                     'manual_urgency': f'Invalid urgency level. Must be one of: {valid_levels}'
