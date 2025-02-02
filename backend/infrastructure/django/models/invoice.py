@@ -15,6 +15,17 @@ class Invoice(models.Model):
     It focuses on data integrity and storage, while business logic is handled
     in the domain model.
 
+    Attributes:
+        id (AutoField): Primary key, automatically added by Django.
+                       Auto-incrementing integer field that uniquely identifies each invoice.
+        invoice_number (CharField): Business-specific unique identifier
+        amount (DecimalField): Total invoice amount
+        due_date (DateField): When payment is due
+        status (CharField): Current payment status
+        uploaded_by (ForeignKey): User who uploaded the invoice
+        created_at (DateTimeField): When the record was created
+        updated_at (DateTimeField): When the record was last modified
+
     Key Assumptions:
         - Invoices can only be created from PDF files
         - Maximum invoice amount is 99,999,999.99
