@@ -228,7 +228,6 @@ const BillifyDashboard = () => {
                               <InvoiceUploadResult result={uploadedInvoiceData} />
                             </div>
                             <button
-                              onClick={handleUpload}
                               className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 mt-4"
                               disabled={uploadStatus === 'uploading'}
                               type="button"
