@@ -1,8 +1,7 @@
 """Coordinates the complete PDF transformation process."""
 
 import re
-from datetime import datetime, date, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 from typing import Dict, Any
 from integrations.transformers.pdf.ocr import OCRService, OCRError
@@ -10,6 +9,7 @@ from integrations.transformers.pdf.text_analysis import (
     TextAnalyzer,
     TextAnalysisError
 )
+from datetime import date
 
 
 class PDFTransformationError(Exception):
@@ -90,7 +90,10 @@ class PDFTransformer:
             if 'date' in raw_data and raw_data['date']:
                 date_str = raw_data['date'].strip()
                 format_type = 'belgian' if re.match(r'\d{2}[-/]\d{2}[-/]\d{4}', date_str) else 'english'
-                standardized['due_date'] = self.text_analyzer.standardize_date(date_str, format_type)
+                date_str = self.text_analyzer.standardize_date(date_str, format_type)
+                if date_str:
+                    year, month, day = map(int, date_str.split('-'))
+                    standardized['due_date'] = date(year, month, day)
 
             # Process supplier name
             if 'supplier_name' in raw_data:

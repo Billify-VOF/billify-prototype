@@ -182,6 +182,13 @@ class UrgencyLevel(Enum):
             return cls.LOW
         raise ValueError(f"Invalid days value: {days}")
 
+    @classmethod
+    def from_db_value(cls, db_value: int) -> 'UrgencyLevel':
+        for level in UrgencyLevel:
+            if db_value == level.db_value:
+                return level
+        raise ValueError(f"Invalid urgency db_value: {db_value}")
+
 
 class InvoiceStatus(Enum):
     """Value object representing the payment status of an invoice.
@@ -262,3 +269,11 @@ class InvoiceStatus(Enum):
             list[tuple[str, str]]: List of (value, display_name) pairs
         """
         return [(status.value, status.display_name) for status in cls]
+    
+    @classmethod
+    def from_db_value(cls, db_value: str) -> 'InvoiceStatus':
+        for status in InvoiceStatus:
+            if db_value == status.value:
+                return status
+        raise ValueError(f"Invalid status db_value: {db_value}")
+

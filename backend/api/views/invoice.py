@@ -2,7 +2,7 @@
 
 from logging import getLogger
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 from django.http import FileResponse
@@ -19,6 +19,7 @@ from domain.exceptions import (
 )
 from integrations.transformers.pdf.transformer import PDFTransformer
 from infrastructure.storage.file_system import FileStorage
+from infrastructure.django.repositories.invoice_repository import DjangoInvoiceRepository
 
 logger = getLogger(__name__)
 
@@ -32,8 +33,14 @@ class InvoiceUploadView(APIView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.invoice_service = InvoiceService()
-        self.storage = FileStorage()
+        # Create repositories
+        self.storage_repository = FileStorage()
+        self.invoice_repository = DjangoInvoiceRepository()
+        # Initialize service with repositories
+        self.invoice_service = InvoiceService(
+            invoice_repository=self.invoice_repository,
+            storage_repository=self.storage_repository
+        )
         # Add the PDF transformer as a class dependency
         self.transformer = PDFTransformer()
 
@@ -71,7 +78,6 @@ class InvoiceUploadView(APIView):
             # First, let invoice service handle storage and basic processing
             invoice = self.invoice_service.process_invoice(
                 file=uploaded_file,
-                storage=self.storage,
                 user_id=self._get_user_id(request)
             )
             logger.info("Invoice processed: %s", invoice)
@@ -82,7 +88,7 @@ class InvoiceUploadView(APIView):
                 )
 
             # Now, process the stored PDF to extract structured data
-            file_path = self.storage.get_file_path(invoice['file_path'])
+            file_path = self.storage_repository.get_file_path(invoice['file_path'])
             logger.info("File path: %s", file_path)
             extracted_data = self.transformer.transform(Path(file_path))
             logger.info("Extracted data: %s", extracted_data)
@@ -91,23 +97,38 @@ class InvoiceUploadView(APIView):
             processed_data = self.process_extracted_data(extracted_data)
             logger.info("Processed data: %s", processed_data)
 
+            # Debug log all values before creating response
+            logger.debug("Invoice data for response:")
+            logger.debug("  - invoice_id: %s (%s)", invoice['invoice_id'], type(invoice['invoice_id']))
+            logger.debug("  - status: %s (%s)", invoice['status'], type(invoice['status']))
+            logger.debug("  - file_path: %s (%s)", invoice['file_path'], type(invoice['file_path']))
+            logger.debug("  - updated: %s (%s)", invoice.get('updated', False), type(invoice.get('updated', False)))
+            logger.debug("Processed data for response:")
+            logger.debug("  - invoice_number: %s (%s)", processed_data.get('invoice_number'), type(processed_data.get('invoice_number')))
+            logger.debug("  - amount: %s (%s)", processed_data.get('amount'), type(processed_data.get('amount')))
+            logger.debug("  - due_date: %s (%s)", processed_data.get('due_date'), type(processed_data.get('due_date')))
+            logger.debug("  - supplier_name: %s (%s)", processed_data.get('supplier_name'), type(processed_data.get('supplier_name')))
+
             # Combine invoice record with extracted data in response
             response_data = {
                 'status': 'success',
                 'message': 'Invoice processed successfully',
                 'invoice': {
                     'id': invoice['invoice_id'],
-                    'status': invoice['status'],
+                    'status': str(invoice['status'].value) if hasattr(invoice['status'], 'value') else str(invoice['status']),
                     'file_path': invoice['file_path'],
                     'updated': invoice.get('updated', False)
                 },
                 'invoice_data': {
                     'invoice_number': processed_data.get('invoice_number'),
-                    'amount': str(processed_data.get('amount')),
+                    'amount': str(processed_data.get('amount')) if processed_data.get('amount') is not None else None,
                     'date': self._format_date(processed_data.get('due_date')),
                     'supplier_name': processed_data.get('supplier_name')
                 }
             }
+
+            # Debug log final response data
+            logger.debug("Final response data: %s", response_data)
 
             logger.info(
                 "Successfully processed invoice with extracted data",
@@ -184,9 +205,12 @@ class InvoiceUploadView(APIView):
         """Process extracted data and convert due_date to datetime object."""
         self.validate_extracted_data(extracted_data)
         raw_due_date = extracted_data.get('due_date')
-        due_date = (
-            self.normalize_date(raw_due_date) if raw_due_date else None
-        )
+        
+        # If it's already a date object, use it directly
+        if isinstance(raw_due_date, date):
+            due_date = raw_due_date
+        else:
+            due_date = self.normalize_date(raw_due_date) if raw_due_date else None
 
         processed_data = {
             'invoice_number': extracted_data.get('invoice_number'),
@@ -206,21 +230,30 @@ class InvoiceUploadView(APIView):
         if not data.get('invoice_number'):
             errors.append("Invoice number is missing.")
 
-        # Validate due_date format
+        # Validate due_date format with debug logging
         raw_due_date = data.get('due_date')
         if raw_due_date:
-            try:
-                # Try multiple date formats
-                for fmt in ['%Y-%m-%d', '%b %d %Y']:
-                    try:
-                        datetime.strptime(raw_due_date, fmt)
-                        break  # If any format works, we're good
-                    except ValueError:
-                        continue
-                else:  # No format worked
+            print(f"Validating due_date: {raw_due_date} (type: {type(raw_due_date)})")
+            # If it's already a date object, it's valid
+            if isinstance(raw_due_date, date):
+                print(f"Due date is already a date object: {raw_due_date}")
+            else:
+                try:
+                    # Try multiple date formats for string dates
+                    for fmt in ['%Y-%m-%d', '%b %d %Y']:
+                        try:
+                            print(f"Trying format: {fmt}")
+                            parsed_date = datetime.strptime(raw_due_date, fmt)
+                            print(f"Successfully parsed date: {parsed_date}")
+                            break  # If any format works, we're good
+                        except ValueError as e:
+                            print(f"Failed with format {fmt}: {str(e)}")
+                            continue
+                    else:  # No format worked
+                        errors.append(f"Invalid date format: {raw_due_date}")
+                except (ValueError, TypeError, AttributeError) as e:
+                    print(f"Date validation error: {str(e)}")
                     errors.append(f"Invalid date format: {raw_due_date}")
-            except (ValueError, TypeError, AttributeError):
-                errors.append(f"Invalid date format: {raw_due_date}")
 
         # Validate amount
         try:
@@ -235,6 +268,11 @@ class InvoiceUploadView(APIView):
 
     def normalize_date(self, raw_date):
         """Normalize the date format for consistent internal representation."""
+        # If it's already a date object, return it
+        if isinstance(raw_date, date):
+            return raw_date
+            
+        # Otherwise try to parse the string
         for fmt in ['%Y-%m-%d', '%b %d %Y']:
             try:
                 normalized_date = datetime.strptime(raw_date, fmt)
@@ -244,7 +282,7 @@ class InvoiceUploadView(APIView):
                     normalized_date,
                     fmt
                 )
-                return normalized_date
+                return normalized_date.date()  # Convert to date object
             except ValueError:
                 continue
         logger.warning("Failed to normalize date: %s", raw_date)
@@ -258,6 +296,10 @@ class InvoiceUploadView(APIView):
 class InvoicePreviewView(APIView):
     """Handle serving PDF files for preview."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.storage_repository = FileStorage()
+
     def get(self, _, file_path):
         """
         Serve a PDF file for preview.
@@ -270,8 +312,7 @@ class InvoicePreviewView(APIView):
         """
         logger.info("Preview requested for file: %s", file_path)
         try:
-            storage = FileStorage()
-            full_path = storage.get_file_path(file_path)
+            full_path = self.storage_repository.get_file_path(file_path)
             logger.info("Full path resolved to: %s", full_path)
 
             if not Path(full_path).exists():
