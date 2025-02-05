@@ -38,10 +38,15 @@ class Invoice(models.Model):
 
     # Core invoice data
     invoice_number = models.CharField(
-        max_length=100, 
-        unique=True,
-        help_text="Unique identifier for the invoice. "
-                  "Can contain special characters and varies by country format."
+        max_length=100,
+        help_text="Business-specific identifier for the invoice. "
+                  "Can contain special characters and varies by country format. "
+                  "Note: Invoice numbers may be similar or identical due to: "
+                  "1) Different suppliers using the same numbering format "
+                  "2) OCR extraction errors requiring manual correction "
+                  "3) Initial automated extraction before user verification "
+                  "4) Manual edits during the invoice review process. "
+                  "Therefore, invoice numbers are not constrained to be unique in the system."
     )
     amount = models.DecimalField(
         max_digits=10, 
@@ -109,45 +114,43 @@ class Invoice(models.Model):
             models.Index(fields=['due_date']),
         ]
 
+    @classmethod
+    def create(
+        cls,
+        invoice_number: str,
+        amount: Decimal,
+        due_date: date,
+        uploaded_by_id: int,
+        file_path: str
+    ) -> 'Invoice':
+        """Create a new Invoice instance with validation."""
+        instance = cls(
+            invoice_number=invoice_number,
+            amount=amount,
+            due_date=due_date,
+            uploaded_by_id=uploaded_by_id,
+            file_path=file_path
+        )
+        instance.full_clean()
+        return instance
+
     def __str__(self) -> str:
         return f"Invoice {self.invoice_number} ({self.status})"
 
-    def __init__(
-            self,
-            invoice_number: str, 
-            amount: Decimal,
-            due_date: date,
-            uploaded_by_id: int,
-            file_path: str,
-            *args, 
-            **kwargs
-    ):
+    def __init__(self, *args, **kwargs):
         """Initialize a new Invoice instance.
-
-        Args:
-            invoice_number (str): Unique identifier extracted from PDF
-            amount (Decimal): Invoice amount extracted from PDF
-            due_date (date): Due date extracted from PDF
-            uploaded_by_id (int): ID of the user who uploaded the invoice
-            file_path (str): Path to the stored PDF file
-            *args: Additional positional arguments for Django model
-            **kwargs: Additional keyword arguments for Django model
-
+        
         Note:
-            All parameters are required as we only support PDF-based invoice creation.
-            Status and urgency are handled automatically and should not be provided.
-            Business rule validation happens in the domain model before reaching this class.
+            This simplified constructor allows Django's ORM to work correctly
+            while the create() class method provides a validated way to
+            create new instances.
         """
-        # Initialize Django model
-        super().__init__(
-            invoice_number = invoice_number,
-            amount = amount,
-            due_date = due_date,
-            uploaded_by_id = uploaded_by_id,
-            file_path = file_path,
-            *args, 
-            **kwargs
-        )
+        print("Django Invoice __init__ called with:")
+        print(f"  Number of args: {len(args)}")
+        for i, arg in enumerate(args):
+            print(f"  arg[{i}]: {arg} (type: {type(arg)})")
+        print(f"  kwargs: {kwargs}")        
+        super().__init__(*args, **kwargs)
 
     def clean(self) -> None:
         """Validate the model as a whole.

@@ -12,91 +12,91 @@ from integrations.transformers.pdf.transformer import (
     PDFTransformer,
     PDFTransformationError
 )
-from infrastructure.django.repositories.invoice_repository import (
-    DjangoInvoiceRepository
-)
+from domain.repositories.interfaces.invoice_repository import InvoiceRepository
+from domain.repositories.interfaces.storage_repository import StorageRepository
+from datetime import datetime  # We'll need this for generating identifiers
 
 
 class InvoiceService:
     """Handles business logic for invoice processing operations."""
 
-    def __init__(self):
+    def __init__(self, invoice_repository: InvoiceRepository, storage_repository: StorageRepository):
         """Initialize service with required components."""
         self.pdf_transformer = PDFTransformer()
-        self.invoice_repository = DjangoInvoiceRepository()
+        self.invoice_repository = invoice_repository
+        self.storage_repository = storage_repository
 
-    def process_invoice(self, file, storage, user_id: int):
-        """
-        Process a new invoice file through the complete business workflow.
-
+    def process_invoice(self, file, user_id: int):
+        """Process a new invoice file through the complete business workflow.
+        
         Args:
             file: The uploaded invoice file
-            storage: Storage implementation for saving the file
             user_id: The ID of the user who uploaded the invoice
-
-        Returns:
-            dict: A dictionary containing the ID, invoice number,
-                    and status of the processed invoice
-
-        Raises:
-            InvalidInvoiceError: If the invoice fails validation
-            StorageError: If the file cannot be stored
-            ProcessingError: If processing fails
         """
         try:
-            print(f"Processing invoice file: {file.name}")
-            print(f"Processing invoice for user_id: {user_id}")
-
-            # Store the file using the provided storage implementation
-            file_path = storage.save_invoice(file)
-            print(f"File saved with relative path: {file_path}")
-
-            full_path = storage.get_file_path(file_path)
-            print(f"Full path: {full_path}")
-
-            # Extract data from the PDF
+            # Generate unique identifier for file
+            identifier = f"invoice_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            # Store file using new interface
+            file_path = self.storage_repository.save_file(file, identifier)
+            
+            # Get path for processing
+            full_path = self.storage_repository.get_file_path(file_path)
+            
+            # Extract data from PDF
             invoice_data = self.pdf_transformer.transform(Path(full_path))
             print(f"PDF transformation successful: {invoice_data}")
 
-            # Check for existing invoice with same number
+            # Check for existing invoice
             existing_invoice = self.invoice_repository.get_by_number(
                 invoice_data['invoice_number']
             )
 
-            # Update existing invoice if found
             if existing_invoice:
-                # Store old file path for cleanup
-                old_file_path = existing_invoice.file_path
-
-                # Update invoice with new data
+                # Generate old file identifier using invoice number
+                old_identifier = f"invoice_{user_id}_{existing_invoice.invoice_number}"
+                
+                # Update invoice data (without file_path)
                 existing_invoice.amount = invoice_data['amount']
                 existing_invoice.due_date = invoice_data['due_date']
-                existing_invoice.file_path = file_path
                 existing_invoice.validate()
 
                 # Save updated invoice
-                saved_invoice = self.invoice_repository.update(
+                saved_invoice = self.invoice_repository.save(
                     existing_invoice, 
                     user_id
                 )
 
-                # Clean up old file
+                # Clean up old file using storage repository
                 try:
-                    storage.delete_file(old_file_path)
+                    self.storage_repository.delete_file(old_identifier)
                 except StorageError:
-                    # Log but continue if old file cleanup fails
                     pass
 
                 return {
                     'invoice_id': saved_invoice.id,
                     'invoice_number': saved_invoice.invoice_number,
                     'status': saved_invoice.status,
-                    'file_path': file_path,
+                    'file_path': file_path,  # Keep in response
                     'updated': True
                 }
 
-            # Create new invoice if no existing one found
-            invoice = Invoice(**invoice_data)
+            # Create new invoice
+            print(f"Invoice data before creation: {invoice_data}")
+            print(f"Creating invoice with:")
+            print(f"  amount: {invoice_data['amount']} ({type(invoice_data['amount'])})")
+            print(f"  due_date: {invoice_data['due_date']} ({type(invoice_data['due_date'])})")
+            print(f"  invoice_number: {invoice_data['invoice_number']} ({type(invoice_data['invoice_number'])})")
+            invoice_data.pop('file_path', None)  # Remove file_path from data
+            print(f"Invoice data after pop (full dict): {invoice_data}")
+
+            print(f"Invoice class being used: {Invoice.__module__}.{Invoice.__name__}")
+
+            invoice = Invoice(
+                amount=invoice_data['amount'],
+                due_date=invoice_data['due_date'],
+                invoice_number=invoice_data['invoice_number']
+            )
             invoice.validate()
             saved_invoice = self.invoice_repository.save(invoice, user_id)
 
@@ -104,20 +104,16 @@ class InvoiceService:
                 'invoice_id': saved_invoice.id,
                 'invoice_number': saved_invoice.invoice_number,
                 'status': saved_invoice.status,
-                'file_path': file_path,
+                'file_path': file_path,  # Keep in response
                 'updated': False
             }
 
         except PDFTransformationError as e:
-            raise ProcessingError(
-                f"Failed to extract data from invoice: {str(e)}"
-            ) from e
+            raise ProcessingError(f"Failed to extract data from invoice: {str(e)}") from e
         except Exception as e:
-            # Clean up stored file on any error
+            # Clean up stored file on error
             try:
-                storage.delete_file(file_path)
+                self.storage_repository.delete_file(file_path)
             except StorageError:
-                pass  # Log but continue if cleanup fails
-            raise ProcessingError(
-                f"Failed to process invoice: {str(e)}"
-            ) from e
+                pass
+            raise ProcessingError(f"Failed to process invoice: {str(e)}") from e

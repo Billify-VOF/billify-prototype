@@ -8,15 +8,16 @@ organization and access control.
 """
 
 from pathlib import Path
-import uuid
 from datetime import datetime
 from django.conf import settings
 import boto3
 from botocore.exceptions import ClientError
 from domain.exceptions import StorageError
+from domain.repositories.interfaces.storage_repository import StorageRepository
+from django.core.files.uploadedfile import UploadedFile
 
 
-class ObjectStorage:
+class ObjectStorage(StorageRepository):
     """
     Manages file storage operations using Digital Ocean Spaces.
 
@@ -41,26 +42,12 @@ class ObjectStorage:
             msg = f"Failed to initialize cloud storage: {str(e)}"
             raise StorageError(msg) from e
 
-    def save_invoice(self, file) -> str:
-        """
-        Save an invoice file to cloud storage with proper organization.
-
-        Args:
-            file: The invoice file to store
-
-        Returns:
-            str: The storage path where the file was saved
-
-        Raises:
-            StorageError: If the file cannot be saved
-        """
+    def save_file(self, file: UploadedFile, identifier: str) -> str:
         try:
-            # Generate a structured storage path for better organization
             year_month = datetime.now().strftime('%Y/%m')
-            filename = self._generate_unique_filename(file.name)
-            storage_path = f"invoices/{year_month}/{filename}"
+            ext = Path(file.name).suffix
+            storage_path = f"invoices/{year_month}/{identifier}{ext}"
 
-            # Upload to Digital Ocean Spaces
             self.client.upload_fileobj(
                 file,
                 self.bucket,
@@ -69,13 +56,8 @@ class ObjectStorage:
             )
 
             return storage_path
-
-        except ClientError as e:
-            msg = f"Cloud storage operation failed: {str(e)}"
-            raise StorageError(msg) from e
         except Exception as e:
-            msg = f"Unexpected storage error: {str(e)}"
-            raise StorageError(msg) from e
+            raise StorageError(f"Failed to save file: {str(e)}") from e
 
     def get_file_url(self, storage_path: str, expires_in: int = 3600) -> str:
         """
@@ -105,9 +87,39 @@ class ObjectStorage:
             msg = f"Failed to generate file URL: {str(e)}"
             raise StorageError(msg) from e
 
-    def _generate_unique_filename(self, original_name: str) -> str:
-        """Create unique filename while preserving the original extension."""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique_id = uuid.uuid4().hex[:8]
-        ext = Path(original_name).suffix
-        return f"{timestamp}_{unique_id}{ext}"
+    def get_file_path(self, identifier: str) -> Path:
+        """
+        Get the full path to a stored file.
+        
+        Args:
+            identifier: The storage identifier returned by save_file
+            
+        Returns:
+            Path: Full path to the file
+            
+        Raises:
+            StorageError: If file cannot be found
+        """
+        try:
+            # Convert S3 path to a Path object
+            return Path(identifier)
+        except Exception as e:
+            raise StorageError(f"Failed to get file path: {str(e)}") from e
+
+    def delete_file(self, identifier: str) -> None:
+        """
+        Delete a stored file.
+        
+        Args:
+            identifier: The storage identifier returned by save_file
+            
+        Raises:
+            StorageError: If file cannot be deleted
+        """
+        try:
+            self.client.delete_object(
+                Bucket=self.bucket,
+                Key=identifier
+            )
+        except Exception as e:
+            raise StorageError(f"Failed to delete file: {str(e)}") from e

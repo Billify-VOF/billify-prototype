@@ -6,12 +6,13 @@ contract.
 """
 from pathlib import Path
 from datetime import datetime
-import uuid
 from django.conf import settings
 from domain.exceptions import StorageError
+from domain.repositories.interfaces.storage_repository import StorageRepository
+from django.core.files.uploadedfile import UploadedFile
 
 
-class FileStorage:
+class FileStorage(StorageRepository):
     """Handles file storage operations using the local file system."""
 
     def __init__(self):
@@ -20,12 +21,13 @@ class FileStorage:
         self.base_dir = Path(settings.MEDIA_ROOT) / 'invoices'
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def save_invoice(self, file):
+    def save_file(self, file: UploadedFile, identifier: str) -> str:
         """
         Save an invoice file to the storage system with organized structure.
 
         Args:
             file: The invoice file to store
+            identifier: The identifier for the file
 
         Returns:
             str: The relative path where the file was stored (for db storage)
@@ -42,14 +44,9 @@ class FileStorage:
 
             # Generate unique filename while preserving original extension
             original_name = Path(file.name)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            unique_id = uuid.uuid4().hex[:8]
-            unique_filename = f"{timestamp}_{unique_id}{original_name.suffix}"
-            print(f"Generated filename: {unique_filename}")
+            file_path = storage_dir / f"{identifier}{original_name.suffix}"
+            print(f"Generated filename: {file_path}")
 
-            # Create full storage path
-            file_path = storage_dir / unique_filename
-            print(f"Full storage path: {file_path}")
             # Save the file using chunks for memory efficiency
             with file_path.open('wb+') as destination:
                 for chunk in file.chunks():
@@ -64,7 +61,7 @@ class FileStorage:
 
         except Exception as e:
             raise StorageError(
-                f"Failed to save invoice: {str(e)}"
+                f"Failed to save file: {str(e)}"
             ) from e
 
     def get_file_path(self, relative_path: str) -> Path:

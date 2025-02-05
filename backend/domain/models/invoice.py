@@ -18,7 +18,6 @@ class Invoice:
         amount (Decimal): Invoice amount (must be positive)
         due_date (date): When payment is due
         invoice_number (str): Unique identifier
-        file_path (str): Path to stored PDF file
         status (InvoiceStatus): Current payment status
         _manual_urgency (Optional[UrgencyLevel]): Manual urgency override
     """
@@ -28,7 +27,6 @@ class Invoice:
                amount: Decimal, 
                due_date: date, 
                invoice_number: str, 
-               file_path: str, 
                status: InvoiceStatus = InvoiceStatus.PENDING
         ) -> 'Invoice':
         """Create a new valid invoice.
@@ -40,7 +38,6 @@ class Invoice:
             amount (Decimal): Invoice amount (must be positive)
             due_date (date): When payment is due
             invoice_number (str): Unique identifier
-            file_path (str): Path to stored PDF file
             status (InvoiceStatus, optional): Initial status. Defaults to PENDING.
         
         Returns:
@@ -52,24 +49,32 @@ class Invoice:
                 - Status is not a valid InvoiceStatus
                 - Other validation rules
         """
-        invoice = cls(amount, due_date, invoice_number, file_path, status=status)
+        invoice = cls(
+            amount=amount,
+            due_date=due_date,
+            invoice_number=invoice_number,
+            status=status
+        )
         invoice.validate()
         return invoice
 
     def __init__(
         self,
+        *,  # This makes all following arguments keyword-only
         amount: Decimal,
         due_date: date,
         invoice_number: str,
-        file_path: str,
         invoice_id: Optional[int] = None,
         status: InvoiceStatus = InvoiceStatus.PENDING
-    ) -> 'Invoice':
+    ) -> None:
+        print(f"__init__ called with:")
+        print(f"  amount: {amount} ({type(amount)})")
+        print(f"  due_date: {due_date} ({type(due_date)})")
+        print(f"  invoice_number: {invoice_number} ({type(invoice_number)})")
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
         self.invoice_number: str = invoice_number
-        self.file_path: str = file_path
         self.status: InvoiceStatus = status
         self._manual_urgency: Optional[UrgencyLevel] = None
     
