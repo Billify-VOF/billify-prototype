@@ -10,14 +10,15 @@ from domain.models.value_objects import InvoiceStatus, UrgencyLevel
 
 class Invoice(models.Model):
     """Database model for storing invoice information.
-    
-    This model handles the persistence of invoice data extracted from PDF files.
-    It focuses on data integrity and storage, while business logic is handled
-    in the domain model.
+
+    This model handles the persistence of invoice data extracted from PDF
+    files. It focuses on data integrity and storage, while business logic
+    is handled in the domain model.
 
     Attributes:
         id (AutoField): Primary key, automatically added by Django.
-                       Auto-incrementing integer field that uniquely identifies each invoice.
+                     Auto-incrementing integer field that uniquely
+                     identifies each invoice.
         invoice_number (CharField): Business-specific unique identifier
         amount (DecimalField): Total invoice amount
         due_date (DateField): When payment is due
@@ -37,25 +38,27 @@ class Invoice(models.Model):
     objects = models.Manager()
 
     # Core invoice data
-    invoice_number = models.CharField(
+    invoice_number: models.CharField = models.CharField(
         max_length=100,
-        help_text="Business-specific identifier for the invoice. "
-                  "Can contain special characters and varies by country format. "
-                  "Note: Invoice numbers may be similar or identical due to: "
-                  "1) Different suppliers using the same numbering format "
-                  "2) OCR extraction errors requiring manual correction "
-                  "3) Initial automated extraction before user verification "
-                  "4) Manual edits during the invoice review process. "
-                  "Therefore, invoice numbers are not constrained to be unique in the system."
+        help_text=(
+            "Business-specific identifier for the invoice. "
+            "Can contain special characters and varies by country format. "
+            "Note: Invoice numbers may be similar or identical due to: "
+            "1) Different suppliers using the same numbering format "
+            "2) OCR extraction errors requiring manual correction "
+            "3) Initial automated extraction before user verification "
+            "4) Manual edits during the invoice review process. "
+            "Therefore, invoice numbers are not constrained to be unique."
+        )
     )
-    amount = models.DecimalField(
+    amount: models.DecimalField = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
         help_text="Total invoice amount. "
                   "Maximum 99,999,999.99. "
                   "Negative amounts not allowed."
     )
-    due_date = models.DateField(
+    due_date: models.DateField = models.DateField(
         help_text="Date when payment is due. "
                   "Used for overdue calculations and urgency levels."
     )
@@ -63,7 +66,7 @@ class Invoice(models.Model):
     # Metadata
     # Status
     STATUS_CHOICES = InvoiceStatus.choices()
-    status = models.CharField(
+    status: models.CharField = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='pending',
@@ -72,7 +75,7 @@ class Invoice(models.Model):
     )
 
     URGENCY_LEVELS = UrgencyLevel.choices()
-    manual_urgency = models.IntegerField(
+    manual_urgency: models.IntegerField = models.IntegerField(
         choices=URGENCY_LEVELS,
         null=True,
         blank=True,
@@ -81,24 +84,24 @@ class Invoice(models.Model):
     )
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
 
     # File handling
-    uploaded_by = models.ForeignKey(
+    uploaded_by: models.ForeignKey = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         help_text="User who uploaded the invoice PDF. "
                   "Protected from deletion."
     )
-    file_path = models.CharField(
+    file_path: models.CharField = models.CharField(
         max_length=255,
         help_text="Relative path to the stored invoice PDF file in the system."
     )
 
     class Meta:
         """Model configuration for database behavior and indexing.
-        
+
         Indexes are created for:
             - invoice_number: For unique constraint lookups
             - status: For filtering and status-based queries
@@ -139,7 +142,7 @@ class Invoice(models.Model):
 
     def __init__(self, *args, **kwargs):
         """Initialize a new Invoice instance.
-        
+
         Note:
             This simplified constructor allows Django's ORM to work correctly
             while the create() class method provides a validated way to
@@ -154,9 +157,10 @@ class Invoice(models.Model):
 
     def clean(self) -> None:
         """Validate the model as a whole.
-        
-        Validates only data integrity constraints. Business rules are handled in the domain model.
-        
+
+        Validates only data integrity constraints. Business rules are
+        handled in the domain model.
+
         Raises:
             ValidationError: If any validation fails
         """
@@ -166,16 +170,20 @@ class Invoice(models.Model):
 
     def _validate_urgency_level(self) -> None:
         """Validate urgency level constraints.
-        
+
         Validates that if a manual urgency override is set, it uses a valid
         urgency level value from the UrgencyLevel enum.
-        
+
         Raises:
-            ValidationError: If manual_urgency is set but not a valid UrgencyLevel db_value
+            ValidationError: If manual_urgency is not a valid UrgencyLevel
+                           db_value
         """
         if self.manual_urgency is not None:
             valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
                 raise ValidationError({
-                    'manual_urgency': f'Invalid urgency level. Must be one of: {valid_levels}'
+                    'manual_urgency': (
+                        'Invalid urgency level. '
+                        f'Must be one of: {valid_levels}'
+                    )
                 })
