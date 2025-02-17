@@ -4,22 +4,25 @@ import re
 from typing import Dict, Optional
 from dateutil.parser import parse
 
-
 class TextAnalysisError(Exception):
     """Raised when field extraction from text fails."""
-
-
 class TextAnalyzer:
     """Extracts structured data from invoice text using pattern matching."""
 
     def __init__(self):
         self.patterns = {
             'invoice_number': (
-                r'(?:Factuur|Facture|Invoice Number|Invoice number|'
-                r'Invoice ID|Receipt number|Numero de la factura|'
-                r'N°\s*(?:de\s*)?factura|N°\s*de\s*referencia|Reference|'
-                r'Order number|Booking\s*Reference|#\|)'
-                r':?\s*([\w.-]+)'
+                # r'(?:Factura|Facture|Invoice Number|Invoice number|Invoice|Document No.|Document number |Order|'
+                # r'Invoice ID|Receipt number|Numero de la factura|Document No.|Document number|'
+                # r'N°\s*(?:de\s*)?factura|N°\s*de\s*referencia|Reference|'
+                # r'Order number|Booking\s*Reference|#\s*)'  # Matches common invoice-related labels
+                # r'[:?\s]*'  # Matches optional spaces and punctuation after the label
+                # r'(?:\n?\s*)'  # Allows for optional newline and spaces between label and number
+                # r'(#?\d{1,}-?\d{1,}-?\d{1,}|\w{1,}\d+|\d{1,})'  
+                r'(?:Invoice\s*(?:Number|ID)|Factura|Invoice|Order|Facture|Receipt\s*(?:Number)?|Numero\s*de\s*la\s*factura|Order number)'  # General invoice labels
+                r'[:?\s]*'  # Matches optional spaces and punctuation after the label
+                r'(?:\s*)'  # Allows optional spaces between label and number
+                r'(#\s*\d{1,}-?\d{1,}-?\d{1,}|\d{1,}-?\d{1,}-?\d{1,}|\d{1,}|\w{1,}\d+)'  # Handles numbers after #
             ),
             'amount': (
                 r'(?:Total (?:Due|price|cost|amount|:)?|Total|Amount Due|'
@@ -64,7 +67,9 @@ class TextAnalyzer:
             if not extracted.get('due_date'):
                 extracted['due_date'] = extracted.get('date')
 
-            print(f"TextAnalyzer: Extracted fields: {extracted}")
+            if not extracted.get('invoice_number'):
+                extracted['invoice_number'] = "Unknown Invoice Number"
+
             return extracted
 
         except Exception as e:
@@ -80,18 +85,37 @@ class TextAnalyzer:
         )
 
     def _extract_using_patterns(self, text: str, patterns: Dict) -> Dict:
-        """Apply regex patterns to extract fields."""
-        extracted = {}
-        # -- Moved the 'return' below so we gather *all* fields --
-        for field, pattern in patterns.items():
-            print(f"\nTrying to match {field} with pattern: {pattern}")
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                extracted[field] = match.group(1)
-                print(f"Found match for {field}: {extracted[field]}")
+            """Apply regex patterns to extract fields."""
+            extracted = {}
+            doc_no_pattern = r"DOCUMENT\s*NO\.\s*BEL\s*\n([A-Z0-9]+)\s+(\d+)"
+            doc_no_match = re.search(doc_no_pattern, text, re.MULTILINE | re.DOTALL | re.IGNORECASE)
+            
+            if doc_no_match:
+                # Extract the document number and assign it to the invoice_number field
+                extracted['invoice_number'] = doc_no_match.group(2)
+                print("Document No. (as invoice_number):", extracted['invoice_number'])
             else:
-                print(f"No match found for {field}")
-        return extracted   # Return *after* the loop finishes all fields.
+                print("Document No. not found, invoice_number not set.")
+                    
+            for field, pattern in patterns.items():
+                print(f"\nTrying to match {field} with pattern: {pattern}")
+                match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE | re.DOTALL )
+                
+                if match:
+                    extracted[field] = match.group(1)
+                    
+                    # Check if the match came from "Receipt" keyword
+                    if field == "invoice_number":
+                        receipt_match = re.search(r'(Receipt number|Receipt |Order)', text, re.IGNORECASE)
+                        
+                        if receipt_match and not extracted[field].startswith("#"):
+                            extracted[field] = f"#{extracted[field]}"
+                    
+                    print(f"Found match for {field}: {extracted[field]}")
+                else:
+                    print(f"No match found for {field}")
+            
+            return extracted
 
     def _fallback_extract_date(self, text: str) -> Optional[str]:
         """Second pass for date if labeled pattern fails."""
@@ -131,25 +155,18 @@ class TextAnalyzer:
 
         return amount_str
 
-    def standardize_date(
-        self, date_str: str, format_type: str
-    ) -> Optional[str]:
-        """
-        Convert date to ISO format based on detected format.
-        """
+    def standardize_date(self, date_str: str, format_type: str) -> Optional[str]:
+        """Convert date to ISO format based on detected format."""
         if format_type == 'belgian':
-            # Convert DD-MM-YYYY to ISO
             match = re.match(r'(\d{2})[-/](\d{2})[-/](\d{4})', date_str)
             if match:
                 day, month, year = match.groups()
                 return f"{year}-{month}-{day}"
         else:
-            # Convert English format (e.g. Dec 7th 2024) to ISO
             try:
                 date_obj = parse(date_str)
                 return date_obj.strftime('%Y-%m-%d')
             except (ValueError, TypeError) as e:
                 print(f"Failed to parse date: {e}")
                 return None
-
         return None
