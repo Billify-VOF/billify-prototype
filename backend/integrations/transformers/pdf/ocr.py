@@ -7,6 +7,7 @@ converting the visual content of PDF documents into machine-readable text.
 from pathlib import Path
 import pytesseract
 from pdf2image import convert_from_path
+import pdfplumber
 
 
 class OCRError(Exception):
@@ -61,3 +62,12 @@ class OCRService:
         except Exception as e:
             # If anything goes wrong, wrap the error in our custom error type
             raise OCRError(f"Failed to extract text from PDF: {str(e)}") from e
+        
+        
+    def extract_text_from_pdf(self, pdf_path: Path) -> str:
+        """Extract text from a PDF file."""
+        text = ""
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                text += page.extract_text() + "\n"
+        return text.strip()
