@@ -68,7 +68,7 @@ class InvoiceService:
 
                 # Save updated invoice
                 saved_invoice = self.invoice_repository.save(
-                    existing_invoice, 
+                    existing_invoice,
                     user_id
                 )
 
