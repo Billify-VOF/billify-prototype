@@ -1,12 +1,16 @@
 """Invoice repository interface for data access operations.
 
-This module defines the abstract interface for invoice data access operations using Python's ABC (Abstract Base Class).
-The interface serves as a contract that all concrete repository implementations must follow.
+This module defines the abstract interface for invoice data access operations
+using Python's ABC (Abstract Base Class). The interface serves as a contract
+that all concrete repository implementations must follow.
 
 Key concepts:
-    - ABC (Abstract Base Class): Defines an interface that cannot be instantiated directly
-    - @abstractmethod: Marks methods that MUST be implemented by any concrete repository class
-    - Repository Pattern: Separates domain logic from data access implementation details
+    - ABC (Abstract Base Class): Defines an interface that cannot be
+      instantiated directly
+    - @abstractmethod: Marks methods that MUST be implemented by any
+      concrete repository class
+    - Repository Pattern: Separates domain logic from data access
+      implementation details
 
 Example:
     # Concrete implementation must implement all abstract methods
@@ -24,15 +28,16 @@ from domain.models.invoice import Invoice
 
 class InvoiceRepository(ABC):
     """Interface defining invoice data access operations.
-    
-    This abstract base class serves as a contract for invoice persistence operations.
-    Any concrete implementation (e.g., Django ORM, SQLAlchemy, etc.) must implement
-    all methods marked with @abstractmethod.
+
+    This abstract base class serves as a contract for invoice persistence
+    operations. Any concrete implementation (e.g., Django ORM, SQLAlchemy,
+    etc.) must implement all methods marked with @abstractmethod.
 
     The Repository pattern used here:
     1. Separates domain logic from data access details
     2. Makes the system more maintainable and testable
-    3. Allows swapping different storage implementations without changing domain code
+    3. Allows swapping different storage implementations without changing
+       domain code
     4. Follows the Dependency Inversion Principle (SOLID)
 
     Example:
@@ -71,7 +76,8 @@ class InvoiceRepository(ABC):
             invoice_id (int): The unique identifier of the invoice
 
         Returns:
-            Optional[Invoice]: The domain invoice model if found, None otherwise
+            Optional[Invoice]: The domain invoice model if found,
+                             None otherwise
 
         Raises:
             RepositoryError: If there's a persistence-related error
@@ -85,7 +91,8 @@ class InvoiceRepository(ABC):
             invoice_number (str): The business-specific invoice number
 
         Returns:
-            Optional[Invoice]: The domain invoice model if found, None otherwise
+            Optional[Invoice]: The domain invoice model if found,
+                             None otherwise
 
         Raises:
             RepositoryError: If there's a persistence-related error
@@ -96,7 +103,8 @@ class InvoiceRepository(ABC):
         """List all invoices with a given status.
 
         Args:
-            status (str): The invoice status to filter by (e.g., 'pending', 'paid')
+            status (str): The invoice status to filter by (e.g., 'pending',
+                         'paid')
 
         Returns:
             List[Invoice]: List of domain invoice models matching the status
@@ -106,14 +114,15 @@ class InvoiceRepository(ABC):
         """
 
     @abstractmethod
-    def list_overdue(self, as_of: date = None) -> List[Invoice]:
+    def list_overdue(self, as_of: Optional[date] = None) -> List[Invoice]:
         """List all overdue invoices.
 
         Retrieves invoices that are past their due date and still pending.
         If no date is provided, uses the current date for comparison.
 
         Args:
-            as_of (date, optional): The date to check against. Defaults to today.
+            as_of (date, optional): The date to check against. Defaults to
+                                  today.
 
         Returns:
             List[Invoice]: List of overdue domain invoice models
@@ -153,6 +162,7 @@ class InvoiceRepository(ABC):
             Invoice: The updated domain invoice model
 
         Raises:
-            InvalidInvoiceError: If the invoice doesn't exist or data is invalid
+            InvalidInvoiceError: If the invoice doesn't exist or data is
+                               invalid
             RepositoryError: If there's a persistence-related error
         """
