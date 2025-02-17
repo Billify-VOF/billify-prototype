@@ -20,7 +20,11 @@ from datetime import datetime  # We'll need this for generating identifiers
 class InvoiceService:
     """Handles business logic for invoice processing operations."""
 
-    def __init__(self, invoice_repository: InvoiceRepository, storage_repository: StorageRepository):
+    def __init__(
+        self,
+        invoice_repository: InvoiceRepository,
+        storage_repository: StorageRepository
+    ):
         """Initialize service with required components."""
         self.pdf_transformer = PDFTransformer()
         self.invoice_repository = invoice_repository
@@ -28,21 +32,22 @@ class InvoiceService:
 
     def process_invoice(self, file, user_id: int):
         """Process a new invoice file through the complete business workflow.
-        
+
         Args:
             file: The uploaded invoice file
             user_id: The ID of the user who uploaded the invoice
         """
         try:
             # Generate unique identifier for file
-            identifier = f"invoice_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            identifier = f"invoice_{user_id}_{timestamp}"
+
             # Store file using new interface
             file_path = self.storage_repository.save_file(file, identifier)
-            
+
             # Get path for processing
             full_path = self.storage_repository.get_file_path(file_path)
-            
+
             # Extract data from PDF
             invoice_data = self.pdf_transformer.transform(Path(full_path))
             print(f"PDF transformation successful: {invoice_data}")
@@ -54,8 +59,8 @@ class InvoiceService:
 
             if existing_invoice:
                 # Generate old file identifier using invoice number
-                old_identifier = f"invoice_{user_id}_{existing_invoice.invoice_number}"
-                
+                old_id = f"invoice_{user_id}_{existing_invoice.invoice_number}"
+
                 # Update invoice data (without file_path)
                 existing_invoice.amount = invoice_data['amount']
                 existing_invoice.due_date = invoice_data['due_date']
@@ -69,7 +74,7 @@ class InvoiceService:
 
                 # Clean up old file using storage repository
                 try:
-                    self.storage_repository.delete_file(old_identifier)
+                    self.storage_repository.delete_file(old_id)
                 except StorageError:
                     pass
 
@@ -83,14 +88,21 @@ class InvoiceService:
 
             # Create new invoice
             print(f"Invoice data before creation: {invoice_data}")
-            print(f"Creating invoice with:")
-            print(f"  amount: {invoice_data['amount']} ({type(invoice_data['amount'])})")
-            print(f"  due_date: {invoice_data['due_date']} ({type(invoice_data['due_date'])})")
-            print(f"  invoice_number: {invoice_data['invoice_number']} ({type(invoice_data['invoice_number'])})")
+            print("Creating invoice with:")
+            amount_type = type(invoice_data['amount'])
+            print(f"  amount: {invoice_data['amount']} ({amount_type})")
+            due_date_type = type(invoice_data['due_date'])
+            print(f"  due_date: {invoice_data['due_date']} ({due_date_type})")
+            number_type = type(invoice_data['invoice_number'])
+            print(
+                f"  invoice_number: {invoice_data['invoice_number']} "
+                f"({number_type})"
+            )
             invoice_data.pop('file_path', None)  # Remove file_path from data
             print(f"Invoice data after pop (full dict): {invoice_data}")
 
-            print(f"Invoice class being used: {Invoice.__module__}.{Invoice.__name__}")
+            module_name = f"{Invoice.__module__}.{Invoice.__name__}"
+            print(f"Invoice class being used: {module_name}")
 
             invoice = Invoice(
                 amount=invoice_data['amount'],
@@ -109,11 +121,13 @@ class InvoiceService:
             }
 
         except PDFTransformationError as e:
-            raise ProcessingError(f"Failed to extract data from invoice: {str(e)}") from e
+            msg = f"Failed to extract data from invoice: {str(e)}"
+            raise ProcessingError(msg) from e
         except Exception as e:
             # Clean up stored file on error
             try:
                 self.storage_repository.delete_file(file_path)
             except StorageError:
                 pass
-            raise ProcessingError(f"Failed to process invoice: {str(e)}") from e
+            msg = f"Failed to process invoice: {str(e)}"
+            raise ProcessingError(msg) from e
