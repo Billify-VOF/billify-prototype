@@ -19,8 +19,7 @@ class Invoice:
         due_date: date,
         invoice_number: str,
         file_path: str,
-        invoice_id: Optional[int] = None,
-        supplier_name: Optional[str] = None,
+        invoice_id: Optional[int] = None
     ):
         self.id = invoice_id
         self.amount = amount
