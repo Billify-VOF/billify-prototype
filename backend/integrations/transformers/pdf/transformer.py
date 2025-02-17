@@ -3,7 +3,7 @@
 import re
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from integrations.transformers.pdf.ocr import OCRService, OCRError
 from integrations.transformers.pdf.text_analysis import (
     TextAnalyzer,
@@ -54,7 +54,7 @@ class PDFTransformer:
 
     def _standardize_data(
         self, raw_data: Dict, file_path: str
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Union[str, Decimal, date]]:
         """
         Convert raw extracted data into our standard invoice format.
 
@@ -72,32 +72,41 @@ class PDFTransformer:
         """
 
         try:
-            standardized = {
+            standardized: Dict[str, Union[str, Decimal, date]] = {
                 'file_path': file_path
             }
 
             # Process invoice number
             if 'invoice_number' in raw_data:
-                standardized['invoice_number'] = raw_data['invoice_number'].strip()
+                invoice_number = raw_data['invoice_number'].strip()
+                standardized['invoice_number'] = invoice_number
 
             # Process amount
             if 'amount' in raw_data:
                 amount_str = raw_data['amount'].strip()
                 format_type = 'belgian' if ',' in amount_str else 'english'
-                standardized['amount'] = Decimal(self.text_analyzer.standardize_amount(amount_str, format_type))
+                std_amount = self.text_analyzer.standardize_amount(
+                    amount_str, format_type
+                )
+                standardized['amount'] = Decimal(std_amount)
 
             # Process date with more flexible parsing
             if 'date' in raw_data and raw_data['date']:
                 date_str = raw_data['date'].strip()
-                format_type = 'belgian' if re.match(r'\d{2}[-/]\d{2}[-/]\d{4}', date_str) else 'english'
-                date_str = self.text_analyzer.standardize_date(date_str, format_type)
-                if date_str:
-                    year, month, day = map(int, date_str.split('-'))
+                date_pattern = r'\d{2}[-/]\d{2}[-/]\d{4}'
+                is_belgian = re.match(date_pattern, date_str)
+                format_type = 'belgian' if is_belgian else 'english'
+                std_date = self.text_analyzer.standardize_date(
+                    date_str, format_type
+                )
+                if std_date:
+                    year, month, day = map(int, std_date.split('-'))
                     standardized['due_date'] = date(year, month, day)
 
             # Process supplier name
             if 'supplier_name' in raw_data:
-                standardized['supplier_name'] = raw_data['supplier_name'].strip()
+                supplier = raw_data['supplier_name'].strip()
+                standardized['supplier_name'] = supplier
 
             return standardized
 
