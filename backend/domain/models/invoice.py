@@ -172,7 +172,7 @@ class Invoice:
         2. The invoice hasn't been paid yet
 
         Raises:
-            InvalidStatusTransition: If invoice is already paid
+            InvalidInvoiceError: If invoice is already paid
 
         The status change will be persisted through the repository pattern.
         """
