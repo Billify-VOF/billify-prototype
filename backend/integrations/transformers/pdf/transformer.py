@@ -29,8 +29,12 @@ class PDFTransformer:
         try:
             print(f"\nStarting PDF transformation for: {pdf_path}")
             # Step 1: Extract text using OCR
-            # text_content = self.ocr_service.extract_text(pdf_path)  # Old method using pdf2image
-            text_content = self.ocr_service.extract_text_from_pdf(pdf_path) # New method using pdfplumber
+            # Old method using pdf2image
+            # text_content = self.ocr_service.extract_text(pdf_path)
+            # New method using pdfplumber
+            text_content = self.ocr_service.extract_text_from_pdf(
+                pdf_path
+            )
             print(f"\nExtracted text:\n{text_content}")
 
             # Step 2: Analyze text to extract fields
