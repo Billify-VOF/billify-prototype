@@ -48,8 +48,9 @@ class DjangoInvoiceRepository(InvoiceRepository):
             'amount': db_invoice.amount,
             'due_date': db_invoice.due_date,
             'invoice_number': db_invoice.invoice_number,
-            # "Invoice" has no attribute "id"mypyattr-defined
-            'invoice_id': db_invoice.id, 
+            # Map Django's auto-generated id to domain model's
+            # invoice_id parameter. Domain model stores it as self.id
+            'invoice_id': db_invoice.id,
             'status': InvoiceStatus.from_db_value(db_invoice.status)
         }
         print(f"Created invoice args: {invoice_args}")
