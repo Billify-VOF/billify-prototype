@@ -21,28 +21,29 @@ class Invoice:
         status (InvoiceStatus): Current payment status
         _manual_urgency (Optional[UrgencyLevel]): Manual urgency override
     """
-    
+
     @classmethod
-    def create(cls, 
-               amount: Decimal, 
-               due_date: date, 
-               invoice_number: str, 
+    def create(cls,
+               amount: Decimal,
+               due_date: date,
+               invoice_number: str,
                status: InvoiceStatus = InvoiceStatus.PENDING
-        ) -> 'Invoice':
+               ) -> 'Invoice':
         """Create a new valid invoice.
-        
+
         Factory method that creates and validates a new invoice instance.
         Use this method instead of constructor for normal invoice creation.
-        
+
         Args:
             amount (Decimal): Invoice amount (must be positive)
             due_date (date): When payment is due
             invoice_number (str): Unique identifier
-            status (InvoiceStatus, optional): Initial status. Defaults to PENDING.
-        
+            status (InvoiceStatus, optional): Initial status.
+                Defaults to PENDING.
+
         Returns:
             Invoice: A validated invoice instance
-            
+
         Raises:
             InvalidInvoiceError: If any of the data is invalid:
                 - Amount is not positive
@@ -67,7 +68,7 @@ class Invoice:
         invoice_id: Optional[int] = None,
         status: InvoiceStatus = InvoiceStatus.PENDING
     ) -> None:
-        print(f"__init__ called with:")
+        print("__init__ called with:")  # Remove f-string since no placeholders
         print(f"  amount: {amount} ({type(amount)})")
         print(f"  due_date: {due_date} ({type(due_date)})")
         print(f"  invoice_number: {invoice_number} ({type(invoice_number)})")
@@ -77,7 +78,7 @@ class Invoice:
         self.invoice_number: str = invoice_number
         self.status: InvoiceStatus = status
         self._manual_urgency: Optional[UrgencyLevel] = None
-    
+
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""
         if self.amount <= 0:
@@ -86,29 +87,37 @@ class Invoice:
 
     def validate_status(self) -> None:
         """Validate invoice status against business rules.
-        
+
         Raises:
             InvalidInvoiceError: If status violates business rules
         """
-        if self.status == InvoiceStatus.OVERDUE and self.due_date > timezone.now().date():
-            raise InvalidInvoiceError('Invoice cannot be overdue if due date is in the future')
+        if (self.status == InvoiceStatus.OVERDUE
+                and self.due_date > timezone.now().date()):
+            raise InvalidInvoiceError(
+                'Invoice cannot be overdue if due date is in the future'
+            )
         if not isinstance(self.status, InvoiceStatus):
             raise InvalidInvoiceError("Status must be an InvoiceStatus enum")
-        if self.status not in (InvoiceStatus.PENDING, InvoiceStatus.OVERDUE, InvoiceStatus.PAID):
+        valid_statuses = (
+            InvoiceStatus.PENDING,
+            InvoiceStatus.OVERDUE,
+            InvoiceStatus.PAID
+        )
+        if self.status not in valid_statuses:
             raise InvalidInvoiceError(f"Invalid status: {self.status}")
-    
+
     @property
     def is_paid(self) -> bool:
         """Check if the invoice has been paid.
-        
+
         Returns:
             bool: True if the invoice status is PAID, False otherwise.
-        
+
         Example:
             invoice = Invoice(...)
             invoice.mark_as_paid()
             invoice.is_paid  # Returns True
-            
+
             invoice = Invoice(...)  # New invoice
             invoice.is_paid  # Returns False (PENDING by default)
         """
@@ -116,7 +125,7 @@ class Invoice:
 
     @property
     def urgency(self) -> 'UrgencyLevel':
-        """Returns the current urgency level, either manual override or calculated.
+        """Returns current urgency level: manual override or calculated.
 
         The urgency level can be either:
         1. A manually set override (if _manual_urgency is not None)
@@ -140,7 +149,7 @@ class Invoice:
         Example:
             invoice = Invoice(due_date=date.today() + timedelta(days=5))
             invoice.urgency  # Returns UrgencyLevel.CRITICAL
-            
+
             invoice.set_urgency_manually(UrgencyLevel.HIGH)
             invoice.urgency  # Returns UrgencyLevel.HIGH (manual override)
         """
@@ -150,11 +159,11 @@ class Invoice:
         due_date_timedelta = self.due_date - today
         days_until_due = due_date_timedelta.days
         return UrgencyLevel.calculate_from_days(days_until_due)
-    
+
     def get_status_display(self) -> str:
         """Return a human-readable status description."""
         return self.status.display_name
-    
+
     def mark_as_paid(self) -> None:
         """Mark the invoice as paid.
 
@@ -167,12 +176,13 @@ class Invoice:
 
         The status change will be persisted through the repository pattern.
         """
-        if self.status == InvoiceStatus.PENDING or self.status == InvoiceStatus.OVERDUE:
+        if (self.status == InvoiceStatus.PENDING
+                or self.status == InvoiceStatus.OVERDUE):
             self.status = InvoiceStatus.PAID
-    
+
     def is_overdue(self) -> bool:
         """Check if the invoice is past its due date.
-        
+
         Returns:
             bool: True if the invoice is past its due date, False otherwise.
         """
@@ -180,16 +190,16 @@ class Invoice:
 
     def mark_as_overdue(self) -> None:
         """Mark the invoice as overdue if it's past due date and pending.
-        
+
         This method will only mark the invoice as overdue if:
         1. The invoice is past its due date
         2. The current status is 'pending'
-        
+
         The status change will be persisted through the repository pattern.
         """
         if self.is_overdue() and self.status == InvoiceStatus.PENDING:
             self.status = InvoiceStatus.OVERDUE
-    
+
     def set_urgency_manually(self, new_urgency: UrgencyLevel) -> None:
         """Set a manual override for the invoice's urgency level.
 
@@ -209,12 +219,14 @@ class Invoice:
             # Set manual urgency
             invoice.set_urgency_manually(UrgencyLevel.HIGH)
             invoice.urgency  # Returns UrgencyLevel.HIGH regardless of due date
-            
+
             # Trying to set invalid urgency
             invoice.set_urgency_manually("HIGH")  # Raises InvalidInvoiceError
         """
         if not isinstance(new_urgency, UrgencyLevel):
-            raise InvalidInvoiceError(f"Expected UrgencyLevel, got {type(new_urgency)}")
+            raise InvalidInvoiceError(
+                f"Expected UrgencyLevel, got {type(new_urgency)}"
+            )
         self._manual_urgency = new_urgency
 
     def clear_manual_urgency(self) -> None:
@@ -231,10 +243,10 @@ class Invoice:
         Example:
             invoice = Invoice(due_date=date.today() + timedelta(days=5))
             invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic)
-            
+
             invoice.set_urgency_manually(UrgencyLevel.LOW)
             invoice.urgency  # Returns UrgencyLevel.LOW (manual override)
-            
+
             invoice.clear_manual_urgency()
             invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic again)
         """
