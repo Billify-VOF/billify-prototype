@@ -52,7 +52,7 @@ class Invoice(models.Model):
         )
     )
     amount: models.DecimalField = models.DecimalField(
-        max_digits=10, 
+        max_digits=10,
         decimal_places=2,
         help_text="Total invoice amount. "
                   "Maximum 99,999,999.99. "
@@ -152,7 +152,7 @@ class Invoice(models.Model):
         print(f"  Number of args: {len(args)}")
         for i, arg in enumerate(args):
             print(f"  arg[{i}]: {arg} (type: {type(arg)})")
-        print(f"  kwargs: {kwargs}")        
+        print(f"  kwargs: {kwargs}")
         super().__init__(*args, **kwargs)
 
     def clean(self) -> None:
