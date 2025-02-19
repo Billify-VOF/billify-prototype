@@ -32,7 +32,10 @@ class Migration(migrations.Migration):
                     (4, "Medium"),
                     (5, "Low"),
                 ],
-                help_text="Manual override for invoice urgency. If not set, urgency is calculated from due date.",
+                help_text=(
+                    "Manual override for invoice urgency. "
+                    "If not set, urgency is calculated from due date."
+                ),
                 null=True,
             ),
         ),
@@ -41,7 +44,10 @@ class Migration(migrations.Migration):
             name="amount",
             field=models.DecimalField(
                 decimal_places=2,
-                help_text="Total invoice amount. Maximum 99,999,999.99. Negative amounts not allowed.",
+                help_text=(
+                    "Total invoice amount. Maximum 99,999,999.99. "
+                    "Negative amounts not allowed."
+                ),
                 max_digits=10,
             ),
         ),
@@ -49,14 +55,20 @@ class Migration(migrations.Migration):
             model_name="invoice",
             name="due_date",
             field=models.DateField(
-                help_text="Date when payment is due. Used for overdue calculations and urgency levels."
+                help_text=(
+                    "Date when payment is due. "
+                    "Used for overdue calculations and urgency levels."
+                ),
             ),
         ),
         migrations.AlterField(
             model_name="invoice",
             name="file_path",
             field=models.CharField(
-                help_text="Relative path to the stored invoice PDF file in the system.",
+                help_text=(
+                    "Relative path to the stored invoice PDF file "
+                    "in the system."
+                ),
                 max_length=255,
             ),
         ),
@@ -64,7 +76,11 @@ class Migration(migrations.Migration):
             model_name="invoice",
             name="invoice_number",
             field=models.CharField(
-                help_text="Unique identifier for the invoice. Can contain special characters and varies by country format.",
+                help_text=(
+                    "Unique identifier for the invoice. "
+                    "Can contain special characters and "
+                    "varies by country format."
+                ),
                 max_length=100,
                 unique=True,
             ),
@@ -79,7 +95,10 @@ class Migration(migrations.Migration):
                     ("overdue", "Payment Overdue"),
                 ],
                 default="pending",
-                help_text="Current payment status of the invoice. Automatically updated based on payment and due date.",
+                help_text=(
+                    "Current payment status of the invoice. "
+                    "Automatically updated based on payment and due date."
+                ),
                 max_length=20,
             ),
         ),
@@ -87,7 +106,10 @@ class Migration(migrations.Migration):
             model_name="invoice",
             name="uploaded_by",
             field=models.ForeignKey(
-                help_text="User who uploaded the invoice PDF. Protected from deletion.",
+                help_text=(
+                    "User who uploaded the invoice PDF. "
+                    "Protected from deletion."
+                ),
                 on_delete=django.db.models.deletion.PROTECT,
                 to=settings.AUTH_USER_MODEL,
             ),
