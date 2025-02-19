@@ -156,7 +156,9 @@ class DjangoInvoiceRepository(InvoiceRepository):
         db_invoices = DjangoInvoice.objects.filter(status=status)
         return [self._to_domain(invoice) for invoice in db_invoices]
 
-    def list_overdue(self, as_of: Optional[date] = None) -> List[DomainInvoice]:
+    def list_overdue(
+        self, as_of: Optional[date] = None
+    ) -> List[DomainInvoice]:
         """List all overdue invoices."""
         check_date = as_of or date.today()
         db_invoices = DjangoInvoice.objects.filter(
