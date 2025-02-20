@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-// import { Input } from "@/components/ui/input";
-import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Search, AlertCircle } from 'lucide-react';
-import { set } from 'date-fns';
 
 interface SearchComponentProps<T> {
   onSearch: (query: string) => Promise<void>;

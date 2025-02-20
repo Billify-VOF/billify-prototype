@@ -135,12 +135,11 @@ const BillifyDashboard = () => {
     ];
 
     const onSearch = async (query: string) => {
-      console.log('Searching for:', query);
       // Make API call to search for query
       // const response = await fetch(`/api/search?q=${query}`);
       // const data = await response.json();
+      // setSearchResult(data);
 
-      // return dummySearchResults;
       setSearchResult([...dummySearchResults]);
     }
   
