@@ -3,12 +3,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Circle } from 'lucide-react';
 
+/**
+ * Notification interface
+ * @interface Notification
+ * @property {string} id - Unique identifier for the notification
+ * @property {string} message - Message content of the notification
+ * @property {boolean} isRead - Read status of the notification
+ */
 interface Notification {
   id: string;
   message: string;
   isRead: boolean;
 }
 
+/**
+ * NotificationBell component props
+ * @param {Object} props - Component properties
+ * @param {string} [props.className] - Optional class name for styling
+ */
 export default function NotificationBell(props: { className?: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -39,6 +51,12 @@ export default function NotificationBell(props: { className?: string }) {
       ];
       setNotifications(dummyNotifications);
       setUnreadCount(dummyNotifications.filter((n) => !n.isRead).length);
+
+      // Make API call to search for notifications
+      // const response = await fetch(`/api/notifications`);
+      // const notifications = await response.json();
+      // setNotifications(notifications);
+      // setUnreadCount(notifications.filter((n) => !n.isRead).length);
     }
 
     fetchNotifications();
