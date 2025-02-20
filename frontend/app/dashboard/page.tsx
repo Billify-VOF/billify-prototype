@@ -13,6 +13,7 @@ import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
 import SearchComponent from '@/components/SearchComponent'
 import { dummySearchResults, SearchItemResult } from '@/components/types'
 import SearchResultItem from '@/components/SearchResultItem'
+import NotificationBell from '@/components/NotificationBell'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 type InvoiceStatus = 'urgent' | 'warning' | 'safe';
@@ -162,6 +163,10 @@ const BillifyDashboard = () => {
   
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 p-8">
+
+        {/* Notification Widget */}
+        <NotificationBell className="w-fit max-w-full ml-auto" />
+
         <div className='flex-1 bg-gray-50 p-4'>
           {/* Top Search Bar */}
             <SearchComponent
