@@ -4,8 +4,22 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Search, AlertCircle } from 'lucide-react';
 
 interface SearchComponentProps<T> {
-  onSearch: (query: string) => Promise<void>;
+  /**
+   * Function to execute the search query.
+   * @param query - The search query string.
+   */
+  onSearch: (query: string) => void;
+
+  /**
+   * Function to render each item in the search results.
+   * @param item - The item to render.
+   * @returns A React node representing the rendered item.
+   */
   renderItem: (item: T) => React.ReactNode;
+
+  /**
+   * Array of search results.
+   */
   results: T[];
 }
 
