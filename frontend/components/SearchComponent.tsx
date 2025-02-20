@@ -22,6 +22,7 @@ export default function SearchComponent<T>({
   const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -41,6 +42,9 @@ export default function SearchComponent<T>({
   const handleSearch = async () => {
     if (!query.trim()) return;
 
+    if(!handleSearch){
+      setHasSearched(true)
+    }
     setLoading(true);
     setError(null);
 
@@ -88,7 +92,7 @@ export default function SearchComponent<T>({
         )}
 
         {/* No Results */}
-        {!loading && !error && query && results.length === 0 && (
+        {hasSearched && !loading && !error && query && results.length === 0 && (
           <p className='text-gray-500 text-center mt-4'>No results found.</p>
         )}
 
