@@ -94,6 +94,8 @@ class Invoice(models.Model):
         help_text="User who uploaded the invoice PDF. "
                   "Protected from deletion."
     )
+    uploaded_by_id: int
+
     file_path: models.CharField = models.CharField(
         max_length=255,
         help_text="Relative path to the stored invoice PDF file in the system."
