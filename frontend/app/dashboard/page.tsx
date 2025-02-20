@@ -10,6 +10,9 @@ import {
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
+import SearchComponent from '@/components/SearchComponent'
+import { dummySearchResults, SearchItemResult } from '@/components/types'
+import SearchResultItem from '@/components/SearchResultItem'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 type InvoiceStatus = 'urgent' | 'warning' | 'safe';
@@ -28,6 +31,7 @@ const BillifyDashboard = () => {
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+    const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
 
     // Reset all states when dialog is closed
     const handleDialogOpenChange = (open: boolean) => {
@@ -128,6 +132,16 @@ const BillifyDashboard = () => {
       { id: 2, amount: 800, dueDate: '2024-12-10', status: 'warning' },
       { id: 3, amount: 2500, dueDate: '2024-12-25', status: 'safe' }
     ];
+
+    const onSearch = async (query: string) => {
+      console.log('Searching for:', query);
+      // Make API call to search for query
+      // const response = await fetch(`/api/search?q=${query}`);
+      // const data = await response.json();
+
+      // return dummySearchResults;
+      setSearchResult([...dummySearchResults]);
+    }
   
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -148,6 +162,22 @@ const BillifyDashboard = () => {
   
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 p-8">
+        <div className='flex-1 bg-gray-50 p-4'>
+          {/* Top Search Bar */}
+            <SearchComponent
+              onSearch={onSearch}
+              renderItem={(item) => {
+                return (
+                  <SearchResultItem
+                    item={item}
+                    onClick={() => {}}
+                  />
+                );
+              }}
+              results={searchResult}
+            />
+          </div>
+          
           {/* Top Metrics Grid */}
           <div className="grid grid-cols-4 gap-6 mb-6">
             <MetricCard title="Cash Saldo" value={financialData.cashSaldo} />
