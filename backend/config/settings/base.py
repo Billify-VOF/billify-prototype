@@ -3,6 +3,9 @@ import os
 import sys
 from pathlib import Path
 import environ
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize environ
 env = environ.Env(
@@ -20,7 +23,8 @@ sys.path.append(str(BASE_DIR.parent))
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY')
+print(SECRET_KEY,'SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
@@ -49,6 +53,7 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
+    
 ]
 
 MIDDLEWARE = [
@@ -63,6 +68,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'billify.urls'
+
+
 
 TEMPLATES = [
     {

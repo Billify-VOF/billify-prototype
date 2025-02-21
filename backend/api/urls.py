@@ -2,7 +2,7 @@
 
 from django.urls import path
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView
-
+from token_manager.views import ponto_login,ponto_callback
 urlpatterns = [
     path(
         'invoices/upload/',
@@ -14,4 +14,8 @@ urlpatterns = [
         InvoicePreviewView.as_view(),
         name='invoice-preview'
     ),
+    path('auth/ponto/login/', ponto_login, name='ponto-login'),
+    path('auth/ponto/callback/', ponto_callback, name='ponto-callback'),
+    
+
 ]
