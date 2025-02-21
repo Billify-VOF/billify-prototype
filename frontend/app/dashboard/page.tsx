@@ -163,10 +163,7 @@ const BillifyDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 p-8">
 
-        {/* Notification Widget */}
-        <NotificationBell className="w-fit max-w-full ml-auto" />
-
-        <div className='flex-1 bg-gray-50 p-4'>
+        <div className='bg-gray-50  my-2 mb-2 flex justify-between items-center'>
           {/* Top Search Bar */}
             <SearchComponent
               onSearch={onSearch}
@@ -180,6 +177,8 @@ const BillifyDashboard = () => {
               }}
               results={searchResult}
             />
+          {/* Notification Widget */}
+            <NotificationBell className="w-fit" />
           </div>
           
           {/* Top Metrics Grid */}
