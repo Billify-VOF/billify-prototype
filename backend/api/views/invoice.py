@@ -19,7 +19,9 @@ from domain.exceptions import (
 )
 from integrations.transformers.pdf.transformer import PDFTransformer
 from infrastructure.storage.file_system import FileStorage
-from infrastructure.django.repositories.invoice_repository import DjangoInvoiceRepository
+from infrastructure.django.repositories.invoice_repository import (
+    DjangoInvoiceRepository
+)
 
 logger = getLogger(__name__)
 
@@ -233,26 +235,30 @@ class InvoiceUploadView(APIView):
         # Validate due_date format with debug logging
         raw_due_date = data.get('due_date')
         if raw_due_date:
-            print(f"Validating due_date: {raw_due_date} (type: {type(raw_due_date)})")
+            logger.debug(
+                "Validating due_date: %s (type: %s)",
+                raw_due_date,
+                type(raw_due_date)
+            )
             # If it's already a date object, it's valid
             if isinstance(raw_due_date, date):
-                print(f"Due date is already a date object: {raw_due_date}")
+                logger.debug("Due date is already a date object: %s", raw_due_date)
             else:
                 try:
                     # Try multiple date formats for string dates
                     for fmt in ['%Y-%m-%d', '%b %d %Y']:
                         try:
-                            print(f"Trying format: {fmt}")
+                            logger.debug("Trying format: %s", fmt)
                             parsed_date = datetime.strptime(raw_due_date, fmt)
-                            print(f"Successfully parsed date: {parsed_date}")
+                            logger.debug("Successfully parsed date: %s", parsed_date)
                             break  # If any format works, we're good
                         except ValueError as e:
-                            print(f"Failed with format {fmt}: {str(e)}")
+                            logger.debug("Failed with format %s: %s", fmt, str(e))
                             continue
                     else:  # No format worked
                         errors.append(f"Invalid date format: {raw_due_date}")
                 except (ValueError, TypeError, AttributeError) as e:
-                    print(f"Date validation error: {str(e)}")
+                    logger.debug("Date validation error: %s", str(e))
                     errors.append(f"Invalid date format: {raw_due_date}")
 
         # Validate amount
