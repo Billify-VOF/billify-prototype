@@ -344,8 +344,13 @@ class InvoiceUploadView(APIView):
                 )
                 return normalized_date.date()  # Convert to date object
             except ValueError:
+                logger.warning(
+                    "Failed to normalize date %s with format %s",
+                    raw_date,
+                    fmt
+                )
                 continue
-        logger.warning("Failed to normalize date: %s", raw_date)
+
         return None
 
     def _format_date(self, date):
