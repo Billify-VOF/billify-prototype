@@ -7,6 +7,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from domain.models.value_objects import InvoiceStatus, UrgencyLevel
 from logging import getLogger
+from typing import Optional
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -193,3 +194,41 @@ class Invoice(models.Model):
                         f'Must be one of: {valid_levels}'
                     )
                 })
+
+    def update(
+        self,
+        *,
+        amount: Optional[Decimal] = None,
+        due_date: Optional[date] = None,
+        status: Optional[str] = None,
+        uploaded_by_id: Optional[int] = None
+    ) -> None:
+        """Update invoice fields with validation.
+
+        Encapsulates updates to invoice fields, ensuring proper validation
+        is performed before saving changes.
+
+        Args:
+            amount: New invoice amount
+            due_date: New invoice due date
+            status: New invoice status
+            uploaded_by_id: ID of user performing the update
+
+        Raises:
+            ValidationError: If updated fields don't meet validation
+                requirements
+        """
+        if amount is not None:
+            self.amount = amount
+
+        if due_date is not None:
+            self.due_date = due_date
+
+        if status is not None:
+            self.status = status
+
+        if uploaded_by_id is not None:
+            self.uploaded_by_id = uploaded_by_id
+
+        # Validate all fields
+        self.full_clean()
