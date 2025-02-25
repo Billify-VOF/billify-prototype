@@ -6,6 +6,10 @@ from decimal import Decimal
 from datetime import date
 from django.core.exceptions import ValidationError
 from domain.models.value_objects import InvoiceStatus, UrgencyLevel
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class Invoice(models.Model):
@@ -150,11 +154,11 @@ class Invoice(models.Model):
             while the create() class method provides a validated way to
             create new instances.
         """
-        print("Django Invoice __init__ called with:")
-        print(f"  Number of args: {len(args)}")
+        logger.debug("Django Invoice __init__ called")
+        logger.debug("Number of args: %s", len(args))
         for i, arg in enumerate(args):
-            print(f"  arg[{i}]: {arg} (type: {type(arg)})")
-        print(f"  kwargs: {kwargs}")
+            logger.debug("arg[%s]: %s (type: %s)", i, arg, type(arg))
+        logger.debug("kwargs: %s", kwargs)
         super().__init__(*args, **kwargs)
 
     def clean(self) -> None:
