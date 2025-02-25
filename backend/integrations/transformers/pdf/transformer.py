@@ -42,7 +42,7 @@ class PDFTransformer:
                 extracted
         """
         try:
-            print(f"\nStarting PDF transformation for: {pdf_path}")
+            logger.info("Starting PDF transformation for: %s", pdf_path)
             # Step 1: Extract text using OCR
             # Old method using pdf2image
             # text_content = self.ocr_service.extract_text(pdf_path)
@@ -50,7 +50,7 @@ class PDFTransformer:
             text_content = self.ocr_service.extract_text_from_pdf(
                 pdf_path
             )
-            print(f"\nExtracted text:\n{text_content}")
+            logger.debug("Extracted text:\n%s", text_content)
 
             # Step 2: Analyze text to extract fields
             raw_data = self.text_analyzer.extract_fields(text_content)
@@ -61,13 +61,13 @@ class PDFTransformer:
 
             # Step 3: Standardize the extracted data
             standardized = self._standardize_data(raw_data, pdf_path_str)
-            print(f"\nStandardized data:\n{standardized}")
+            logger.info("Standardized data:\n%s", standardized)
 
             # Return the standardized data
             return standardized
 
         except (OCRError, TextAnalysisError) as e:
-            print(f"\nTransformation error: {str(e)}")
+            logger.error("Transformation error: %s", str(e))
             raise PDFTransformationError(
                 f"PDF transformation failed: {str(e)}"
             ) from e
@@ -83,6 +83,7 @@ class PDFTransformer:
 
         Args:
             raw_data: Dictionary containing extracted field values
+            file_path: Path to the original PDF file
 
         Returns:
             Dictionary with standardized invoice data
@@ -94,17 +95,23 @@ class PDFTransformer:
         try:
             logger.info("Standardizing extracted data")
             standardized: Dict[str, Union[str, Decimal, date]] = {
-                'file_path': file_path
+                'file_path': file_path,
+                # Add default values for required fields
+                'invoice_number': 'UNKNOWN',
+                'amount': Decimal('0.00'),
+                'due_date': date.today()  # Default to today
             }
 
-            # Process invoice number
-            if 'invoice_number' in raw_data:
+            # Process invoice number if available
+            if raw_data.get('invoice_number'):
                 invoice_number = raw_data['invoice_number'].strip()
                 standardized['invoice_number'] = invoice_number
                 logger.debug("Standardized invoice_number: %s", invoice_number)
+            else:
+                logger.warning("No invoice number found in extracted data")
 
-            # Process amount
-            if 'amount' in raw_data:
+            # Process amount if available
+            if raw_data.get('amount'):
                 amount_str = raw_data['amount'].strip()
                 format_type = 'belgian' if ',' in amount_str else 'english'
                 std_amount = self.text_analyzer.standardize_amount(
@@ -112,9 +119,11 @@ class PDFTransformer:
                 )
                 standardized['amount'] = Decimal(std_amount)
                 logger.debug("Standardized amount: %s", std_amount)
+            else:
+                logger.warning("No amount found in extracted data")
 
             # Process date with more flexible parsing
-            if 'date' in raw_data and raw_data['date']:
+            if raw_data.get('date'):
                 date_str = raw_data['date'].strip()
                 date_pattern = r'\d{2}[-/]\d{2}[-/]\d{4}'
                 is_belgian = re.match(date_pattern, date_str)
@@ -126,12 +135,23 @@ class PDFTransformer:
                     year, month, day = map(int, std_date.split('-'))
                     standardized['due_date'] = date(year, month, day)
                     logger.debug("Standardized due_date: %s", std_date)
+                else:
+                    logger.warning("Could not parse date format")
+            else:
+                logger.warning("No date found in extracted data")
 
-            # Process supplier name
-            if 'supplier_name' in raw_data:
+            # Process supplier name if available
+            if raw_data.get('supplier_name'):
                 supplier = raw_data['supplier_name'].strip()
                 standardized['supplier_name'] = supplier
                 logger.debug("Standardized supplier_name: %s", supplier)
+            else:
+                # Supplier name is optional
+                standardized['supplier_name'] = ''
+                logger.info("No supplier name found in extracted data")
+
+            # Validate that we have minimum required data
+            self._validate_standardized_data(standardized)
 
             return standardized
 
@@ -140,3 +160,34 @@ class PDFTransformer:
             raise PDFTransformationError(
                 f"Failed to standardize data: {str(e)}"
             ) from e
+
+    def _validate_standardized_data(self, data: Dict) -> None:
+        """
+        Validate that standardized data meets minimum requirements.
+
+        Args:
+            data: Standardized data dictionary
+
+        Raises:
+            PDFTransformationError: If data fails validation
+        """
+        # Check amount is positive
+        if data.get('amount', Decimal('0')) <= 0:
+            logger.error("Invalid invoice amount: %s", data.get('amount'))
+            raise PDFTransformationError(
+                "Invoice amount must be positive"
+            )
+
+        # Check invoice number is not empty
+        if not data.get('invoice_number'):
+            logger.error("Missing invoice number")
+            raise PDFTransformationError(
+                "Invoice must have an invoice number"
+            )
+
+        # Check due date is valid
+        if not isinstance(data.get('due_date'), date):
+            logger.error("Invalid due date: %s", data.get('due_date'))
+            raise PDFTransformationError(
+                "Invoice must have a valid due date"
+            )
