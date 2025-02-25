@@ -250,11 +250,15 @@ class InvoiceStatus(Enum):
         Returns:
             str: The human-readable display name for this status
         """
-        return {
+        status_display_names = {
             'pending': 'Pending Payment',
             'paid': 'Payment Received',
             'overdue': 'Payment Overdue'
-        }[self.value]
+        }
+        return status_display_names.get(
+            self.value,
+            f"Unknown Status: {self.value}"
+        )
 
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
