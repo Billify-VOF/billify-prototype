@@ -88,7 +88,7 @@ class UrgencyLevel(Enum):
         return self.value[1]
 
     @property
-    def day_range(self) -> tuple[int | None, int | None]:
+    def day_range(self) -> tuple[Optional[int], Optional[int]]:
         """Returns the day range tuple for this urgency level.
 
         Returns:
