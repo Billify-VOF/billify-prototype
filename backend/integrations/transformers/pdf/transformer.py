@@ -10,6 +10,10 @@ from integrations.transformers.pdf.text_analysis import (
     TextAnalysisError
 )
 from datetime import date
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class PDFTransformationError(Exception):
@@ -25,7 +29,18 @@ class PDFTransformer:
         self.text_analyzer = TextAnalyzer()
 
     def transform(self, pdf_path: Path) -> Dict[str, Any]:
-        """Transform a PDF invoice into structured data."""
+        """Transform a PDF into structured invoice data.
+
+        Args:
+            pdf_path: Path to the PDF file
+
+        Returns:
+            Dict containing extracted invoice data
+
+        Raises:
+            PDFTransformationError: If the PDF cannot be processed or data
+                extracted
+        """
         try:
             print(f"\nStarting PDF transformation for: {pdf_path}")
             # Step 1: Extract text using OCR
@@ -39,7 +54,7 @@ class PDFTransformer:
 
             # Step 2: Analyze text to extract fields
             raw_data = self.text_analyzer.extract_fields(text_content)
-            print(f"\nExtracted raw data:\n{raw_data}")
+            logger.debug("Extracted raw data:\n%s", raw_data)
 
             # String of pdf path
             pdf_path_str = str(pdf_path)
@@ -77,6 +92,7 @@ class PDFTransformer:
         """
 
         try:
+            logger.info("Standardizing extracted data")
             standardized: Dict[str, Union[str, Decimal, date]] = {
                 'file_path': file_path
             }
@@ -85,6 +101,7 @@ class PDFTransformer:
             if 'invoice_number' in raw_data:
                 invoice_number = raw_data['invoice_number'].strip()
                 standardized['invoice_number'] = invoice_number
+                logger.debug("Standardized invoice_number: %s", invoice_number)
 
             # Process amount
             if 'amount' in raw_data:
@@ -94,6 +111,7 @@ class PDFTransformer:
                     amount_str, format_type
                 )
                 standardized['amount'] = Decimal(std_amount)
+                logger.debug("Standardized amount: %s", std_amount)
 
             # Process date with more flexible parsing
             if 'date' in raw_data and raw_data['date']:
@@ -107,15 +125,18 @@ class PDFTransformer:
                 if std_date:
                     year, month, day = map(int, std_date.split('-'))
                     standardized['due_date'] = date(year, month, day)
+                    logger.debug("Standardized due_date: %s", std_date)
 
             # Process supplier name
             if 'supplier_name' in raw_data:
                 supplier = raw_data['supplier_name'].strip()
                 standardized['supplier_name'] = supplier
+                logger.debug("Standardized supplier_name: %s", supplier)
 
             return standardized
 
         except Exception as e:
+            logger.error("Failed to standardize data: %s", str(e))
             raise PDFTransformationError(
                 f"Failed to standardize data: {str(e)}"
             ) from e

@@ -5,9 +5,13 @@ converting the visual content of PDF documents into machine-readable text.
 """
 
 from pathlib import Path
-import pytesseract
+import pytesseract  # type: ignore
 from pdf2image import convert_from_path
 import pdfplumber
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class OCRError(Exception):
@@ -41,19 +45,19 @@ class OCRService:
             OCRError: If text extraction fails for any reason
         """
         try:
-            print(f"OCR: Starting text extraction from {pdf_path}")
+            logger.info("Starting text extraction from %s", pdf_path)
             # First, convert the PDF into a list of images
             # Each image represents one page of the PDF
             pages = convert_from_path(pdf_path)
-            print(f"OCR: Extracted {len(pages)} pages from {pdf_path}")
+            logger.info("Extracted %d pages from %s", len(pages), pdf_path)
 
             # Process each page and collect the extracted text
             text_content = []
             for i, page in enumerate(pages):
                 # Use OCR to extract text from the page image
                 text = pytesseract.image_to_string(page)
-                print(f"OCR: Extracted text from page {i + 1}:")
-                print(text)
+                logger.debug("Extracted text from page %d:", i + 1)
+                logger.debug(text)
                 text_content.append(text)
 
             # Combine all pages into a single text document
@@ -61,11 +65,12 @@ class OCRService:
 
         except Exception as e:
             # If anything goes wrong, wrap the error in our custom error type
+            logger.error("Failed to extract text from PDF: %s", str(e))
             raise OCRError(f"Failed to extract text from PDF: {str(e)}") from e
-        
-        
+
     def extract_text_from_pdf(self, pdf_path: Path) -> str:
-        """Extract text from a PDF file."""
+        """Extract text from a PDF file using pdfplumber."""
+        logger.info("Extracting text from PDF using pdfplumber: %s", pdf_path)
         text = ""
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:

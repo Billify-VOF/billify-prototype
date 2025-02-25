@@ -6,6 +6,10 @@ from typing import Optional
 from domain.exceptions import InvalidInvoiceError
 from .value_objects import UrgencyLevel, InvoiceStatus
 from django.utils import timezone
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class Invoice:
@@ -68,10 +72,14 @@ class Invoice:
         invoice_id: Optional[int] = None,
         status: InvoiceStatus = InvoiceStatus.PENDING
     ) -> None:
-        print("__init__ called with:")  # Remove f-string since no placeholders
-        print(f"  amount: {amount} ({type(amount)})")
-        print(f"  due_date: {due_date} ({type(due_date)})")
-        print(f"  invoice_number: {invoice_number} ({type(invoice_number)})")
+        logger.debug("Invoice __init__ called")
+        logger.debug("  amount: %s (%s)", amount, type(amount))
+        logger.debug("  due_date: %s (%s)", due_date, type(due_date))
+        logger.debug(
+            "  invoice_number: %s (%s)",
+            invoice_number,
+            type(invoice_number)
+        )
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date

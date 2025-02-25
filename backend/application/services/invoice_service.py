@@ -15,6 +15,10 @@ from integrations.transformers.pdf.transformer import (
     PDFTransformer,
     PDFTransformationError
 )
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class InvoiceProcessingService:
@@ -79,7 +83,7 @@ class InvoiceProcessingService:
 
             # Extract data from PDF
             invoice_data = self.pdf_transformer.transform(Path(full_path))
-            print(f"PDF transformation successful: {invoice_data}")
+            logger.info("PDF transformation successful: %s", invoice_data)
 
             # Check for existing invoice
             existing_invoice = self.invoice_repository.get_by_number(
