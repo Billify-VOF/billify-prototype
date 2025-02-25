@@ -9,6 +9,10 @@ from domain.models.invoice import Invoice as DomainInvoice
 from domain.exceptions import InvalidInvoiceError
 from infrastructure.django.models.invoice import Invoice as DjangoInvoice
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
+from logging import getLogger
+
+# Module-level logger
+logger = getLogger(__name__)
 
 
 class DjangoInvoiceRepository(InvoiceRepository):
@@ -43,7 +47,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             domain_invoice = self._to_domain(db_invoice)
             return domain_invoice  # Ready for business logic
         """
-        print(f"Converting DB invoice to domain model: {db_invoice}")
+        logger.debug("Converting DB invoice to domain model: %s", db_invoice)
         # All Django models have an id field by default
         invoice_args = {
             'amount': db_invoice.amount,
@@ -54,7 +58,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             'invoice_id': db_invoice.id,  # type: ignore[attr-defined]
             'status': InvoiceStatus.from_db_value(db_invoice.status)
         }
-        print(f"Created invoice args: {invoice_args}")
+        logger.debug("Created invoice args: %s", invoice_args)
 
         if db_invoice.manual_urgency is not None:
             invoice_args['_manual_urgency'] = (
@@ -133,8 +137,8 @@ class DjangoInvoiceRepository(InvoiceRepository):
         If multiple invoices exist with the same number (due to OCR errors,
         different suppliers, etc.), returns the most recently created one.
         """
-        print(f"Searching for invoice with number: {invoice_number}")
-        print(f"Type of invoice_number: {type(invoice_number)}")
+        logger.debug("Searching for invoice with number: %s", invoice_number)
+        logger.debug("Type of invoice_number: %s", type(invoice_number))
         try:
             # Order by created_at descending and get the first one
             db_invoice = DjangoInvoice.objects.filter(
@@ -142,14 +146,14 @@ class DjangoInvoiceRepository(InvoiceRepository):
             ).order_by('-created_at').first()
 
             if db_invoice:
-                print(f"Found invoice in DB: {db_invoice}")
+                logger.debug("Found invoice in DB: %s", db_invoice)
                 return self._to_domain(db_invoice)
             else:
-                print("No invoice found with that number")
+                logger.debug("No invoice found with that number")
                 return None
 
         except Exception as e:
-            print(f"Error retrieving invoice: {str(e)}")
+            logger.error("Error retrieving invoice: %s", str(e))
             return None
 
     def list_by_status(self, status: str) -> List[DomainInvoice]:
