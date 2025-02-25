@@ -12,16 +12,18 @@ from rest_framework.parsers import MultiPartParser
 
 from api.serializers import InvoiceUploadSerializer
 from domain.services.invoice_service import InvoiceService
+from application.services.invoice_service import (
+    InvoiceProcessingService
+)
 from domain.exceptions import (
-    InvalidInvoiceError,
     StorageError,
     ProcessingError
 )
-from integrations.transformers.pdf.transformer import PDFTransformer
 from infrastructure.storage.file_system import FileStorage
 from infrastructure.django.repositories.invoice_repository import (
     DjangoInvoiceRepository
 )
+from integrations.transformers.pdf.transformer import PDFTransformer
 
 logger = getLogger(__name__)
 
@@ -38,12 +40,15 @@ class InvoiceUploadView(APIView):
         # Create repositories
         self.storage_repository = FileStorage()
         self.invoice_repository = DjangoInvoiceRepository()
-        # Initialize service with repositories
-        self.invoice_service = InvoiceService(
+        # Initialize domain service
+        self.invoice_service = InvoiceService()
+        # Initialize application service
+        self.invoice_processing_service = InvoiceProcessingService(
+            invoice_service=self.invoice_service,
             invoice_repository=self.invoice_repository,
             storage_repository=self.storage_repository
         )
-        # Add the PDF transformer as a class dependency
+        # Initialize transformer for additional data extraction
         self.transformer = PDFTransformer()
 
     def _get_user_id(self, request):
@@ -77,128 +82,56 @@ class InvoiceUploadView(APIView):
         )
 
         try:
-            # First, let invoice service handle storage and basic processing
-            invoice = self.invoice_service.process_invoice(
+            # Process invoice using the application service
+            # This handles file storage, PDF transformation, and invoice
+            # creation/update
+            result = self.invoice_processing_service.process_invoice(
                 file=uploaded_file,
                 user_id=self._get_user_id(request)
             )
-            logger.info("Invoice processed: %s", invoice)
+            logger.info("Invoice processed: %s", result)
 
-            if 'file_path' not in invoice:
-                raise ProcessingError(
-                    "Missing file path in processed invoice"
-                )
+            # Prepare response
+            due_date = result.get('due_date')
+            formatted_date = self._format_date(due_date)
 
-            # Now, process the stored PDF to extract structured data
-            file_path = (
-                self.storage_repository.get_file_path(invoice['file_path'])
-            )
-            logger.info("File path: %s", file_path)
-            extracted_data = self.transformer.transform(Path(file_path))
-            logger.info("Extracted data: %s", extracted_data)
-
-            # Process extracted data
-            processed_data = self.process_extracted_data(extracted_data)
-            logger.info("Processed data: %s", processed_data)
-
-            # Debug log all values before creating response
-            logger.debug("Invoice data for response:")
-            logger.debug(
-                "  - invoice_id: %s (%s)",
-                invoice['invoice_id'],
-                type(invoice['invoice_id'])
-            )
-            logger.debug(
-                "  - status: %s (%s)",
-                invoice['status'],
-                type(invoice['status'])
-            )
-            logger.debug(
-                "  - file_path: %s (%s)",
-                invoice['file_path'],
-                type(invoice['file_path'])
-            )
-            logger.debug(
-                "  - updated: %s (%s)",
-                invoice.get('updated', False),
-                type(invoice.get('updated', False))
-            )
-            logger.debug("Processed data for response:")
-            logger.debug(
-                "  - invoice_number: %s (%s)",
-                processed_data.get('invoice_number'),
-                type(processed_data.get('invoice_number'))
-            )
-            logger.debug(
-                "  - amount: %s (%s)",
-                processed_data.get('amount'),
-                type(processed_data.get('amount'))
-            )
-            logger.debug(
-                "  - due_date: %s (%s)",
-                processed_data.get('due_date'),
-                type(processed_data.get('due_date'))
-            )
-            logger.debug(
-                "  - supplier_name: %s (%s)",
-                processed_data.get('supplier_name'),
-                type(processed_data.get('supplier_name'))
-            )
-
-            # Combine invoice record with extracted data in response
             response_data = {
                 'status': 'success',
                 'message': 'Invoice processed successfully',
                 'invoice': {
-                    'id': invoice['invoice_id'],
+                    'id': result['invoice_id'],
                     'status': (
-                        str(invoice['status'].value)
-                        if hasattr(invoice['status'], 'value')
-                        else str(invoice['status'])
+                        str(result['status'].value)
+                        if hasattr(result['status'], 'value')
+                        else str(result['status'])
                     ),
-                    'file_path': invoice['file_path'],
-                    'updated': invoice.get('updated', False)
+                    'file_path': result['file_path'],
+                    'updated': result.get('updated', False)
                 },
                 'invoice_data': {
-                    'invoice_number': processed_data.get('invoice_number'),
+                    'invoice_number': result.get('invoice_number'),
                     'amount': (
-                        str(processed_data.get('amount'))
-                        if processed_data.get('amount') is not None
+                        str(result.get('amount'))
+                        if result.get('amount') is not None
                         else None
                     ),
-                    'date': self._format_date(processed_data.get('due_date')),
-                    'supplier_name': processed_data.get('supplier_name')
+                    'date': formatted_date,
+                    'supplier_name': result.get('supplier_name', '')
                 }
             }
-
-            # Debug log final response data
-            logger.debug("Final response data: %s", response_data)
 
             logger.info(
                 "Successfully processed invoice with extracted data",
                 extra={
                     'user_id': self._get_user_id(request),
-                    'invoice_id': invoice['invoice_id'],
-                    'has_invoice_number': bool(
-                        processed_data.get('invoice_number')),
-                    'has_amount': bool(processed_data.get('amount')),
-                    'has_date': bool(processed_data.get('due_date'))
+                    'invoice_id': result['invoice_id'],
+                    'has_invoice_number': 'invoice_number' in result,
+                    'has_amount': 'amount' in result,
+                    'has_date': 'due_date' in result
                 }
             )
 
             return Response(response_data, status=201)
-
-        except InvalidInvoiceError as e:
-            logger.warning(
-                "Invalid invoice upload: %s",
-                str(e),
-                extra={'user_id': self._get_user_id(request)}
-            )
-            return Response({
-                'status': 'error',
-                'error': 'Invalid invoice format',
-                'detail': str(e)
-            }, status=400)
 
         except StorageError as e:
             logger.error(
@@ -213,16 +146,28 @@ class InvoiceUploadView(APIView):
             }, status=503)
 
         except ProcessingError as e:
+            error_msg = str(e)
             logger.error(
                 "Processing error during invoice upload: %s",
-                str(e),
+                error_msg,
                 extra={'user_id': self._get_user_id(request)}
             )
-            return Response({
-                'status': 'error',
-                'error': 'Unable to process invoice',
-                'detail': str(e)
-            }, status=422)
+
+            # Check for specific error types embedded in the message
+            if "PDF_TRANSFORMATION_ERROR" in error_msg:
+                return Response({
+                    'status': 'error',
+                    'error': 'Unable to extract data from invoice',
+                    'detail': error_msg.replace(
+                        "PDF_TRANSFORMATION_ERROR: ", ""
+                    )
+                }, status=422)
+            else:
+                return Response({
+                    'status': 'error',
+                    'error': 'Unable to process invoice',
+                    'detail': error_msg
+                }, status=422)
 
         except KeyError as e:
             logger.error("Missing required data: %s", e)
@@ -353,9 +298,21 @@ class InvoiceUploadView(APIView):
 
         return None
 
-    def _format_date(self, date):
-        """Format date in a consistent format."""
-        return date.strftime('%b %d %Y') if date else None
+    def _format_date(self, date_value):
+        """Format date in a consistent format.
+
+        Formats the date as 'MMM DD YYYY' if provided, else returns None.
+        Frontend expects this specific format to parse correctly.
+        """
+        if not date_value:
+            return None
+
+        # Convert to string if it's a date object
+        if isinstance(date_value, (date, datetime)):
+            return date_value.strftime('%b %d %Y')
+
+        # If it's already a string, return as is
+        return str(date_value)
 
 
 class InvoicePreviewView(APIView):
