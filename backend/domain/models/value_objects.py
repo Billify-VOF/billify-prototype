@@ -18,14 +18,14 @@ Currently includes:
 
 Usage:
     from domain.models.value_objects import UrgencyLevel, InvoiceStatus
-    
+
     # Calculate urgency from days
     urgency = UrgencyLevel.calculate_from_days(days_until_due)
-    
+
     # Get display name and color for UI
     display = urgency.display_name  # e.g., "Critical"
     color = urgency.color_code     # e.g., "#FF0000"
-    
+
     # Use with Django models
     choices = UrgencyLevel.choices()  # For model field choices
 """
@@ -34,13 +34,16 @@ from typing import Optional
 
 
 class UrgencyLevel(Enum):
-    """Value object representing the urgency level of an invoice based on its due date.
+    """Value object representing the urgency level of an invoice based on
+    its due date.
 
     Each urgency level has an associated:
     - db_value: Integer value stored in database (e.g., 1)
     - color_code: Hex color for UI display (e.g., "#8B0000")
-    - day_range: Tuple of (min_days, max_days) for calculation (e.g., (None, -1))
-    - display_name: Auto-generated from enum name using title() (e.g., "Overdue")
+    - day_range: Tuple of (min_days, max_days) for calculation
+      (e.g., (None, -1))
+    - display_name: Auto-generated from enum name using title()
+      (e.g., "Overdue")
 
     Naming Convention:
     - Enum members use UPPERCASE names with underscores for multiple words
@@ -62,7 +65,9 @@ class UrgencyLevel(Enum):
     MEDIUM = (4, "#FFD700", (15, 30))
     LOW = (5, "#008000", (31, None))
 
-    value: tuple[int, str, tuple[Optional[int], Optional[int]]]  # (db_value, color_code, (min_days, max_days))
+    # Type annotation for the value attribute of each enum member
+    # (db_value, color_code, (min_days, max_days))
+    value: tuple[int, str, tuple[Optional[int], Optional[int]]]
 
     @property
     def db_value(self) -> int:
@@ -72,7 +77,7 @@ class UrgencyLevel(Enum):
             int: The database value
         """
         return self.value[0]
-    
+
     @property
     def color_code(self) -> str:
         """Returns the hex color code associated with this urgency level.
@@ -87,22 +92,24 @@ class UrgencyLevel(Enum):
         """Returns the day range tuple for this urgency level.
 
         Returns:
-            tuple: A tuple of (min_days, max_days) where None represents no limit
+            tuple: A tuple of (min_days, max_days) where None represents
+                  no limit
         """
         return self.value[2]
 
     @property
     def display_name(self) -> str:
         """Returns a human-readable display name for the urgency level.
-        
+
         Automatically converts the enum member name to a display name by:
         1. Taking the enum member name (e.g., "OVERDUE" or "PAST_DUE")
-        2. Converting it to title case with spaces (e.g., "Overdue" or "Past Due")
+        2. Converting it to title case with spaces (e.g., "Overdue" or
+           "Past Due")
 
         Note:
         - Enum members should use UPPERCASE with underscores for multiple words
         - Underscores are converted to spaces in the display name
-        
+
         Examples:
             UrgencyLevel.OVERDUE.display_name == "Overdue"
             UrgencyLevel.HIGH.display_name == "High"
@@ -114,15 +121,16 @@ class UrgencyLevel(Enum):
             str: The human-readable display name for this urgency level
         """
         return self.name.title()  # OVERDUE -> Overdue, PAST_DUE -> "Past Due"
-    
+
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
-        """Returns choices in Django format for form fields and model definitions.
-        
+        """Returns choices in Django format for form fields and model
+        definitions.
+
         Creates a list of tuples where each tuple contains:
         - First element: db_value (int) - The value stored in database
         - Second element: display_name (str) - The human-readable label
-        
+
         Example:
             UrgencyLevel.choices() returns:
             [
@@ -132,17 +140,16 @@ class UrgencyLevel(Enum):
                 (4, "Medium"),
                 (5, "Low")
             ]
-        
+
         Returns:
             list[tuple[int, str]]: List of (db_value, display_name) pairs
         """
         return [(urgency.db_value, urgency.display_name) for urgency in cls]
 
-
     @classmethod
     def calculate_from_days(cls, days: int) -> 'UrgencyLevel':
         """Calculates the appropriate urgency level based on days until due.
-        
+
         Maps the number of days until due (or overdue if negative) to an
         urgency level according to these rules:
         - OVERDUE:  days < 0 (past due date)
@@ -192,7 +199,7 @@ class UrgencyLevel(Enum):
 
 class InvoiceStatus(Enum):
     """Value object representing the payment status of an invoice.
-    
+
     Provides status values and display names for invoice payment states.
     Used by both domain and infrastructure layers.
 
@@ -216,22 +223,22 @@ class InvoiceStatus(Enum):
     @property
     def display_name(self) -> str:
         """Returns a human-readable display name for the invoice status.
-        
+
         Uses a dictionary mapping to convert the enum's value (e.g., "pending")
         to its display form (e.g., "Pending Payment").
-        
+
         The mapping is:
             "pending" -> "Pending Payment"
             "paid" -> "Payment Received"
             "overdue" -> "Payment Overdue"
-            
+
         Technical Implementation:
         This property uses Python's dictionary lookup syntax (dict[key]) to map
         the enum's value to its display name. For example:
         - If self.value is "pending", dict["pending"] returns "Pending Payment"
         - If self.value is "paid", dict["paid"] returns "Payment Received"
         - If self.value is "overdue", dict["overdue"] returns "Payment Overdue"
-        
+
         This is equivalent to writing:
             mapping = {
                 'pending': 'Pending Payment',
@@ -239,7 +246,7 @@ class InvoiceStatus(Enum):
                 'overdue': 'Payment Overdue'
             }
             return mapping[self.value]
-        
+
         Returns:
             str: The human-readable display name for this status
         """
@@ -251,12 +258,13 @@ class InvoiceStatus(Enum):
 
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
-        """Returns choices in Django format for form fields and model definitions.
-        
+        """Returns choices in Django format for form fields and model
+        definitions.
+
         Creates a list of tuples where each tuple contains:
         - First element: value (str) - The value stored in database
         - Second element: display_name (str) - The human-readable label
-        
+
         Example:
             InvoiceStatus.choices() returns:
             [
@@ -264,16 +272,15 @@ class InvoiceStatus(Enum):
                 ("paid", "Payment Received"),
                 ("overdue", "Payment Overdue")
             ]
-        
+
         Returns:
             list[tuple[str, str]]: List of (value, display_name) pairs
         """
         return [(status.value, status.display_name) for status in cls]
-    
+
     @classmethod
     def from_db_value(cls, db_value: str) -> 'InvoiceStatus':
         for status in InvoiceStatus:
             if db_value == status.value:
                 return status
         raise ValueError(f"Invalid status db_value: {db_value}")
-
