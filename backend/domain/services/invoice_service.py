@@ -61,10 +61,11 @@ class InvoiceService:
                 # Generate old file identifier using invoice number
                 old_id = f"invoice_{user_id}_{existing_invoice.invoice_number}"
 
-                # Update invoice data (without file_path)
-                existing_invoice.amount = invoice_data['amount']
-                existing_invoice.due_date = invoice_data['due_date']
-                existing_invoice.validate()
+                # Update invoice data using the domain model's update method
+                existing_invoice.update(
+                    amount=invoice_data['amount'],
+                    due_date=invoice_data['due_date']
+                )
 
                 # Save updated invoice
                 saved_invoice = self.invoice_repository.save(
@@ -104,12 +105,12 @@ class InvoiceService:
             module_name = f"{Invoice.__module__}.{Invoice.__name__}"
             print(f"Invoice class being used: {module_name}")
 
-            invoice = Invoice(
+            # Use the factory method to create and validate the invoice
+            invoice = Invoice.create(
                 amount=invoice_data['amount'],
                 due_date=invoice_data['due_date'],
                 invoice_number=invoice_data['invoice_number']
             )
-            invoice.validate()
             saved_invoice = self.invoice_repository.save(invoice, user_id)
 
             return {

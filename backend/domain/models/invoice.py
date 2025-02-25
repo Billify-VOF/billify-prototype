@@ -251,3 +251,55 @@ class Invoice:
             invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic again)
         """
         self._manual_urgency = None
+
+    def update(
+        self,
+        *,
+        amount: Optional[Decimal] = None,
+        due_date: Optional[date] = None,
+        invoice_number: Optional[str] = None,
+        status: Optional[InvoiceStatus] = None
+    ) -> None:
+        """Update invoice fields with validation.
+
+        This method allows updating one or more invoice fields and ensures
+        that all business rules are validated after the update.
+
+        Args:
+            amount (Optional[Decimal]): New invoice amount
+            due_date (Optional[date]): New due date
+            invoice_number (Optional[str]): New invoice number
+            status (Optional[InvoiceStatus]): New invoice status
+
+        Raises:
+            InvalidInvoiceError: If the updated data violates business rules
+
+        Example:
+            invoice = Invoice(amount=100, due_date=date(2023, 1, 1),
+                             invoice_number="INV-001")
+
+            # Update just the amount
+            invoice.update(amount=Decimal("150.00"))
+
+            # Update multiple fields
+            invoice.update(
+                amount=Decimal("200.00"),
+                due_date=date(2023, 2, 1),
+                status=InvoiceStatus.PAID
+            )
+        """
+        # Update fields that are provided (not None)
+        if amount is not None:
+            self.amount = amount
+
+        if due_date is not None:
+            self.due_date = due_date
+
+        if invoice_number is not None:
+            self.invoice_number = invoice_number
+
+        if status is not None:
+            self.status = status
+
+        # Validate the updated invoice
+        self.validate()
