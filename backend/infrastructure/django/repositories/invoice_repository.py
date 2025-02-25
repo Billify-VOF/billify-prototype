@@ -44,13 +44,14 @@ class DjangoInvoiceRepository(InvoiceRepository):
             return domain_invoice  # Ready for business logic
         """
         print(f"Converting DB invoice to domain model: {db_invoice}")
+        # All Django models have an id field by default
         invoice_args = {
             'amount': db_invoice.amount,
             'due_date': db_invoice.due_date,
             'invoice_number': db_invoice.invoice_number,
             # Map Django's auto-generated id to domain model's
             # invoice_id parameter. Domain model stores it as self.id
-            'invoice_id': db_invoice.id,
+            'invoice_id': db_invoice.id,  # type: ignore[attr-defined]
             'status': InvoiceStatus.from_db_value(db_invoice.status)
         }
         print(f"Created invoice args: {invoice_args}")
@@ -193,12 +194,14 @@ class DjangoInvoiceRepository(InvoiceRepository):
             db_invoice = DjangoInvoice.objects.get(
                 invoice_number=invoice.invoice_number
             )
-            # Update fields from domain model
-            db_invoice.amount = invoice.amount
-            db_invoice.due_date = invoice.due_date
-            db_invoice.status = invoice.status
-            # Update the user who modified it
-            db_invoice.uploaded_by_id = user_id
+            # Use model's update method for encapsulation
+            db_invoice.update(
+                amount=invoice.amount,
+                due_date=invoice.due_date,
+                status=invoice.status.value,
+                uploaded_by_id=user_id
+            )
+            # Save the changes to the database
             db_invoice.save()
             return self._to_domain(db_invoice)
         except ObjectDoesNotExist as exc:
