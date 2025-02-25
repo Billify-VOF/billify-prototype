@@ -90,7 +90,9 @@ class InvoiceUploadView(APIView):
                 )
 
             # Now, process the stored PDF to extract structured data
-            file_path = self.storage_repository.get_file_path(invoice['file_path'])
+            file_path = (
+                self.storage_repository.get_file_path(invoice['file_path'])
+            )
             logger.info("File path: %s", file_path)
             extracted_data = self.transformer.transform(Path(file_path))
             logger.info("Extracted data: %s", extracted_data)
@@ -101,15 +103,47 @@ class InvoiceUploadView(APIView):
 
             # Debug log all values before creating response
             logger.debug("Invoice data for response:")
-            logger.debug("  - invoice_id: %s (%s)", invoice['invoice_id'], type(invoice['invoice_id']))
-            logger.debug("  - status: %s (%s)", invoice['status'], type(invoice['status']))
-            logger.debug("  - file_path: %s (%s)", invoice['file_path'], type(invoice['file_path']))
-            logger.debug("  - updated: %s (%s)", invoice.get('updated', False), type(invoice.get('updated', False)))
+            logger.debug(
+                "  - invoice_id: %s (%s)",
+                invoice['invoice_id'],
+                type(invoice['invoice_id'])
+            )
+            logger.debug(
+                "  - status: %s (%s)",
+                invoice['status'],
+                type(invoice['status'])
+            )
+            logger.debug(
+                "  - file_path: %s (%s)",
+                invoice['file_path'],
+                type(invoice['file_path'])
+            )
+            logger.debug(
+                "  - updated: %s (%s)",
+                invoice.get('updated', False),
+                type(invoice.get('updated', False))
+            )
             logger.debug("Processed data for response:")
-            logger.debug("  - invoice_number: %s (%s)", processed_data.get('invoice_number'), type(processed_data.get('invoice_number')))
-            logger.debug("  - amount: %s (%s)", processed_data.get('amount'), type(processed_data.get('amount')))
-            logger.debug("  - due_date: %s (%s)", processed_data.get('due_date'), type(processed_data.get('due_date')))
-            logger.debug("  - supplier_name: %s (%s)", processed_data.get('supplier_name'), type(processed_data.get('supplier_name')))
+            logger.debug(
+                "  - invoice_number: %s (%s)",
+                processed_data.get('invoice_number'),
+                type(processed_data.get('invoice_number'))
+            )
+            logger.debug(
+                "  - amount: %s (%s)",
+                processed_data.get('amount'),
+                type(processed_data.get('amount'))
+            )
+            logger.debug(
+                "  - due_date: %s (%s)",
+                processed_data.get('due_date'),
+                type(processed_data.get('due_date'))
+            )
+            logger.debug(
+                "  - supplier_name: %s (%s)",
+                processed_data.get('supplier_name'),
+                type(processed_data.get('supplier_name'))
+            )
 
             # Combine invoice record with extracted data in response
             response_data = {
@@ -117,13 +151,21 @@ class InvoiceUploadView(APIView):
                 'message': 'Invoice processed successfully',
                 'invoice': {
                     'id': invoice['invoice_id'],
-                    'status': str(invoice['status'].value) if hasattr(invoice['status'], 'value') else str(invoice['status']),
+                    'status': (
+                        str(invoice['status'].value)
+                        if hasattr(invoice['status'], 'value')
+                        else str(invoice['status'])
+                    ),
                     'file_path': invoice['file_path'],
                     'updated': invoice.get('updated', False)
                 },
                 'invoice_data': {
                     'invoice_number': processed_data.get('invoice_number'),
-                    'amount': str(processed_data.get('amount')) if processed_data.get('amount') is not None else None,
+                    'amount': (
+                        str(processed_data.get('amount'))
+                        if processed_data.get('amount') is not None
+                        else None
+                    ),
                     'date': self._format_date(processed_data.get('due_date')),
                     'supplier_name': processed_data.get('supplier_name')
                 }
@@ -207,12 +249,14 @@ class InvoiceUploadView(APIView):
         """Process extracted data and convert due_date to datetime object."""
         self.validate_extracted_data(extracted_data)
         raw_due_date = extracted_data.get('due_date')
-        
+
         # If it's already a date object, use it directly
         if isinstance(raw_due_date, date):
             due_date = raw_due_date
         else:
-            due_date = self.normalize_date(raw_due_date) if raw_due_date else None
+            due_date = (
+                self.normalize_date(raw_due_date) if raw_due_date else None
+            )
 
         processed_data = {
             'invoice_number': extracted_data.get('invoice_number'),
@@ -242,7 +286,10 @@ class InvoiceUploadView(APIView):
             )
             # If it's already a date object, it's valid
             if isinstance(raw_due_date, date):
-                logger.debug("Due date is already a date object: %s", raw_due_date)
+                logger.debug(
+                    "Due date is already a date object: %s",
+                    raw_due_date
+                )
             else:
                 try:
                     # Try multiple date formats for string dates
@@ -250,10 +297,17 @@ class InvoiceUploadView(APIView):
                         try:
                             logger.debug("Trying format: %s", fmt)
                             parsed_date = datetime.strptime(raw_due_date, fmt)
-                            logger.debug("Successfully parsed date: %s", parsed_date)
+                            logger.debug(
+                                "Successfully parsed date: %s",
+                                parsed_date
+                            )
                             break  # If any format works, we're good
                         except ValueError as e:
-                            logger.debug("Failed with format %s: %s", fmt, str(e))
+                            logger.debug(
+                                "Failed with format %s: %s",
+                                fmt,
+                                str(e)
+                            )
                             continue
                     else:  # No format worked
                         errors.append(f"Invalid date format: {raw_due_date}")
@@ -277,7 +331,7 @@ class InvoiceUploadView(APIView):
         # If it's already a date object, return it
         if isinstance(raw_date, date):
             return raw_date
-            
+
         # Otherwise try to parse the string
         for fmt in ['%Y-%m-%d', '%b %d %Y']:
             try:
