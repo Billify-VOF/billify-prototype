@@ -101,9 +101,10 @@ class InvoiceUploadView(APIView):
                 'invoice': {
                     'id': result['invoice_id'],
                     'status': (
-                        str(result['status'].value)
-                        if hasattr(result['status'], 'value')
-                        else str(result['status'])
+                        str(result.get('status').value)
+                        if (result.get('status') and
+                            hasattr(result.get('status'), 'value'))
+                        else str(result.get('status', ''))
                     ),
                     'file_path': result['file_path'],
                     'updated': result.get('updated', False)
