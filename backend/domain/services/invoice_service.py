@@ -1,123 +1,108 @@
-"""Service layer for invoice processing business logic.
+"""Domain service for invoice business logic.
 
-This service handles the core business operations related to
-invoice processing, delegating technical concerns to
-appropriate infrastructure components.
+This service contains pure domain logic related to invoices,
+independent of infrastructure concerns like storage or data transformation.
 """
 
-from pathlib import Path
-from domain.exceptions import ProcessingError, StorageError
+from typing import Dict, Any, List
 from domain.models.invoice import Invoice
-from integrations.transformers.pdf.transformer import (
-    PDFTransformer,
-    PDFTransformationError
-)
-from infrastructure.django.repositories.invoice_repository import (
-    DjangoInvoiceRepository
-)
+from domain.models.value_objects import InvoiceStatus
 
 
 class InvoiceService:
-    """Handles business logic for invoice processing operations."""
+    """Domain service that implements business logic for invoice operations."""
 
-    def __init__(self):
-        """Initialize service with required components."""
-        self.pdf_transformer = PDFTransformer()
-        self.invoice_repository = DjangoInvoiceRepository()
+    def update(
+        self,
+        invoice: Invoice,
+        extracted_data: Dict[str, Any]
+    ) -> Invoice:
+        """Update an invoice with data extracted from a document.
 
-    def process_invoice(self, file, storage, user_id: int):
-        """
-        Process a new invoice file through the complete business workflow.
+        This method applies business rules for updating an existing invoice
+        with extracted data, ensuring the domain model remains valid.
 
         Args:
-            file: The uploaded invoice file
-            storage: Storage implementation for saving the file
-            user_id: The ID of the user who uploaded the invoice
+            invoice: The invoice to update
+            extracted_data: Data dictionary with extracted invoice information
 
         Returns:
-            dict: A dictionary containing the ID, invoice number,
-                    and status of the processed invoice
+            The updated invoice
 
         Raises:
-            InvalidInvoiceError: If the invoice fails validation
-            StorageError: If the file cannot be stored
-            ProcessingError: If processing fails
+            ValueError: If the extracted data is invalid
         """
-        try:
-            print(f"Processing invoice file: {file.name}")
-            print(f"Processing invoice for user_id: {user_id}")
+        # Delegate to the domain model's update method
+        invoice.update(
+            amount=extracted_data['amount'],
+            due_date=extracted_data['due_date']
+        )
 
-            # Store the file using the provided storage implementation
-            file_path = storage.save_invoice(file)
-            print(f"File saved with relative path: {file_path}")
+        return invoice
 
-            full_path = storage.get_file_path(file_path)
-            print(f"Full path: {full_path}")
+    def create(
+        self,
+        extracted_data: Dict[str, Any]
+    ) -> Invoice:
+        """Create a new invoice from extracted document data.
 
-            # Extract data from the PDF
-            invoice_data = self.pdf_transformer.transform(Path(full_path))
-            print(f"PDF transformation successful: {invoice_data}")
+        This method applies business rules for creating a new invoice
+        from extracted data, ensuring all required fields are present
+        and valid.
 
-            # Check for existing invoice with same number
-            existing_invoice = self.invoice_repository.get_by_number(
-                invoice_data['invoice_number']
-            )
+        Args:
+            extracted_data: Data dictionary with extracted invoice information
 
-            # Update existing invoice if found
-            if existing_invoice:
-                # Store old file path for cleanup
-                old_file_path = existing_invoice.file_path
+        Returns:
+            A new Invoice instance
 
-                # Update invoice with new data
-                existing_invoice.amount = invoice_data['amount']
-                existing_invoice.due_date = invoice_data['due_date']
-                existing_invoice.file_path = file_path
-                existing_invoice.validate()
+        Raises:
+            ValueError: If the extracted data is missing required fields
+        """
+        # Remove any non-domain fields
+        extracted_data.pop('file_path', None)
 
-                # Save updated invoice
-                saved_invoice = self.invoice_repository.update(
-                    existing_invoice, 
-                    user_id
-                )
+        # Use the factory method to create and validate the invoice
+        return Invoice.create(
+            amount=extracted_data['amount'],
+            due_date=extracted_data['due_date'],
+            invoice_number=extracted_data['invoice_number']
+        )
 
-                # Clean up old file
-                try:
-                    storage.delete_file(old_file_path)
-                except StorageError:
-                    # Log but continue if old file cleanup fails
-                    pass
+    def update_statuses(self, invoices: List[Invoice]) -> None:
+        """Recalculate status for a collection of invoices.
 
-                return {
-                    'invoice_id': saved_invoice.id,
-                    'invoice_number': saved_invoice.invoice_number,
-                    'status': saved_invoice.status,
-                    'file_path': file_path,
-                    'updated': True
-                }
+        This is a batch operation that can be used to update the status of
+        multiple invoices based on current date and business rules.
 
-            # Create new invoice if no existing one found
-            invoice = Invoice(**invoice_data)
-            invoice.validate()
-            saved_invoice = self.invoice_repository.save(invoice, user_id)
+        Args:
+            invoices: List of invoices to update
+        """
+        for invoice in invoices:
+            # Using the domain model's built-in methods to update status
+            if invoice.status == InvoiceStatus.PENDING:
+                if invoice.is_overdue():
+                    invoice.mark_as_overdue()
 
-            return {
-                'invoice_id': saved_invoice.id,
-                'invoice_number': saved_invoice.invoice_number,
-                'status': saved_invoice.status,
-                'file_path': file_path,
-                'updated': False
-            }
+    def _calculate_status(
+        self,
+        invoice: Invoice,
+        current_date
+    ) -> InvoiceStatus:
+        """Determine the status of an invoice based on business rules.
 
-        except PDFTransformationError as e:
-            raise ProcessingError(
-                f"Failed to extract data from invoice: {str(e)}"
-            ) from e
-        except Exception as e:
-            # Clean up stored file on any error
-            try:
-                storage.delete_file(file_path)
-            except StorageError:
-                pass  # Log but continue if cleanup fails
-            raise ProcessingError(
-                f"Failed to process invoice: {str(e)}"
-            ) from e
+        Args:
+            invoice: The invoice to evaluate
+            current_date: The current date to compare against
+
+        Returns:
+            The calculated InvoiceStatus enum value
+        """
+        # This method is now private to the service and can be used
+        # for more complex status determination logic in the future
+        if invoice.is_paid:
+            return InvoiceStatus.PAID
+        elif invoice.due_date < current_date:
+            return InvoiceStatus.OVERDUE
+        else:
+            return InvoiceStatus.PENDING
