@@ -2,11 +2,15 @@
 
 ## Status
 
-Proposed
+Implemented
 
 ## Date
 
 2024-02-26
+
+## Implementation Date
+
+27 February 2025
 
 ## Context
 
@@ -32,24 +36,20 @@ As noted in initial evaluation, 512 MB of RAM is insufficient to properly host a
 
 ## Decision
 
-Based on the system documentation and scalability analysis, we will upgrade the DigitalOcean droplet to accommodate the resource requirements of the Billify application. The recommended sizing options are:
+Based on the system documentation and scalability analysis, we have upgraded the DigitalOcean droplet to accommodate the resource requirements of the Billify application.
 
-### Minimum Viable Option
-- DigitalOcean Standard Droplet: 2GB RAM / 1 vCPU (~$12/month)
-- This provides resources to run core services for up to ~20-30 users (as per scalability docs)
-- May experience performance limitations during PDF processing or peak usage
+### Implementation
 
-### Recommended Option
-- DigitalOcean Standard Droplet: 4GB RAM / 2 vCPUs (~$24/month)
+The DigitalOcean droplet has been upsized to:
+- 4GB RAM
+- 2 vCPUs
+- 10GB storage
+- Cost: ~$24/month
+
+This implemented option follows our "Recommended Option" from the initial proposal:
 - Provides sufficient memory for up to ~75-100 users (per scalability analysis)
 - The 2 vCPUs help with concurrent processing and PDF/OCR operations
 - Suitable for moderate usage patterns with room for growth
-
-### Scalable Option
-- DigitalOcean Standard Droplet: 8GB RAM / 4 vCPUs (~$48/month)
-- Supporting up to ~175-200 users (per available RAM calculations)
-- Recommended for processing many invoices with OCR or supporting many concurrent users
-- Provides headroom for future growth and expansion
 
 ## Resource Allocation Estimates
 
