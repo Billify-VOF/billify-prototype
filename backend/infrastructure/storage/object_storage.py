@@ -10,11 +10,12 @@ organization and access control.
 from pathlib import Path
 from datetime import datetime
 from django.conf import settings
-import boto3
-from botocore.exceptions import ClientError
+import boto3  # type: ignore
+from botocore.exceptions import ClientError  # type: ignore
 from domain.exceptions import StorageError
 from domain.repositories.interfaces.storage_repository import StorageRepository
 from django.core.files.uploadedfile import UploadedFile
+from typing import Union, BinaryIO
 
 
 class ObjectStorage(StorageRepository):
@@ -42,10 +43,16 @@ class ObjectStorage(StorageRepository):
             msg = f"Failed to initialize cloud storage: {str(e)}"
             raise StorageError(msg) from e
 
-    def save_file(self, file: UploadedFile, identifier: str) -> str:
+    def save_file(
+        self,
+        file: Union[BinaryIO, UploadedFile],
+        identifier: str
+    ) -> str:
         try:
             year_month = datetime.now().strftime('%Y/%m')
-            ext = Path(file.name).suffix
+            # Get filename safely with fallback
+            file_name = getattr(file, 'name', None)
+            ext = Path(file_name or '').suffix or '.pdf'
             storage_path = f"invoices/{year_month}/{identifier}{ext}"
 
             self.client.upload_fileobj(
@@ -90,13 +97,13 @@ class ObjectStorage(StorageRepository):
     def get_file_path(self, identifier: str) -> Path:
         """
         Get the full path to a stored file.
-        
+
         Args:
             identifier: The storage identifier returned by save_file
-            
+
         Returns:
             Path: Full path to the file
-            
+
         Raises:
             StorageError: If file cannot be found
         """
@@ -109,10 +116,10 @@ class ObjectStorage(StorageRepository):
     def delete_file(self, identifier: str) -> None:
         """
         Delete a stored file.
-        
+
         Args:
             identifier: The storage identifier returned by save_file
-            
+
         Raises:
             StorageError: If file cannot be deleted
         """
