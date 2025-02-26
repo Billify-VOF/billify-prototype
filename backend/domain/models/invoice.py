@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import date
 from typing import Optional
 from domain.exceptions import InvalidInvoiceError
-from .value_objects import UrgencyLevel, InvoiceStatus
+from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from django.utils import timezone
 from logging import getLogger
 
