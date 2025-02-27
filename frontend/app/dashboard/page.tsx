@@ -135,11 +135,7 @@ const BillifyDashboard = () => {
     ];
 
     const onSearch = async (query: string) => {
-      // Make API call to search for query
-      // const response = await fetch(`/api/search?q=${query}`);
-      // const data = await response.json();
-      // setSearchResult(data);
-
+      // TODO: Implement search functionality
       setSearchResult([...dummySearchResults]);
     }
   
@@ -163,7 +159,7 @@ const BillifyDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 p-8">
 
-        <div className='bg-gray-50  my-2 mb-2 flex justify-between items-center'>
+        <div className='bg-gray-50 my-2 flex justify-between items-center'>
           {/* Top Search Bar */}
             <SearchComponent
               onSearch={onSearch}
