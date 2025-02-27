@@ -29,6 +29,7 @@ export default function NotificationBell(props: { className?: string }) {
 
   // Fetch Notifications (Simulating API)
   useEffect(() => {
+    let isMounted = true;
     async function fetchNotifications() {
       const dummyNotifications: Notification[] = [
         { id: '1', message: 'Invoice #1023 has been generated', isRead: false },
@@ -49,17 +50,18 @@ export default function NotificationBell(props: { className?: string }) {
           isRead: false,
         },
       ];
-      setNotifications(dummyNotifications);
-      setUnreadCount(dummyNotifications.filter((n) => !n.isRead).length);
-
-      // Make API call to search for notifications
-      // const response = await fetch(`/api/notifications`);
-      // const notifications = await response.json();
-      // setNotifications(notifications);
-      // setUnreadCount(notifications.filter((n) => !n.isRead).length);
+      if (isMounted) {
+        setNotifications(dummyNotifications);
+        setUnreadCount(dummyNotifications.filter((n) => !n.isRead).length);
+      }
     }
 
-    fetchNotifications();
+      // TODO: Make API call to search for notifications
+      fetchNotifications();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Toggle Notification Dropdown

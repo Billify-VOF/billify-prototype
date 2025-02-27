@@ -26,7 +26,7 @@ interface SearchComponentProps<T> {
 export default function SearchComponent<T>({
   onSearch,
   renderItem,
-  results,
+  results = [],
 }: SearchComponentProps<T>) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,7 +57,7 @@ export default function SearchComponent<T>({
   const handleSearch = () => {
     if (!query.trim()) return;
 
-    if (!handleSearch) {
+    if (!hasSearched) {
       setHasSearched(true);
     }
     setLoading(true);
@@ -67,6 +67,7 @@ export default function SearchComponent<T>({
       onSearch(query);
     } catch (err) {
       setError('Something went wrong. Please try again.');
+      setLoading(false);
     }
   };
 
