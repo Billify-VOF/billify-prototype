@@ -6,7 +6,8 @@ interface SearchResultItemProps {
   onClick: () => void;
 }
 
-export default function SearchResultItem({ item : {name, description} }: SearchResultItemProps) {
+export default function SearchResultItem({ item }: SearchResultItemProps) {
+  const { name, description } = item
   return (
     <Card className="m-2 border border-gray-200 shadow-sm hover:shadow-lg transition rounded-lg bg-white max-h-26">
       <CardHeader>
