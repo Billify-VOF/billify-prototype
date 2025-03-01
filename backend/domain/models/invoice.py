@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 from datetime import date
-from typing import Optional
+from typing import Optional, Union
 from domain.exceptions import InvalidInvoiceError
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from django.utils import timezone
@@ -266,7 +266,8 @@ class Invoice:
         amount: Optional[Decimal] = None,
         due_date: Optional[date] = None,
         invoice_number: Optional[str] = None,
-        status: Optional[InvoiceStatus] = None
+        status: Optional[InvoiceStatus] = None,
+        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None
     ) -> None:
         """Update invoice fields with validation.
 
@@ -278,6 +279,8 @@ class Invoice:
             due_date (Optional[date]): New due date
             invoice_number (Optional[str]): New invoice number
             status (Optional[InvoiceStatus]): New invoice status
+            manual_urgency (Optional[Union[UrgencyLevel, bool]]): New urgency level
+                or False to clear manual urgency and switch to automatic calculation
 
         Raises:
             InvalidInvoiceError: If the updated data violates business rules
@@ -295,6 +298,15 @@ class Invoice:
                 due_date=date(2023, 2, 1),
                 status=InvoiceStatus.PAID
             )
+            
+            # Set manual urgency alongside other updates
+            invoice.update(
+                amount=Decimal("300.00"),
+                manual_urgency=UrgencyLevel.HIGH
+            )
+            
+            # Clear manual urgency and return to automatic calculation
+            invoice.update(manual_urgency=False)
         """
         # Update fields that are provided (not None)
         if amount is not None:
@@ -308,6 +320,19 @@ class Invoice:
 
         if status is not None:
             self.status = status
+            
+        # Handle manual urgency if provided
+        if manual_urgency is not None:
+            if manual_urgency is False:
+                # Special case: False means clear the manual override
+                self.clear_manual_urgency()
+            elif isinstance(manual_urgency, UrgencyLevel):
+                # Set the manual urgency level
+                self.set_urgency_manually(manual_urgency)
+            else:
+                raise InvalidInvoiceError(
+                    f"Expected UrgencyLevel or False, got {type(manual_urgency)}"
+                )
 
         # Validate the updated invoice
         self.validate()
