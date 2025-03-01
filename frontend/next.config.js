@@ -11,7 +11,24 @@ const nextConfig = {
                 destination: `${backendUrl}/api/:path*`
             }
         ];
-    }
+    },
+    webpack: (config, { isServer }) => {
+        // Exclude canvas.node from being processed
+        config.module.rules.push({
+          test: /\.node$/,
+          use: 'node-loader',
+        });
+
+        if (!isServer) {
+            // Don't attempt to load native modules on client-side
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                canvas: false,
+            };
+        }
+
+        return config;
+    },
 };
 
 module.exports = nextConfig;
