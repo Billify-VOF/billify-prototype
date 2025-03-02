@@ -302,12 +302,10 @@ class DjangoInvoiceRepository(InvoiceRepository):
         Returns:
             List of domain invoice models ordered by urgency
         """
-        # Start with base query
-        query = DjangoInvoice.objects.all()
-        
-        # Apply status filter if provided
-        if status:
-            query = query.filter(status=status)
+
+        # Efficiently create the base query in one step: if status is provided, filter by it,
+        # otherwise return all invoices. This avoids unnecessary queryset creation.
+        query = DjangoInvoice.objects.filter(status=status) if status else DjangoInvoice.objects.all()
         
         # For proper sorting:
         # 1. Invoices with manual_urgency are ordered by that value
