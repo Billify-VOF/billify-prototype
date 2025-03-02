@@ -51,24 +51,26 @@ class InvoiceProcessingService:
         self.pdf_transformer = PDFTransformer()
 
     def process_invoice(self, file, user_id: int):
-        """Process a new invoice file through the complete workflow.
-
-        This application service method:
-        1. Handles file storage
-        2. Coordinates PDF transformation
-        3. Delegates to domain services for business rules
-        4. Manages persistence through repositories
-
+        """
+        Processes an uploaded invoice file and creates or updates an invoice.
+        
+        This method stores the invoice file, extracts data via PDF transformation, and
+        checks for an existing invoice with the same number. If found, it updates the
+        invoice and silently handles file deletion errors; otherwise, it creates a new
+        invoice record. The returned dictionary includes urgency information along
+        with invoice details.
+        
         Args:
-            file: The uploaded invoice file
-            user_id: The ID of the user who uploaded the invoice
-
+            file: The uploaded invoice file.
+            user_id: The ID of the user uploading the invoice.
+        
         Returns:
-            Dict containing the processed invoice information
-
+            A dictionary with keys 'invoice_id', 'invoice_number', 'status', 'file_path',
+            'updated', 'amount', 'due_date', 'supplier_name', and 'urgency'.
+        
         Raises:
-            ProcessingError: For failures during processing
-            StorageError: For failures storing the file
+            ProcessingError: If invoice processing fails due to PDF transformation or
+                             other processing errors.
         """
         try:
             # Generate unique identifier for file
