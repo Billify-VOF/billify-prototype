@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 from typing import Optional, List, Dict
+from itertools import chain
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
@@ -277,12 +278,9 @@ class DjangoInvoiceRepository(InvoiceRepository):
         # Get invoices with calculated urgency matching the requested level
         db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
         
-        # Combine both querysets
-        db_invoices = list(db_invoices_with_manual) + list(db_invoices_calculated)
+        # Convert to domain models and return the combined result
+        return [self._to_domain(invoice) for invoice in chain(db_invoices_with_manual, db_invoices_calculated)]
         
-        # Convert to domain models
-        return [self._to_domain(invoice) for invoice in db_invoices]
-
     def list_by_urgency_order(
         self, 
         status: Optional[str] = None,
