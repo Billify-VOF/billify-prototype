@@ -252,8 +252,8 @@ class DjangoInvoiceRepository(InvoiceRepository):
         min_days, max_days = day_range
         
         # Create date range for query
-        min_date = None if min_days is None else (today + timedelta(days=min_days))
-        max_date = None if max_days is None else (today + timedelta(days=max_days))
+        min_date = today + timedelta(days=min_days) if min_days is not None else None
+        max_date = today + timedelta(days=max_days) if max_days is not None else None
         
         # Build query for calculated urgency
         # Only include invoices without manual override
