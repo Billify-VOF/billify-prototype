@@ -201,7 +201,8 @@ class Invoice(models.Model):
         amount: Optional[Decimal] = None,
         due_date: Optional[date] = None,
         status: Optional[str] = None,
-        uploaded_by_id: Optional[int] = None
+        uploaded_by_id: Optional[int] = None,
+        manual_urgency: Optional[int] = None
     ) -> None:
         """Update invoice fields with validation.
 
@@ -213,6 +214,7 @@ class Invoice(models.Model):
             due_date: New invoice due date
             status: New invoice status
             uploaded_by_id: ID of user performing the update
+            manual_urgency: Manual override for invoice urgency level
 
         Raises:
             ValidationError: If updated fields don't meet validation
@@ -229,6 +231,9 @@ class Invoice(models.Model):
 
         if uploaded_by_id is not None:
             self.uploaded_by_id = uploaded_by_id
+
+        if manual_urgency is not None:
+            self.manual_urgency = manual_urgency
 
         # Validate all fields
         self.full_clean()
