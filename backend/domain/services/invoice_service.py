@@ -123,12 +123,12 @@ class InvoiceService:
         urgency_level = invoice.urgency
         
         # Check if urgency was manually set
-        is_manually_set = invoice._manual_urgency is not None
+        is_manually_set = invoice.is_urgency_manually_set()
         
         # Return a dictionary with all relevant information
         return {
-            'level': urgency_level.name,  # e.g., "CRITICAL"
-            'display_name': urgency_level.name.title().replace('_', ' '),  # e.g., "Critical"
-            'color_code': urgency_level.color_code,  # e.g., "#FF0000"
+            'level': urgency_level.name if urgency_level else None,
+            'display_name': urgency_level.name.title().replace('_', ' ') if urgency_level else None,
+            'color_code': getattr(urgency_level, 'color_code', None),
             'is_manual': is_manually_set
         }

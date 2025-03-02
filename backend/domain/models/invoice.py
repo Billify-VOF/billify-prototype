@@ -168,6 +168,14 @@ class Invoice:
         days_until_due = due_date_timedelta.days
         return UrgencyLevel.calculate_from_days(days_until_due)
 
+    def is_urgency_manually_set(self) -> bool:
+        """Check if the urgency level has been manually set.
+        
+        Returns:
+            bool: True if urgency has been manually overridden, False if it's calculated automatically
+        """
+        return self._manual_urgency is not None
+
     def get_status_display(self) -> str:
         """Return a human-readable status description."""
         return self.status.display_name
