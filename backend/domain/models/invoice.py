@@ -236,6 +236,7 @@ class Invoice:
                 f"Expected UrgencyLevel, got {type(new_urgency)}"
             )
         self._manual_urgency = new_urgency
+        logger.debug("Update: Setting manual urgency to %s", new_urgency)
 
     def clear_manual_urgency(self) -> None:
         """Clear the manual override for the invoice's urgency level.
@@ -259,6 +260,7 @@ class Invoice:
             invoice.urgency  # Returns UrgencyLevel.CRITICAL (automatic again)
         """
         self._manual_urgency = None
+        logger.debug("Update: Clearing manual urgency override")
 
     def update(
         self,
@@ -333,6 +335,8 @@ class Invoice:
                 raise InvalidInvoiceError(
                     f"Expected UrgencyLevel or False, got {type(manual_urgency)}"
                 )
+        else:  # manual_urgency is None
+            logger.debug("Update: No change to urgency settings")
 
         # Validate the updated invoice
         self.validate()
