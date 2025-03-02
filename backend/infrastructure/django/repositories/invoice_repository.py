@@ -1,7 +1,8 @@
 """Django ORM implementation of the invoice repository interface."""
 
-from datetime import date
-from typing import Optional, List
+from datetime import date, timedelta
+from typing import Optional, List, Dict
+from itertools import chain
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
@@ -10,6 +11,7 @@ from domain.exceptions import InvalidInvoiceError
 from infrastructure.django.models.invoice import Invoice as DjangoInvoice
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from logging import getLogger
+from django.db import models
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -198,12 +200,21 @@ class DjangoInvoiceRepository(InvoiceRepository):
             db_invoice = DjangoInvoice.objects.get(
                 invoice_number=invoice.invoice_number
             )
+            
+            # Get the manual urgency value if it exists
+            manual_urgency_value = (
+                invoice._manual_urgency.db_value
+                if invoice._manual_urgency is not None
+                else None
+            )
+            
             # Use model's update method for encapsulation
             db_invoice.update(
                 amount=invoice.amount,
                 due_date=invoice.due_date,
                 status=invoice.status.value,
-                uploaded_by_id=user_id
+                uploaded_by_id=user_id,
+                manual_urgency=manual_urgency_value
             )
             # Save the changes to the database
             db_invoice.save()
@@ -212,3 +223,103 @@ class DjangoInvoiceRepository(InvoiceRepository):
             raise InvalidInvoiceError(
                 f"Invoice {invoice.invoice_number} not found"
             ) from exc
+
+    def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
+        """Retrieve invoices matching a specific urgency level.
+
+        This method finds invoices with:
+        1. A matching manual urgency OR
+        2. A calculated urgency matching the requested level, based on due date
+        
+        Note: This requires calculating urgency for invoices that don't have
+        manual overrides, which requires accessing the domain logic.
+
+        Args:
+            urgency_level: The urgency level to filter by
+            
+        Returns:
+            List of domain invoice models with the specified urgency level
+        """
+        today = date.today()
+        
+        # First, find invoices with matching manual urgency
+        db_invoices_with_manual = DjangoInvoice.objects.filter(
+            manual_urgency=urgency_level.db_value
+        )
+        
+        # For calculated urgency, we need to determine the date range
+        # that would result in the requested urgency level
+        day_range = urgency_level.day_range
+        min_days, max_days = day_range
+        
+        # Create date range for query
+        min_date = today + timedelta(days=min_days) if min_days is not None else None
+        max_date = today + timedelta(days=max_days) if max_days is not None else None
+        
+        # Build query for calculated urgency
+        # Only include invoices without manual override
+        calculated_query = Q(manual_urgency__isnull=True)
+
+        filter_conditions: Dict[str, Optional[date]] = {}
+
+        if min_date is not None:
+            filter_conditions["due_date__gte"] = min_date
+        if max_date is not None:
+            filter_conditions["due_date__lte"] = max_date
+        
+        # Apply all date range filters at once if any exist. This approach:
+        # 1. Builds all filter conditions before applying them
+        # 2. Creates only a single Q object instead of multiple ones
+        # 3. Avoids applying the same conditions multiple times
+        # 4. Follows Django best practices for dynamic filtering
+        if filter_conditions:
+            calculated_query &= Q(**filter_conditions)
+        
+        # Get invoices with calculated urgency matching the requested level
+        db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
+        
+        # Convert to domain models and return the combined result
+        return [self._to_domain(invoice) for invoice in chain(db_invoices_with_manual, db_invoices_calculated)]
+        
+    def list_by_urgency_order(
+        self, 
+        status: Optional[str] = None,
+        limit: Optional[int] = None
+    ) -> List[DomainInvoice]:
+        """Retrieve invoices ordered by urgency level (highest to lowest).
+        
+        This method creates a prioritized list for cash flow planning,
+        with most urgent invoices first.
+        
+        The ordering is:
+        1. First by manual urgency (if set)
+        2. Then by calculated urgency based on due date
+        
+        Args:
+            status: Optional status filter (e.g., only pending invoices)
+            limit: Optional maximum number of results to return
+            
+        Returns:
+            List of domain invoice models ordered by urgency
+        """
+
+        # Efficiently create the base query in one step: if status is provided, filter by it,
+        # otherwise return all invoices. This avoids unnecessary queryset creation.
+        query = DjangoInvoice.objects.filter(status=status) if status else DjangoInvoice.objects.all()
+        
+        # For proper sorting:
+        # 1. Invoices with manual_urgency are ordered by that value
+        # 2. Invoices without manual_urgency are ordered by due_date
+        
+        # Order by manual_urgency (null last), then by due_date
+        db_invoices = query.order_by(
+            models.F('manual_urgency').asc(nulls_last=True),
+            'due_date'
+        )
+        
+        # Apply limit if provided
+        if limit:
+            db_invoices = db_invoices[:limit]
+            
+        # Convert to domain models
+        return [self._to_domain(invoice) for invoice in db_invoices]
