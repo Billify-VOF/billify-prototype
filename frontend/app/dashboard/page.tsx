@@ -10,6 +10,10 @@ import {
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
+import SearchComponent from '@/components/SearchComponent'
+import { dummySearchResults, SearchItemResult } from '@/components/types'
+import SearchResultItem from '@/components/SearchResultItem'
+import NotificationBell from '@/components/NotificationBell'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 type InvoiceStatus = 'urgent' | 'warning' | 'safe';
@@ -28,6 +32,7 @@ const BillifyDashboard = () => {
     const [uploadedInvoiceData, setUploadedInvoiceData] = useState<any>(null);
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+    const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
 
     // Reset all states when dialog is closed
     const handleDialogOpenChange = (open: boolean) => {
@@ -128,6 +133,11 @@ const BillifyDashboard = () => {
       { id: 2, amount: 800, dueDate: '2024-12-10', status: 'warning' },
       { id: 3, amount: 2500, dueDate: '2024-12-25', status: 'safe' }
     ];
+
+    const onSearch = async (query: string) => {
+      // TODO: Implement search functionality
+      setSearchResult([...dummySearchResults]);
+    }
   
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -148,6 +158,25 @@ const BillifyDashboard = () => {
   
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 p-8">
+
+        <div className='bg-gray-50 my-2 flex justify-between items-center'>
+          {/* Top Search Bar */}
+            <SearchComponent
+              onSearch={onSearch}
+              renderItem={(item) => {
+                return (
+                  <SearchResultItem
+                    item={item}
+                    onClick={() => {}}
+                  />
+                );
+              }}
+              results={searchResult}
+            />
+          {/* Notification Widget */}
+            <NotificationBell className="w-fit" />
+          </div>
+          
           {/* Top Metrics Grid */}
           <div className="grid grid-cols-4 gap-6 mb-6">
             <MetricCard title="Cash Saldo" value={financialData.cashSaldo} />
