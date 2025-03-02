@@ -112,6 +112,9 @@ class InvoiceProcessingService:
                 except StorageError:
                     pass
 
+                # Get urgency information from the domain service
+                urgency_info = self.invoice_service.get_urgency_info(updated_invoice)
+
                 return {
                     'invoice_id': saved_invoice.id,
                     'invoice_number': saved_invoice.invoice_number,
@@ -120,7 +123,8 @@ class InvoiceProcessingService:
                     'updated': True,
                     'amount': updated_invoice.amount,
                     'due_date': updated_invoice.due_date,
-                    'supplier_name': invoice_data.get('supplier_name', '')
+                    'supplier_name': invoice_data.get('supplier_name', ''),
+                    'urgency': urgency_info
                 }
 
             # Create new invoice using domain service
@@ -131,6 +135,9 @@ class InvoiceProcessingService:
             # Persist the invoice
             saved_invoice = self.invoice_repository.save(new_invoice, user_id)
 
+            # Get urgency information from the domain service
+            urgency_info = self.invoice_service.get_urgency_info(new_invoice)
+
             return {
                 'invoice_id': saved_invoice.id,
                 'invoice_number': saved_invoice.invoice_number,
@@ -139,7 +146,8 @@ class InvoiceProcessingService:
                 'updated': False,
                 'amount': new_invoice.amount,
                 'due_date': new_invoice.due_date,
-                'supplier_name': invoice_data.get('supplier_name', '')
+                'supplier_name': invoice_data.get('supplier_name', ''),
+                'urgency': urgency_info
             }
 
         except PDFTransformationError as e:
