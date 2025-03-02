@@ -1,7 +1,7 @@
 """Django ORM implementation of the invoice repository interface."""
 
 from datetime import date, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
@@ -258,16 +258,21 @@ class DjangoInvoiceRepository(InvoiceRepository):
         # Build query for calculated urgency
         # Only include invoices without manual override
         calculated_query = Q(manual_urgency__isnull=True)
+
+        filter_conditions: Dict[str, Optional[date]] = {}
+
+        if min_date is not None:
+            filter_conditions["due_date__gte"] = min_date
+        if max_date is not None:
+            filter_conditions["due_date__lte"] = max_date
         
-        if min_date is not None and max_date is not None:
-            # Both min and max are specified
-            calculated_query &= Q(due_date__gte=min_date, due_date__lte=max_date)
-        elif min_date is not None:
-            # Only min is specified
-            calculated_query &= Q(due_date__gte=min_date)
-        elif max_date is not None:
-            # Only max is specified
-            calculated_query &= Q(due_date__lte=max_date)
+        # Apply all date range filters at once if any exist. This approach:
+        # 1. Builds all filter conditions before applying them
+        # 2. Creates only a single Q object instead of multiple ones
+        # 3. Avoids applying the same conditions multiple times
+        # 4. Follows Django best practices for dynamic filtering
+        if filter_conditions:
+            calculated_query &= Q(**filter_conditions)
         
         # Get invoices with calculated urgency matching the requested level
         db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
