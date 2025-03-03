@@ -61,3 +61,23 @@ class StorageRepository(ABC):
             StorageError: If file cannot be deleted
         """
         pass
+
+    @abstractmethod
+    def move_file(self, source_identifier: str, target_identifier: str) -> str:
+        """
+        Move a file from one location to another within the storage system.
+        
+        This operation should be atomic and implemented efficiently by the
+        storage backend when possible (e.g., rename rather than copy+delete).
+        
+        Args:
+            source_identifier: The identifier of the source file
+            target_identifier: The identifier to use for the target location
+        
+        Returns:
+            str: New storage identifier for the moved file
+        
+        Raises:
+            StorageError: If file cannot be moved
+        """
+        pass
