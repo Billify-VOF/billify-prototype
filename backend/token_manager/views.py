@@ -9,23 +9,38 @@ from requests.auth import HTTPBasicAuth
 import random
 import string
 import base64
+import ssl
+from OpenSSL import crypto
+from urllib.parse import urlencode
+import urllib3
+import hashlib
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.backends import default_backend
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric import padding
+import time
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
 
-# PONTO_CLIENT_ID = os.getenv('PONTO_CLIENT_ID')
-# PONTO_CLIENT_SECRET = os.getenv('PONTO_CLIENT_SECRET')
-# PONTO_AUTH_URL = os.getenv('PONTO_AUTH_URL')
-# PONTO_TOKEN_URL = os.getenv('PONTO_TOKEN_URL')
-# PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
-PONTO_CLIENT_ID = 'bb85a9ef-c106-4646-a53e-c8f405639208'
-PONTO_CLIENT_SECRET = 'b89c0430-0823-47b0-a400-e7501e8ce4d4'
-PONTO_AUTH_URL = "https://sandbox-authorization.myponto.com/oauth2/auth"
-PONTO_TOKEN_URL = 'https://api.myponto.com/oauth2/token'
-print(PONTO_TOKEN_URL,'PONTO_TOKEN_URL')
-PONTO_REDIRECT_URI = "http://127.0.0.1:8003/api/ponto-login/"
+PONTO_CLIENT_ID = os.getenv('PONTO_CLIENT_ID')
+PONTO_CLIENT_SECRET = os.getenv('PONTO_CLIENT_SECRET')
+PONTO_AUTH_URL = os.getenv('PONTO_AUTH_URL')
+PONTO_TOKEN_URL = os.getenv('PONTO_TOKEN_URL')
+PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
+URL = os.getenv('URL')
+PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
+KEY_ID = os.getenv('KEY_ID')
+BASE_URL = os.getenv('BASE_URL')
 
+
+
+AUTHCODE =''
 
 def convertclientidsecret(client_id, client_secret):
     
@@ -38,8 +53,9 @@ def convertclientidsecret(client_id, client_secret):
 
 
 def generate_random_session_id():
-    random_number = ''.join(random.choices(string.digits, k=6))  # Generate a random 6-digit number
+    random_number = ''.join(random.choices(string.digits, k=50))  # Generate a random 50-digit number
     return f"session_{random_number}"
+
 
 @api_view(['GET'])
 def ponto_login(request):
@@ -47,16 +63,22 @@ def ponto_login(request):
     Redirects the user to Ponto OAuth2 login page.
     """
     session_id = generate_random_session_id()
-    print(session_id,'ccccccc')
-    # auth_url = (f"{PONTO_AUTH_URL}?client_id={PONTO_CLIENT_ID}"
-    #             f"&redirect_uri={PONTO_REDIRECT_URI}&response_type=code&scope=ai pi&state={session_id}")
-    # print('auth_url',auth_url)
-    auth_url = f"{PONTO_AUTH_URL}?client_id={PONTO_CLIENT_ID}&redirect_uri={PONTO_REDIRECT_URI}&response_type=code&scope=ai pi&state=session_1234568"
+    auth_url = f"{PONTO_AUTH_URL}?client_id={PONTO_CLIENT_ID}&redirect_uri={PONTO_REDIRECT_URI}&response_type=code&scope=ai pi&state={session_id}"
+    global AUTHCODE
+    AUTHCODE = request.GET.get('code')
     return redirect(auth_url)
 
 
-import ssl
-from OpenSSL import crypto
+
+def load_private_key(private_key_path, password):
+    # Read and load the private key
+    with open(private_key_path, 'rb') as key_file:
+        private_key_data = key_file.read()
+
+    # Decrypt the private key with the provided password
+    private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
+    return private_key
+
 
 @api_view(['GET'])
 def ponto_callback(request):
@@ -64,69 +86,58 @@ def ponto_callback(request):
     Handles Ponto callback and exchanges authorization code for access token.
     """
     try:
-        url = "https://api.ibanity.com/ponto-connect/oauth2/token"
-        PONTO_REDIRECT_URI = "http://127.0.0.1:8003/api/ponto-login/"
-        # auth_code = request.GET.get('code')
-        auth_code = 'Mc_2aWJc0G6OnlFib2m5zuGzOcoQwOTvQ_OR8CAEwDg.J9kNgQA_tNmo5FXr-mTzvDxdXPTyGCTufGZaHtLCGfk'
 
-        if not auth_code:
-            return Response({"error": "No authorization code received"}, status=400)
-
+        url = URL
+        PONTO_REDIRECT_URI = PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
+        if not AUTHCODE:
+                return Response({"error": "No authorization code received"}, status=400)
+        client = convertclientidsecret(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
         # Prepare request data for the token exchange
-        data = {
-            "grant_type": "authorization_code",  # Correct grant_type for authorization code flow
-            "code": auth_code,                   # The authorization code received
-            "redirect_uri": PONTO_REDIRECT_URI,
-        }
-
-        # Convert client_id and client_secret to Base64 encoded string
-        clientID = 'bb85a9ef-c106-4646-a53e-c8f405639208'
-        clientSecret = 'b89c0430-0823-47b0-a400-e7501e8ce4d4'
-        client = convertclientidsecret(clientID, clientSecret)
-
-        # Prepare headers for the request
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/vnd.api+json",
             "Authorization": f"Basic {client}"
         }
-
-        # Define file paths to your certificate and private key
-        certificate_path = r"C:/Users/kunal/Downloads/application_bb85a9ef-c106-4646-a53e-c8f405639208/certificate.pem"
-        private_key_path = r"C:/Users/kunal/Downloads/application_bb85a9ef-c106-4646-a53e-c8f405639208/private_key.pem"
-        private_key_password = 'Billify-2'  # Password for the encrypted private key
-
-        # # Load and decrypt the private key using the password
-        private_key_data = open(private_key_path, 'rb').read()
-        print('private_key_data',private_key_data)
-        # private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data)
-        # print('private_key',dir(private_key))
-        # # if private_key.has_private():
-        # private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, password=private_key_password.encode())
-        # print('private_key===========',private_key)
-        # # Prepare the SSLContext
-        # context = ssl.create_default_context()
-        # context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
-
-        # Send the request to the token URL
-        response = requests.post(
+        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+        private_key_password = PRIVATE_KEY_PASSWORD  # Password for the encrypted private key
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
+        context.check_hostname = False
+        data = {
+            "grant_type": "authorization_code", 
+            "code": AUTHCODE,                  
+            "redirect_uri": PONTO_REDIRECT_URI,
+        }
+        encoded_data = urlencode(data).encode('utf-8')
+        # Create a PoolManager with the SSL context
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_NONE, 
+            ca_certs=None,
+            ssl_context=context
+        )
+        response = http.request(
+            'POST',
             url,
             headers=headers,
-            data=data,
-            cert=(certificate_path, private_key_path,private_key_password),  # Provide certificate and private key
-            verify=False  # Turn off verification for SSL (make sure to remove this for production)
+            body=encoded_data,
+            preload_content=True
         )
-
-        print('response', response)
-        print(f"Response status: {response.status_code}")
-        print(f"Response body: {response.text}")
-
-        if response.status_code == 200:
+        # Process the response
+        if response.status== 200:
             try:
+                token_data = json.loads(response.data.decode('utf-8'))
                 token_data = response.json()
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
-
+                token_info = {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token
+                }
+                token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'tokens', 'tokens.json')
+                with open(token_path, "w") as f:
+                    json.dump(token_info, f, indent=4)
                 return Response({
                     "access_token": access_token,
                     "refresh_token": refresh_token
@@ -136,123 +147,95 @@ def ponto_callback(request):
         else:
             return Response({
                 "error": "Failed to get access token",
-                "details": response.text  # Log the raw response text instead of trying to parse it
+                "details": response.text
             }, status=500)
 
     except Exception as e:
         return Response({'message': str(e)})
 
 
-# Billify-2
-# @api_view(['GET'])
-# def ponto_callback(request):
-#     """
-#     Handles Ponto callback and exchanges authorization code for access token.
-#     """ 
-#     try:
-#         # PONTO_TOKEN_URL = 'https://sandbox-authorization.myponto.com/oauth2/token'  # Updated URL
-#         url = "https://api.ibanity.com/ponto-connect/oauth2/token"
-#         PONTO_REDIRECT_URI = "http://127.0.0.1:8003/api/ponto-login/"
-#         # auth_code =request.Get.get('code')
-#         # Static authorization code for testing
-#         auth_code = "Mc_2aWJc0G6OnlFib2m5zuGzOcoQwOTvQ_OR8CAEwDg.J9kNgQA_tNmo5FXr-mTzvDxdXPTyGCTufGZaHtLCGfk"
-#         print(f"Using auth_code: {auth_code}")
-
-#         if not auth_code:
-#             auth_code = 'Mc_2aWJc0G6OnlFib2m5zuGzOcoQwOTvQ_OR8CAEwDg.J9kNgQA_tNmo5FXr-mTzvDxdXPTyGCTufGZaHtLCGfk'
-#             return Response({"error": "No authorization code received"}, status=400)
-
-#         # Correct the request data to include the right grant_type
-#         data = {
-#             "grant_type": "authorization_code",  # Correct grant_type for authorization code flow
-#             "code": auth_code,                   # The authorization code received
-#             "redirect_uri": PONTO_REDIRECT_URI ,
-#         }
-#         clientID = 'bb85a9ef-c106-4646-a53e-c8f405639208'
-#         clientSecret = 'b89c0430-0823-47b0-a400-e7501e8ce4d4'
-#         client = convertclientidsecret(clientID,clientSecret)
-#         headers = {
-#             "Content-Type": "application/x-www-form-urlencoded",
-#             "Accept": "application/vnd.api+json",
-#             "Authorization": f"Basic {client}"
-#         }
-#         data = {
-#             "grant_type": "authorization_code",
-#             "code": "Mc_2aWJc0G6OnlFib2m5zuGzOcoQwOTvQ_OR8CAEwDg.J9kNgQA_tNmo5FXr-mTzvDxdXPTyGCTufGZaHtLCGfk",
-#             "client_id": "bb85a9ef-c106-4646-a53e-c8f405639208",
-#             "redirect_uri": "http:127.0.0.1:8003/api/ponto-login/",
-#             "code_verifier": "bbe4d91ae3cf8e88ba4341c5a8202896d3d6002cfd2042d606"
-#         }
-#         print(data,'data')
-#         # Send the request to the token URL
-#         # Full path to the certificate
-#         certificate_path = r"C:/Users/kunal\Downloads/application_bb85a9ef-c106-4646-a53e-c8f405639208/certificate.pem"
-#         private_path= r"C:/Users/kunal\Downloads/application_bb85a9ef-c106-4646-a53e-c8f405639208/private_key.pem"
-
-#         response = requests.post(
-#             url,
-#             headers=headers,
-#             data=data,
-#             cert=(certificate_path, private_path)  # Path to your cert and private key
-#         )
-#         password='Billify-2'
-#         print('response',response)
-#         print(f"Response status: {response.status_code}")
-#         print(f"Response body: {response.text}")
-
-#         if response.status_code == 200:
-#             try:
-#                 token_data = response.json()
-#                 access_token = token_data.get("access_token")
-#                 refresh_token = token_data.get("refresh_token")
-
-#                 return Response({
-#                     "access_token": access_token,
-#                     "refresh_token": refresh_token
-#                 })
-#             except requests.exceptions.JSONDecodeError:
-#                 return Response({"error": "Invalid JSON response from server"}, status=500)
-#         else:
-#             return Response({
-#                 "error": "Failed to get access token",
-#                 "details": response.text  # Log the raw response text instead of trying to parse it
-#             }, status=500)
-#     except Exception as e:
-#         return Response({'message':str(e)})
+#Get Access token from Tokens folder
+def get_access_token():
+    # Load access token from file
+    token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'tokens', 'tokens.json')
+    with open(token_path, 'r') as f:
+        token_info = json.load(f)
+        
+        return token_info['access_token']
 
 
+API_BASE_URL = f"{BASE_URL}'accounts'"
+certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+private_key_password = PRIVATE_KEY_PASSWORD
+KEY_ID = KEY_ID # Replace with your actual Key ID
 
-# token_dir = "tokens"
-# token_file_path = os.path.join(token_dir, "token.json")
+def create_signature(request_target, digest, created, private_key_path, private_key_password):
+    """Creates the signature string."""
+    signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: api.ibanity.com"""
+    
+    # Load the private key with the password
+    with open(private_key_path, "rb") as key_file:
+      private_key = serialization.load_pem_private_key(
+          key_file.read(),
+          password=private_key_password.encode(),  # Provide the password here
+          backend=default_backend()
+      )
 
-# def get_access_token():
-#     try:
-#         with open(token_file_path, "r") as file:
-#             token_data = json.load(file)
-#             return token_data["access_token"]
-#     except (FileNotFoundError, KeyError):
-#         print("Error: Token file not found or invalid format.")
-#         return None
+    # Sign the message
+    signature_bytes = private_key.sign(
+        signing_string.encode('utf-8'),
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
 
-# # Create your views here.
-# def fetch_bank_accounts():
-#     token = get_access_token()
-#     headers = {"Authorization": f"Bearer {token}"}
+    # Base64 encode the signature
+    signature = base64.b64encode(signature_bytes).decode('utf-8')
 
-#     response = requests.get(f"{API_BASE_URL}/accounts", headers=headers)
+    return signature
 
-#     if response.status_code == 200:
-#         accounts = response.json()["accounts"]
-#         from .models import BankAccount
+@api_view(['GET'])
+def get_pass_key(request):
+    """Fetches accounts from the Ponto Connect API."""
+    token = get_access_token()
+    # Get current timestamp as 'created' value
+    created = str(int(time.time()))
 
-#         for acc in accounts:
-#             obj, created = BankAccount.objects.update_or_create(
-#                 account_id=acc["id"],
-#                 defaults={
-#                     "balance": acc["balance"]["amount"],
-#                     "currency": acc["balance"]["currency"]
-#                 }
-#             )
-#             print(f"Updated: {obj}")
-#     else:
-#         print("Failed to fetch accounts:", response.status_code, response.text)
+    # Calculate the digest
+    data = "" # No data for GET request
+    digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
+    digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
+
+    # Create the signature
+    request_target = "get /ponto-connect/accounts"
+    signature = create_signature(request_target, digest, created, private_key_path, PRIVATE_KEY_PASSWORD)
+
+    # Construct the Signature header
+    signature_header = f"""keyId="{KEY_ID}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
+
+    headers = {"Authorization": f"Basic {token}"}
+    # Create an SSL context with the private key password
+    context = ssl.create_default_context()
+    context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=PRIVATE_KEY_PASSWORD)
+    context.check_hostname = False
+
+    # Create a PoolManager with the SSL context
+    http = urllib3.PoolManager(
+        num_pools=50,
+        cert_reqs=ssl.CERT_NONE,  
+        ca_certs=None,
+        ssl_context=context
+    )
+
+    # Make the GET request using the PoolManager
+    try:
+        response = http.request(
+            'GET',
+            API_BASE_URL,
+            headers=headers
+        )
+        accounts_data = json.loads(response.data.decode('utf-8'))
+        return Response(accounts_data)
+
+    except Exception as e:
+        return Response({"error": f"Request failed: {e}"}, status=500)
