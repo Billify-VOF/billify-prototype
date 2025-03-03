@@ -108,16 +108,22 @@ class InvoiceService:
             return InvoiceStatus.PENDING
 
     def get_urgency_info(self, invoice: Invoice) -> Dict[str, Any]:
-        """Extract urgency information from an invoice in a format suitable for APIs.
+        """
+        Extract urgency information from an invoice for API consumption.
         
-        This method transforms the UrgencyLevel enum to a dictionary containing
-        all relevant information for presentation purposes.
+        This method retrieves the invoice's urgency level and determines if it was manually set.
+        It returns a dictionary with the urgency level name, a formatted display name, the associated
+        color code, and a flag indicating whether the urgency was manually specified.
         
         Args:
-            invoice: The invoice to extract urgency information from
-            
+            invoice: The invoice instance from which to extract urgency details.
+        
         Returns:
-            Dict with urgency level, display name, color code, and manual flag
+            A dictionary with the following keys:
+                level (str): The urgency level name.
+                display_name (str): A human-friendly representation of the urgency level.
+                color_code (str): The hex code corresponding to the urgency level.
+                is_manual (bool): True if the urgency was manually set, False otherwise.
         """
         # Get the UrgencyLevel enum from the invoice
         urgency_level = invoice.urgency

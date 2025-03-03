@@ -57,14 +57,13 @@ class InvoiceUploadView(APIView):
 
     def post(self, request):
         """
-        Process uploaded invoice PDF and initiate invoice creation workflow.
-
-        This endpoint performs a complete processing pipeline:
-        1. Validates the uploaded file
-        2. Stores the file securely
-        3. Extracts data using OCR and text analysis
-        4. Creates an invoice record with the extracted data
-        5. Returns both the invoice record and extracted information
+        Process invoice PDF upload and create an invoice record.
+        
+        This method handles a POST request to upload a PDF invoice, validate the file,
+        and process it with the invoice processing service. On success, it returns a 201
+        response with the created invoice record and extracted data including invoice
+        number, due date, amount, supplier name, and urgency. In cases of processing or
+        validation errors, it returns an appropriate error response with relevant details.
         """
 
         logger.debug("Request data: %s", request.data)
