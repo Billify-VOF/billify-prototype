@@ -128,7 +128,7 @@ class InvoiceService:
         # Return a dictionary with all relevant information
         return {
             'level': urgency_level.name if urgency_level else None,
-            'display_name': urgency_level.name.title().replace('_', ' ') if urgency_level else None,
+            'display_name': urgency_level.display_name if urgency_level else None,
             'color_code': getattr(urgency_level, 'color_code', None),
             'is_manual': is_manually_set
         }
