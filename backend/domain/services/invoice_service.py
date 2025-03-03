@@ -106,3 +106,29 @@ class InvoiceService:
             return InvoiceStatus.OVERDUE
         else:
             return InvoiceStatus.PENDING
+
+    def get_urgency_info(self, invoice: Invoice) -> Dict[str, Any]:
+        """Extract urgency information from an invoice in a format suitable for APIs.
+        
+        This method transforms the UrgencyLevel enum to a dictionary containing
+        all relevant information for presentation purposes.
+        
+        Args:
+            invoice: The invoice to extract urgency information from
+            
+        Returns:
+            Dict with urgency level, display name, color code, and manual flag
+        """
+        # Get the UrgencyLevel enum from the invoice
+        urgency_level = invoice.urgency
+        
+        # Check if urgency was manually set
+        is_manually_set = invoice.is_urgency_manually_set()
+        
+        # Return a dictionary with all relevant information
+        return {
+            'level': urgency_level.name if urgency_level else None,
+            'display_name': urgency_level.display_name if urgency_level else None,
+            'color_code': urgency_level.color_code if urgency_level else None,
+            'is_manual': is_manually_set
+        }
