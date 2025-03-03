@@ -118,7 +118,12 @@ class InvoiceUploadView(APIView):
                     ),
                     'date': formatted_date,
                     'supplier_name': result.get('supplier_name', ''),
-                    'urgency': result.get('urgency')
+                    'urgency': result.get('urgency', {
+                        'level': None, 
+                        'display_name': "", 
+                        'color_code': None, 
+                        'is_manual': False
+                    })
                 }
             }
 
