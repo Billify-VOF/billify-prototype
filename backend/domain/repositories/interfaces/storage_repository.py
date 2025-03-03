@@ -61,3 +61,24 @@ class StorageRepository(ABC):
             StorageError: If file cannot be deleted
         """
         pass
+
+    @abstractmethod
+    def save_temporary_file(self, file: BinaryIO, identifier: str) -> str:
+        """
+        Save a file to temporary storage.
+        
+        This method is used for files that need to be reviewed before 
+        final storage. Files saved with this method will be stored in 
+        a temporary location and may be subject to automatic cleanup.
+
+        Args:
+            file: The file object to store temporarily
+            identifier: Unique identifier for the file
+
+        Returns:
+            str: Temporary storage path or identifier for future retrieval
+
+        Raises:
+            StorageError: If file cannot be saved
+        """
+        pass
