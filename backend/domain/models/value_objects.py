@@ -54,6 +54,7 @@ class UrgencyLevel(Enum):
     Example:
         level = UrgencyLevel.OVERDUE
         level.name == "OVERDUE"          # Enum member name
+        level.value == (1, "#8B0000", (None, -1))  # Full tuple value
         level.db_value == 1              # Database value
         level.display_name == "Overdue"  # UI display value
         level.color_code == "#8B0000"    # UI color
@@ -288,3 +289,70 @@ class InvoiceStatus(Enum):
             if db_value == status.value:
                 return status
         raise ValueError(f"Invalid status db_value: {db_value}")
+
+
+class NotificationType(Enum):
+    """Value object representing the type/severity of a notification.
+
+    Provides type values and display names for notification categorization.
+    Used to determine visual styling and behavioral handling of notifications.
+
+    Each enum member (e.g., INFO, WARNING, ERROR) has:
+    - name: The enum member's name (e.g., "INFO")
+    - value: Tuple of (db_value, color_code)
+      - db_value: String value stored in database (e.g., "info")
+      - color_code: Hex color for UI display (e.g., "#0ea5e9")
+    - display_name: Human-readable version for UI (e.g., "Information")
+
+    Example:
+        notification_type = NotificationType.WARNING
+        notification_type.name == "WARNING"             # Enum member name
+        notification_type.value == ("warning", "#f59e0b") # Tuple value
+        notification_type.db_value == "warning"         # Database value
+        notification_type.color_code == "#f59e0b"       # UI color
+        notification_type.display_name == "Warning"     # UI display value
+    """
+    INFO = ('info', '#0ea5e9')      # Blue
+    WARNING = ('warning', '#f59e0b') # Orange/yellow
+    ERROR = ('error', '#ef4444')    # Red
+
+    # Type annotation for the value attribute of each enum member
+    # (db_value, color_code)
+    value: tuple[str, str]
+    
+    @property
+    def db_value(self) -> str:
+        """Returns the database value associated with this notification type.
+
+        Returns:
+            str: The database value
+        """
+        return self.value[0]
+    
+    @property
+    def color_code(self) -> str:
+        """Returns the color code associated with this notification type.
+
+        Returns:
+            str: Hex color code for UI display
+        """
+        return self.value[1]
+    
+    @property
+    def display_name(self) -> str:
+        """Returns a human-readable display name for this notification type.
+
+        Transforms the enum value to a user-friendly format:
+        - 'info' -> "Information"
+        - 'warning' -> "Warning"
+        - 'error' -> "Error"
+
+        Returns:
+            str: Human-readable display name
+        """
+        display_names = {
+            NotificationType.INFO: "Information",
+            NotificationType.WARNING: "Warning",
+            NotificationType.ERROR: "Error"
+        }
+        return display_names[self]
