@@ -2,7 +2,7 @@
 
 from django.urls import path
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView
-from token_manager.views import ponto_login,ponto_callback,get_pass_key
+from token_manager.views import ponto_login,get_pass_key,get_transaction_history,Create_Payment
 
 urlpatterns = [
     path(
@@ -16,8 +16,9 @@ urlpatterns = [
         name='invoice-preview'
     ),
     path('ponto-login/', ponto_login, name='ponto_login'),
-    path('ponto/callback/', ponto_callback, name='ponto_callback'),
     path('accounts/', get_pass_key, name='accounts'),
+    path('get-transactions-history/', get_transaction_history, name='transaction_history'),
+    path('create-payments/', Create_Payment, name='payment-create'),
     
     
 

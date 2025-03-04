@@ -1,7 +1,6 @@
 from django.shortcuts import render
 import os,json,requests
-import requests
-import os
+from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import redirect
@@ -22,6 +21,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import padding
 import time
+from token_manager.models import IbanityAccount
+from .serializers import IbanityAccountSerializer
 
 
 from dotenv import load_dotenv
@@ -60,33 +61,20 @@ def generate_random_session_id():
 @api_view(['GET'])
 def ponto_login(request):
     """
-    Redirects the user to Ponto OAuth2 login page.
+    Handles both the redirection to Ponto's OAuth2 login page and the callback to exchange the authorization code for an access token.
     """
+    
     session_id = generate_random_session_id()
-    auth_url = f"{PONTO_AUTH_URL}?client_id={PONTO_CLIENT_ID}&redirect_uri={PONTO_REDIRECT_URI}&response_type=code&scope=ai pi&state={session_id}"
-    global AUTHCODE
+    auth_url = f"{os.getenv('PONTO_AUTH_URL')}?client_id={os.getenv('PONTO_CLIENT_ID')}&redirect_uri={os.getenv('PONTO_REDIRECT_URI')}&response_type=code&scope=ai pi&state={session_id}"
+    
+    # Get 'code' from query parameters (callback step)
     AUTHCODE = request.GET.get('code')
-    return redirect(auth_url)
+    if not AUTHCODE:
+        # Redirect user to Ponto's login page if no code is provided
+        return redirect(auth_url)
 
-
-
-def load_private_key(private_key_path, password):
-    # Read and load the private key
-    with open(private_key_path, 'rb') as key_file:
-        private_key_data = key_file.read()
-
-    # Decrypt the private key with the provided password
-    private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
-    return private_key
-
-
-@api_view(['GET'])
-def ponto_callback(request):
-    """
-    Handles Ponto callback and exchanges authorization code for access token.
-    """
+    # Step 2: Exchange authorization code for access token
     try:
-
         url = URL
         PONTO_REDIRECT_URI = PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
         if not AUTHCODE:
@@ -107,6 +95,7 @@ def ponto_callback(request):
         data = {
             "grant_type": "authorization_code", 
             "code": AUTHCODE,                  
+            # "code": code,                  
             "redirect_uri": PONTO_REDIRECT_URI,
         }
         encoded_data = urlencode(data).encode('utf-8')
@@ -154,6 +143,16 @@ def ponto_callback(request):
         return Response({'message': str(e)})
 
 
+def load_private_key(private_key_path, password):
+    # Read and load the private key
+    with open(private_key_path, 'rb') as key_file:
+        private_key_data = key_file.read()
+
+    # Decrypt the private key with the provided password
+    private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
+    return private_key
+
+
 #Get Access token from Tokens folder
 def get_access_token():
     # Load access token from file
@@ -164,11 +163,34 @@ def get_access_token():
         return token_info['access_token']
 
 
-API_BASE_URL = f"{BASE_URL}'accounts'"
+API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
+
 certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
 private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
 private_key_password = PRIVATE_KEY_PASSWORD
 KEY_ID = KEY_ID # Replace with your actual Key ID
+
+def get_ibanity_credentials():
+    """
+    Returns the credentials and API base URL for the Ibanity API.
+
+    Returns:
+    - A dictionary containing the API base URL, certificate path, private key path, private key password, and key ID.
+    """
+    # API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
+    certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+    private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+    private_key_password = PRIVATE_KEY_PASSWORD
+    KEY_ID = os.getenv('KEY_ID')  # Replace with your actual Key ID
+
+    return {
+        "API_BASE_URL": API_BASE_URL,
+        "certificate_path": certificate_path,
+        "private_key_path": private_key_path,
+        "private_key_password": private_key_password,
+        "KEY_ID": KEY_ID
+    }
+
 
 def create_signature(request_target, digest, created, private_key_path, private_key_password):
     """Creates the signature string."""
@@ -198,6 +220,7 @@ def create_signature(request_target, digest, created, private_key_path, private_
 def get_pass_key(request):
     """Fetches accounts from the Ponto Connect API."""
     token = get_access_token()
+    user_id = 1
     # Get current timestamp as 'created' value
     created = str(int(time.time()))
 
@@ -213,7 +236,7 @@ def get_pass_key(request):
     # Construct the Signature header
     signature_header = f"""keyId="{KEY_ID}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
 
-    headers = {"Authorization": f"Basic {token}"}
+    headers = {"Authorization": f"Bearer {token}"}
     # Create an SSL context with the private key password
     context = ssl.create_default_context()
     context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=PRIVATE_KEY_PASSWORD)
@@ -235,7 +258,188 @@ def get_pass_key(request):
             headers=headers
         )
         accounts_data = json.loads(response.data.decode('utf-8'))
-        return Response(accounts_data)
+        user = User.objects.get(id=user_id)
+        save_record =save_or_update_account(user,accounts_data)
+        return Response(save_record)
 
     except Exception as e:
         return Response({"error": f"Request failed: {e}"}, status=500)
+
+
+#Save and update the record in db
+def save_or_update_account(user, account_data):
+    try:
+        # Check if account already exists for the user
+        account, created = IbanityAccount.objects.get_or_create(
+            user=user,
+            account_id=account_data['data'][0]['id'],
+            defaults={
+                'description': account_data['data'][0]['attributes']['description'],
+                'product': account_data['data'][0]['attributes']['product'],
+                'reference': account_data['data'][0]['attributes']['reference'],
+                'currency': account_data['data'][0]['attributes']['currency'],
+                'authorization_expiration_expected_at': account_data['data'][0]['attributes']['authorizationExpirationExpectedAt'],
+                'current_balance': account_data['data'][0]['attributes']['currentBalance'],
+                'availableBalance': account_data['data'][0]['attributes']['availableBalance'],
+                'subtype': account_data['data'][0]['attributes']['subtype'],
+                'holder_name': account_data['data'][0]['attributes']['holderName'],
+                'resourceId': account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+            }
+        )
+        
+        if not created:
+            # Update existing account
+            account.description = account_data['data'][0]['attributes']['description']
+            account.product = account_data['data'][0]['attributes']['product']
+            account.reference = account_data['data'][0]['attributes']['reference']
+            account.currency = account_data['data'][0]['attributes']['currency']
+            account.authorization_expiration_expected_at = account_data['data'][0]['attributes']['authorizationExpirationExpectedAt']
+            account.current_balance = account_data['data'][0]['attributes']['currentBalance']
+            account.availableBalance = account_data['data'][0]['attributes']['availableBalance']
+            account.subtype = account_data['data'][0]['attributes']['subtype']
+            account.holder_name = account_data['data'][0]['attributes']['holderName']
+            account.resourceId= account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+            account.save()
+        
+        # Serialize the saved or updated object
+        serializer = IbanityAccountSerializer(account)
+        return serializer.data
+    
+    except Exception as e:
+        print(f"Failed to save or update account: {e}")
+        return {"error": f"Failed to save or update account: {e}"}
+    
+    except Exception as e:
+        print(f"Failed to save or update account: {e}")
+        return None
+
+
+#Get transaction History
+@api_view(['GET'])
+def get_transaction_history(request):
+
+    user_id = 1
+    token = get_access_token()
+    get_certificate_credentials =get_ibanity_credentials()
+    get_resourceId = IbanityAccount.objects.filter(id=user_id).first()
+    account_id = get_resourceId.account_id
+    API_BASE_URL = f"{BASE_URL}accounts/{account_id}/transactions"
+    created = str(int(time.time()))
+
+    # Calculate the digest
+    data = "" # No data for GET request
+    digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
+    digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
+
+    # Create the signature
+    request_target = "get /ponto-connect/accounts"
+    signature = create_signature(request_target, digest, created, get_certificate_credentials['private_key_path'], get_certificate_credentials['private_key_password'])
+
+    # Construct the Signature header
+    signature_header = f"""keyId="{get_certificate_credentials['KEY_ID']}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
+
+    headers = {"Authorization": f"Bearer {token}"}
+    # Create an SSL context with the private key password
+    context = ssl.create_default_context()
+    context.load_cert_chain(certfile=get_certificate_credentials['certificate_path'], keyfile=get_certificate_credentials['private_key_path'], password=get_certificate_credentials['private_key_password'])
+    context.check_hostname = False
+
+    # Create a PoolManager with the SSL context
+    http = urllib3.PoolManager(
+        num_pools=50,
+        cert_reqs=ssl.CERT_NONE,  
+        ca_certs=None,
+        ssl_context=context
+    )
+
+    # Make the GET request using the PoolManager
+    try:
+        response = http.request(
+            'GET',
+            API_BASE_URL,
+            headers=headers
+        )
+        accounts_data = json.loads(response.data.decode('utf-8'))
+        print(json.dumps(accounts_data),'accounts_data')
+        return Response({'ok'})
+    except Exception as e:
+        return Response({"error": f"Request failed: {e}"}, status=500)
+
+
+@api_view(['POST'])
+def Create_Payment(request):
+    try:
+        # Get the JSON payload from the request
+        payload = json.loads(request.body)
+        
+        # Get account ID from database or request
+        user_id = 1
+        get_resourceId = IbanityAccount.objects.filter(id=user_id).first()
+        if not get_resourceId:
+            return Response({"error": "Account not found for the given user ID"}, status=404)
+        
+        account_id = get_resourceId.account_id
+        account_type = get_resourceId.product
+        if account_type != "Current account" or account_type != "Checking account":
+            return Response({"error": "Only checking accounts are supported for payment creation"}, status=400)
+        # Construct the API URL
+        API_BASE_URL = f"https://api.ibanity.com/ponto-connect/accounts/{account_id}/payments"
+        created = str(int(time.time()))
+
+        # Calculate the digest
+        data = "" # No data for GET request
+        digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
+        digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
+        request_target = "get /ponto-connect/accounts"
+        # Get access token
+        token = get_access_token()
+        get_certificate_credentials = get_ibanity_credentials()
+        signature = create_signature(request_target, digest, created, get_certificate_credentials['private_key_path'], get_certificate_credentials['private_key_password'])
+
+        # Construct the Signature header
+        signature_header = f"""keyId="{get_certificate_credentials['KEY_ID']}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
+
+        headers = {"Authorization": f"Bearer {token}"}
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=get_certificate_credentials['certificate_path'], keyfile=get_certificate_credentials['private_key_path'], password=get_certificate_credentials['private_key_password'])
+        context.check_hostname = False
+        # Get certificate credentials
+        
+        # Create headers
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_NONE,  
+            ca_certs=None,
+            ssl_context=context
+        )
+        # Make POST request with certificate file
+        response = http.request(
+            'POST',
+            API_BASE_URL,
+            headers=headers,
+        )
+        
+        if response.status == 201:  # Success
+            create_payment_response = response.json()
+            return Response(create_payment_response, status=201)
+        elif response.status == 400:  # Bad Request
+            error_response = response.json()
+            if "paymentsCheckingAccountOnly" in [error['code'] for error in error_response['errors']]:
+                return Response({"error": "Only checking accounts are supported for payment creation"}, status=400)
+            else:
+                return Response(error_response, status=response.status)
+        else:  # Error response from API
+            error_response = response.json()
+            return Response(error_response, status=response.status)
+    
+    except json.JSONDecodeError:
+        return Response({"error": f"Invalid JSON payload: {e}"}, status=400)
+    except Exception as e:
+        return Response({"error": f"Request failed: {e}"}, status=500)
+
+
