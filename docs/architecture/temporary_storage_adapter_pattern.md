@@ -55,7 +55,7 @@ Use the Adapter pattern to implement temporary storage functionality by creating
 
 #### Limitations
 1. **Indirection**
-   - Adds an additional layer of indirection between client code and storage implementation
+   - Adds a layer of indirection between client code and storage implementation
    - Creates a deeper call stack (client → adapter → repository) complicating debugging
    - Requires developers to understand both adapter and repository responsibilities
    - May introduce minimal performance overhead due to extra method calls
