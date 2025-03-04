@@ -187,6 +187,7 @@ class TemporaryStorageAdapter:
                 - files_removed: Number of files successfully removed
                 - files_failed: Number of files that failed to be removed
                 - bytes_reclaimed: Approximate storage space reclaimed (if available)
+                - registry_inconsistencies: Number of files that couldn't be untracked
                 
         Raises:
             StorageError: If there's a critical error accessing the registry
@@ -194,7 +195,8 @@ class TemporaryStorageAdapter:
         cleanup_stats = {
             "files_removed": 0,
             "files_failed": 0,
-            "bytes_reclaimed": 0
+            "bytes_reclaimed": 0,
+            "registry_inconsistencies": 0  # Track registry inconsistencies
         }
         
         try:
@@ -209,38 +211,59 @@ class TemporaryStorageAdapter:
             
             # Process each expired file
             for file_path in expired_files:
+                file_size = 0
+                deletion_successful = False
+                
                 try:
                     # Try to get file size before deletion (for statistics)
                     try:
                         full_path = self.storage_repository.get_file_path(file_path)
                         if full_path and full_path.exists():
-                            cleanup_stats["bytes_reclaimed"] += full_path.stat().st_size
+                            file_size = full_path.stat().st_size
                     except Exception:
                         # Non-critical error, just continue without size info
                         pass
                     
                     # Delete the file
                     self.storage_repository.delete_file(file_path)
+                    deletion_successful = True  # Mark deletion as successful
                     
-                    # Remove from tracking registry
-                    self._untrack_temporary_file(file_path)
-                    
+                    # Update statistics for successfully deleted files
                     cleanup_stats["files_removed"] += 1
+                    cleanup_stats["bytes_reclaimed"] += file_size
                     logger.debug("Removed expired temporary file: %s", file_path)
                     
                 except Exception as e:
+                    deletion_successful = False  # Explicitly mark deletion as failed
                     cleanup_stats["files_failed"] += 1
                     logger.warning(
                         "Failed to remove expired temporary file %s: %s",
                         file_path,
                         str(e)
                     )
+                
+                # Only attempt to untrack if deletion was successful
+                if deletion_successful:
+                    if not self._untrack_temporary_file(file_path):
+                        cleanup_stats["registry_inconsistencies"] += 1
+                        logger.warning(
+                            "File was deleted but could not be untracked from registry: %s", 
+                            file_path
+                        )
+            
+            if cleanup_stats["registry_inconsistencies"] > 0:
+                logger.warning(
+                    "%d files were deleted but could not be untracked from the registry",
+                    cleanup_stats["registry_inconsistencies"]
+                )
             
             logger.info(
-                "Cleanup complete: removed %d files, failed to remove %d files, reclaimed approximately %d bytes",
+                "Cleanup complete: removed %d files, failed to remove %d files, "
+                "reclaimed approximately %d bytes, registry inconsistencies: %d",
                 cleanup_stats["files_removed"],
                 cleanup_stats["files_failed"],
-                cleanup_stats["bytes_reclaimed"]
+                cleanup_stats["bytes_reclaimed"],
+                cleanup_stats["registry_inconsistencies"]
             )
             
             return cleanup_stats
