@@ -217,7 +217,7 @@ def create_signature(request_target, digest, created, private_key_path, private_
     return signature
 
 @api_view(['GET'])
-def get_pass_key(request):
+def fetch_account_details(request):
     """Fetches accounts from the Ponto Connect API."""
     token = get_access_token()
     user_id = 1
