@@ -12,6 +12,7 @@ import uuid
 
 from django.conf import settings
 from logging import getLogger
+from filelock import FileLock  # Import filelock for thread-safe file access
 
 from domain.exceptions import StorageError
 from domain.repositories.interfaces.storage_repository import StorageRepository
@@ -51,16 +52,20 @@ class TemporaryStorageAdapter:
         else:
             self.registry_path = Path(settings.MEDIA_ROOT) / 'temp_registry.json'
         
+        # Set up lock file path
+        self.lock_file_path = Path(str(self.registry_path) + ".lock")
+        
         # Initialize registry if it doesn't exist
-        if not self.registry_path.exists():
-            # Ensure directory exists
-            self.registry_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create empty registry
-            with self.registry_path.open('w') as f:
-                json.dump({}, f)
+        with FileLock(self.lock_file_path):
+            if not self.registry_path.exists():
+                # Ensure directory exists
+                self.registry_path.parent.mkdir(parents=True, exist_ok=True)
                 
-            logger.debug("Created new temporary file registry at %s", self.registry_path)
+                # Create empty registry
+                with self.registry_path.open('w') as f:
+                    json.dump({}, f)
+                    
+                logger.debug("Created new temporary file registry at %s", self.registry_path)
             
         logger.debug(
             "Initialized TemporaryStorageAdapter with expiration: %s hours, registry: %s", 
@@ -254,17 +259,18 @@ class TemporaryStorageAdapter:
             Dict: Dictionary mapping file paths to their metadata
         """
         try:
-            if not self.registry_path.exists():
-                logger.warning(
-                    "Registry file not found at %s, returning empty registry", 
-                    self.registry_path
-                )
-                return {}
-                
-            with self.registry_path.open('r') as f:
-                registry = json.load(f)
-                logger.debug("Loaded registry with %d entries", len(registry))
-                return registry
+            with FileLock(self.lock_file_path):
+                if not self.registry_path.exists():
+                    logger.warning(
+                        "Registry file not found at %s, returning empty registry", 
+                        self.registry_path
+                    )
+                    return {}
+                    
+                with self.registry_path.open('r') as f:
+                    registry = json.load(f)
+                    logger.debug("Loaded registry with %d entries", len(registry))
+                    return registry
                 
         except json.JSONDecodeError as e:
             logger.error(
@@ -290,15 +296,16 @@ class TemporaryStorageAdapter:
             bool: True if saved successfully, False otherwise
         """
         try:
-            # Ensure parent directory exists
-            self.registry_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Write the registry to file with pretty formatting for readability
-            with self.registry_path.open('w') as f:
-                json.dump(registry, f, indent=2)
+            with FileLock(self.lock_file_path):
+                # Ensure parent directory exists
+                self.registry_path.parent.mkdir(parents=True, exist_ok=True)
                 
-            logger.debug("Saved registry with %d entries", len(registry))
-            return True
+                # Write the registry to file with pretty formatting for readability
+                with self.registry_path.open('w') as f:
+                    json.dump(registry, f, indent=2)
+                    
+                logger.debug("Saved registry with %d entries", len(registry))
+                return True
             
         except Exception as e:
             logger.error("Failed to save registry file: %s", str(e))
@@ -362,6 +369,9 @@ class TemporaryStorageAdapter:
                   False if an error occurred
         """
         try:
+            # Since we're using _load_registry and _save_registry which already have locks,
+            # we don't need another lock here as those methods handle locking
+            
             # Load the current registry
             registry = self._load_registry()
             
@@ -400,7 +410,7 @@ class TemporaryStorageAdapter:
             List[str]: List of file paths that have expired
         """
         try:
-            # Load the registry
+            # Load the registry (this will use the lock via _load_registry)
             registry = self._load_registry()
             
             # Get current time for comparison
@@ -451,7 +461,7 @@ class TemporaryStorageAdapter:
             bool: True if the file has expired or is not in registry, False otherwise
         """
         try:
-            # Load the registry
+            # Load the registry (this will use the lock via _load_registry)
             registry = self._load_registry()
             
             # Check if the file is in the registry
