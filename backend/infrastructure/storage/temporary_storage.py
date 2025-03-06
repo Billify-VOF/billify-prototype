@@ -467,8 +467,17 @@ class TemporaryStorageAdapter:
                 
             return expired_files
             
-        except Exception as e:
-            logger.error("Error getting expired files: %s", str(e))
+        except json.JSONDecodeError as e:
+            # Handle JSON parsing errors separately (more specific exception first)
+            logger.error("Failed to parse registry JSON: %s", str(e))
+            return []
+        except (KeyError, FileNotFoundError, PermissionError) as e:
+            # Handle file access and data structure errors
+            logger.error("Error accessing registry: %s", str(e))
+            return []
+        except ValueError as e:
+            # Handle other value errors that aren't JSONDecodeError
+            logger.error("Error parsing data in registry: %s", str(e))
             return []
             
     def is_expired(self, path: str) -> bool:
