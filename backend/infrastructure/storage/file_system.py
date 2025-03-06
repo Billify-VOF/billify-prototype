@@ -257,10 +257,8 @@ class FileStorage(StorageRepository):
             file_name = source_path.name
             
             # Generate new storage path for the target
-            target_relative_path, target_full_path = (
-                self.storage_service.generate_storage_path(
-                    target_identifier, file_name
-                )
+            target_relative_path, target_full_path = self.storage_service.generate_storage_path(
+                target_identifier, file_name
             )
             
             # Delegate file moving to service (infrastructure concern)
