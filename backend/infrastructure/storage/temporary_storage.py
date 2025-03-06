@@ -11,6 +11,7 @@ import json
 import uuid
 
 from django.conf import settings
+from django.utils import timezone
 from logging import getLogger
 from filelock import FileLock  # Import filelock for thread-safe file access
 
@@ -89,7 +90,7 @@ class TemporaryStorageAdapter:
             StorageError: If the file cannot be saved or tracked
         """
         # Generate a unique temporary identifier with timestamp and random suffix
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
         random_suffix = uuid.uuid4().hex[:8]  # Use 8 characters from a UUID for uniqueness
         temp_identifier = f"temp_{identifier}_{timestamp}_{random_suffix}"
         
@@ -98,7 +99,7 @@ class TemporaryStorageAdapter:
             relative_path = self.storage_repository.save_file(file, temp_identifier)
             
             # Track the file in our registry for expiration
-            if not self._track_temporary_file(relative_path, datetime.now()):
+            if not self._track_temporary_file(relative_path, timezone.now()):
                 logger.warning(
                     "File %s was saved but could not be tracked in the registry", 
                     relative_path
@@ -434,7 +435,7 @@ class TemporaryStorageAdapter:
             registry = self._load_registry()
             
             # Get current time for comparison
-            now = datetime.now()
+            now = timezone.now()
             
             # Find expired files
             expired_files = []
@@ -442,6 +443,10 @@ class TemporaryStorageAdapter:
                 try:
                     # Parse expiration time from ISO format
                     expires_at = datetime.fromisoformat(info["expires_at"])
+                    
+                    # Convert expires_at to timezone-aware if it's naive
+                    if expires_at.tzinfo is None:
+                        expires_at = timezone.make_aware(expires_at)
                     
                     # Check if expired
                     if now > expires_at:
@@ -506,8 +511,12 @@ class TemporaryStorageAdapter:
                 logger.warning("Invalid expiration data for file %s: %s", path, str(e))
                 return False
                 
+            # Convert expires_at to timezone-aware if it's naive
+            if expires_at.tzinfo is None:
+                expires_at = timezone.make_aware(expires_at)
+            
             # Check if expired
-            now = datetime.now()
+            now = timezone.now()
             is_expired = now > expires_at
             
             if is_expired:
