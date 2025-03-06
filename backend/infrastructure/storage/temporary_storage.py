@@ -242,25 +242,25 @@ class TemporaryStorageAdapter:
                 # Only attempt to untrack if deletion was successful
                 if deletion_successful:
                     if not self._untrack_temporary_file(file_path):
-                        cleanup_stats["registry_inconsistencies"] += 1
+                        cleanup_stats["registry_inconsistencies"] = cleanup_stats.get("registry_inconsistencies", 0) + 1
                         logger.warning(
                             "File was deleted but could not be untracked from registry: %s", 
                             file_path
                         )
             
-            if cleanup_stats["registry_inconsistencies"] > 0:
+            if cleanup_stats.get("registry_inconsistencies", 0) > 0:
                 logger.warning(
                     "%d files were deleted but could not be untracked from the registry",
-                    cleanup_stats["registry_inconsistencies"]
+                    cleanup_stats.get("registry_inconsistencies", 0)
                 )
             
             logger.info(
                 "Cleanup complete: removed %d files, failed to remove %d files, "
                 "reclaimed approximately %d bytes, registry inconsistencies: %d",
-                cleanup_stats["files_removed"],
-                cleanup_stats["files_failed"],
-                cleanup_stats["bytes_reclaimed"],
-                cleanup_stats["registry_inconsistencies"]
+                cleanup_stats.get("files_removed", 0),
+                cleanup_stats.get("files_failed", 0),
+                cleanup_stats.get("bytes_reclaimed", 0),
+                cleanup_stats.get("registry_inconsistencies", 0)
             )
             
             return cleanup_stats
