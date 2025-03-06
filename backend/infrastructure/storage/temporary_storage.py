@@ -48,7 +48,7 @@ class TemporaryStorageAdapter:
         self.expiration_hours = expiration_hours
         
         # Set up registry file for tracking temporary files
-        self.registry_path = registry_path if registry_path else Path(settings.MEDIA_ROOT) / 'temp_registry.json'
+        self.registry_path = registry_path or (Path(settings.MEDIA_ROOT) / 'temp_registry.json')
         
         # Set up lock file path
         self.lock_file_path = Path(str(self.registry_path) + ".lock")
@@ -99,12 +99,40 @@ class TemporaryStorageAdapter:
             relative_path = self.storage_repository.save_file(file, temp_identifier)
             
             # Track the file in our registry for expiration
-            if not self._track_temporary_file(relative_path, timezone.now()):
+            # Try multiple times to track the file to avoid orphaned files
+            max_tracking_attempts = 3
+            tracking_success = False
+            
+            for attempt in range(1, max_tracking_attempts + 1):
+                if self._track_temporary_file(relative_path, timezone.now()):
+                    tracking_success = True
+                    break
                 logger.warning(
-                    "File %s was saved but could not be tracked in the registry", 
+                    "Attempt %d/%d: Failed to track temporary file %s in registry, retrying...",
+                    attempt,
+                    max_tracking_attempts,
                     relative_path
                 )
-                # Continue anyway since the file was saved successfully
+            
+            # If tracking still failed after retries, clean up to avoid orphaned files
+            if not tracking_success:
+                logger.error(
+                    "Failed to track file %s in registry after %d attempts. Cleaning up to avoid orphaned files.",
+                    relative_path,
+                    max_tracking_attempts
+                )
+                try:
+                    # Delete the file since we can't track it
+                    self.storage_repository.delete_file(relative_path)
+                    raise StorageError(
+                        f"Failed to store temporary file: Could not track in registry after {max_tracking_attempts} attempts"
+                    )
+                except Exception as cleanup_error:
+                    # If cleanup also fails, report both errors
+                    logger.error("Failed to clean up untracked file: %s", str(cleanup_error))
+                    raise StorageError(
+                        f"Failed to store temporary file: Could not track in registry and cleanup failed"
+                    )
             
             logger.info(
                 "Stored temporary file at %s (expires in %d hours)",
