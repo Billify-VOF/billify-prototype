@@ -47,10 +47,7 @@ class TemporaryStorageAdapter:
         self.expiration_hours = expiration_hours
         
         # Set up registry file for tracking temporary files
-        if registry_path:
-            self.registry_path = registry_path
-        else:
-            self.registry_path = Path(settings.MEDIA_ROOT) / 'temp_registry.json'
+        self.registry_path = registry_path if registry_path else Path(settings.MEDIA_ROOT) / 'temp_registry.json'
         
         # Set up lock file path
         self.lock_file_path = Path(str(self.registry_path) + ".lock")
