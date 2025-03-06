@@ -248,6 +248,10 @@ class FileStorage(StorageRepository):
             StorageError: If file cannot be moved
         """
         try:
+            # Check if storage service is initialized
+            if self.storage_service is None:
+                raise StorageError("Storage service not initialized")
+            
             # Get source full path from relative path
             source_full_path = self.storage_service.get_full_path(source_identifier)
             
