@@ -240,14 +240,13 @@ class TemporaryStorageAdapter:
                         str(e)
                     )
                 
-                # Only attempt to untrack if deletion was successful
-                if deletion_successful:
-                    if not self._untrack_temporary_file(file_path):
-                        cleanup_stats["registry_inconsistencies"] = cleanup_stats.get("registry_inconsistencies", 0) + 1
-                        logger.warning(
-                            "File was deleted but could not be untracked from registry: %s", 
-                            file_path
-                        )
+                # Only attempt to untrack if deletion was successful and track operation fails
+                if deletion_successful and not self._untrack_temporary_file(file_path):
+                    cleanup_stats["registry_inconsistencies"] = cleanup_stats.get("registry_inconsistencies", 0) + 1
+                    logger.warning(
+                        "File was deleted but could not be untracked from registry: %s", 
+                        file_path
+                    )
             
             if cleanup_stats.get("registry_inconsistencies", 0) > 0:
                 logger.warning(
