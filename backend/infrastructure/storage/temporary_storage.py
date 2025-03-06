@@ -334,14 +334,14 @@ class TemporaryStorageAdapter:
             )
             return {}
             
-    def _save_registry(self, registry: Dict) -> bool:
+    def _save_registry(self, registry: Dict) -> None:
         """Save the registry dictionary to disk.
         
         Args:
             registry: Dictionary mapping file paths to their metadata
             
-        Returns:
-            bool: True if saved successfully, False otherwise
+        Raises:
+            StorageError: If the registry cannot be saved
         """
         try:
             with FileLock(self.lock_file_path):
@@ -353,11 +353,10 @@ class TemporaryStorageAdapter:
                     json.dump(registry, f, indent=2)
                     
                 logger.debug("Saved registry with %d entries", len(registry))
-                return True
             
         except Exception as e:
             logger.error("Failed to save registry file: %s", str(e))
-            return False
+            raise StorageError(f"Failed to save temporary file registry: {str(e)}") from e
             
     def _track_temporary_file(self, path: str, creation_time: datetime) -> bool:
         """Add a file to the temporary registry.
@@ -386,15 +385,16 @@ class TemporaryStorageAdapter:
             }
             
             # Save updated registry
-            if self._save_registry(registry):
+            try:
+                self._save_registry(registry)
                 logger.debug(
                     "Tracked temporary file %s, expires at %s", 
                     path, 
                     expiration_time.isoformat()
                 )
                 return True
-            else:
-                logger.error("Failed to save registry after tracking file %s", path)
+            except StorageError as e:
+                logger.error("Failed to save registry after tracking file %s: %s", path, str(e))
                 return False
                 
         except Exception as e:
@@ -432,7 +432,8 @@ class TemporaryStorageAdapter:
             file_info = registry.pop(path)
             
             # Save the updated registry
-            if self._save_registry(registry):
+            try:
+                self._save_registry(registry)
                 created_at = file_info.get("created_at", "unknown")
                 logger.debug(
                     "Untracked temporary file %s (created: %s)", 
@@ -440,8 +441,8 @@ class TemporaryStorageAdapter:
                     created_at
                 )
                 return True
-            else:
-                logger.error("Failed to save registry after untracking file %s", path)
+            except StorageError as e:
+                logger.error("Failed to save registry after untracking file %s: %s", path, str(e))
                 return False
                 
         except Exception as e:
