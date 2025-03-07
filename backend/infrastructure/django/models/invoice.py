@@ -106,6 +106,29 @@ class Invoice(models.Model):
         help_text="Relative path to the stored invoice PDF file in the system."
     )
 
+    # Meta Data
+    buyer_name = models.CharField(max_length=255, null=True, blank=True)
+    buyer_address = models.TextField(null=True, blank=True)
+    buyer_email = models.EmailField(null=True, blank=True)
+    buyer_vat = models.CharField(max_length=50, null=True, blank=True)
+    seller_name = models.CharField(max_length=255, null=True, blank=True)
+    seller_vat = models.CharField(max_length=50, null=True, blank=True)
+    payment_method = models.CharField(max_length=50, null=True, blank=True)
+    currency = models.CharField(max_length=10, null=True, blank=True)
+    iban = models.CharField(max_length=34, null=True, blank=True)
+    bic = models.CharField(max_length=11, null=True, blank=True)
+    payment_processor = models.CharField(max_length=100, null=True, blank=True)
+    transaction_id = models.CharField(max_length=100, null=True, blank=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vat_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    invoice_date = models.DateField(null=True, blank=True)
+
+    file_size = models.BigIntegerField(null=True, blank=True, help_text="Size of the uploaded file in bytes.")
+    file_type = models.CharField(max_length=100, null=True, blank=True, help_text="MIME type of the uploaded file.")
+    original_file_name = models.CharField(max_length=255, null=True, blank=True, help_text="Original name of the uploaded file.")
+
+
     class Meta:
         """Model configuration for database behavior and indexing.
 
@@ -127,19 +150,56 @@ class Invoice(models.Model):
     @classmethod
     def create(
         cls,
-        invoice_number: str,
-        amount: Decimal,
-        due_date: date,
-        uploaded_by_id: int,
-        file_path: str
+    invoice_number: str,
+    amount: Decimal,
+    due_date: date,
+    uploaded_by: int,  # Change from uploaded_by_id
+    file_path: str,
+    buyer_name: Optional[str] = None,
+    buyer_address: Optional[str] = None,
+    buyer_vat: Optional[str] = None,
+    buyer_email: Optional[str] = None,
+    seller_name: Optional[str] = None,
+    seller_vat: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    currency: Optional[str] = None,
+    iban: Optional[str] = None,
+    bic: Optional[str] = None,
+    payment_processor: Optional[str] = None,
+    transaction_id: Optional[str] = None,
+    subtotal: Optional[Decimal] = None,
+    vat_amount: Optional[Decimal] = None,
+    total_amount: Optional[Decimal] = None,
+    file_size: Optional[int] = None,
+    file_type: Optional[str] = None,
+    original_file_name: Optional[str] = None 
+
     ) -> 'Invoice':
         """Create a new Invoice instance with validation."""
         instance = cls(
             invoice_number=invoice_number,
-            amount=amount,
-            due_date=due_date,
-            uploaded_by_id=uploaded_by_id,
-            file_path=file_path
+        amount=amount,
+        due_date=due_date,
+        uploaded_by_id=uploaded_by,
+        file_path=file_path,
+        buyer_name=buyer_name or "",
+        buyer_address=buyer_address or "",
+        buyer_vat=buyer_vat or "",
+        buyer_email=buyer_email or "",
+        seller_name=seller_name or "",
+        seller_vat=seller_vat or "",
+        payment_method=payment_method or "",
+        currency=currency or "",
+        iban=iban or "",
+        bic=bic or "",
+        payment_processor=payment_processor or "",
+        transaction_id=transaction_id or "",
+        subtotal=subtotal or Decimal("0.00"),
+        vat_amount=vat_amount or Decimal("0.00"),
+        total_amount=total_amount or Decimal("0.00"),
+        file_size=file_size or 0,
+        file_type=file_type or "unknown",
+        original_file_name=original_file_name or "unknown"
         )
         instance.full_clean()
         return instance
@@ -201,8 +261,27 @@ class Invoice(models.Model):
         amount: Optional[Decimal] = None,
         due_date: Optional[date] = None,
         status: Optional[str] = None,
-        uploaded_by_id: Optional[int] = None,
-        manual_urgency: Optional[int] = None
+        manual_urgency: Optional[int] = None,
+        buyer_name: Optional[str] = None,
+        buyer_address: Optional[str] = None,
+        buyer_vat: Optional[str] = None,
+        buyer_email: Optional[str] = None,
+        seller_name: Optional[str] = None,        
+        seller_vat: Optional[str] = None,        
+        payment_method: Optional[str] = None,        
+        currency: Optional[str] = None,        
+        iban: Optional[str] = None,        
+        bic: Optional[str] = None,        
+        payment_processor: Optional[str] = None,        
+        transaction_id: Optional[str] = None, 
+        subtotal: Optional[Decimal] = None,       
+        vat_amount: Optional[Decimal] = None,       
+        total_amount: Optional[Decimal] = None,
+        uploaded_by: Optional[int] = None,
+        file_size: Optional[int] = None,
+        file_type: Optional[str] = None,
+        original_file_name: Optional[str] = None
+
     ) -> None:
         """Update invoice fields with validation.
 
@@ -229,11 +308,81 @@ class Invoice(models.Model):
         if status is not None:
             self.status = status
 
-        if uploaded_by_id is not None:
-            self.uploaded_by_id = uploaded_by_id
-
         if manual_urgency is not None:
             self.manual_urgency = manual_urgency
+
+        if buyer_name is not None:
+            self.buyer_name = buyer_name
+
+        if buyer_address is not None:
+            self.buyer_address = buyer_address
+
+        if buyer_vat is not None:
+            self.buyer_vat = buyer_vat
+
+
+        if buyer_email is not None:
+            self.buyer_email = buyer_email
+
+
+        if seller_name is not None:
+            self.seller_name = seller_name
+
+
+        if seller_vat is not None:
+            self.seller_vat = seller_vat
+
+
+        if payment_method is not None:
+            self.payment_method = payment_method
+
+
+        if currency is not None:
+            self.currency = currency
+
+
+        if iban is not None:
+            self.iban = iban
+
+
+        if bic is not None:
+            self.bic = bic
+
+
+        if payment_processor is not None:
+            self.payment_processor = payment_processor
+
+
+        if transaction_id is not None:
+            self.transaction_id = transaction_id
+
+
+        if subtotal is not None:
+            self.subtotal = subtotal
+
+
+        if vat_amount is not None:
+            self.vat_amount = vat_amount
+
+
+        if total_amount is not None:
+            self.total_amount = total_amount
+
+        if uploaded_by is not None:
+            self.uploaded_by = uploaded_by
+
+
+        if file_size is not None:
+            self.file_size = file_size
+
+
+        if file_type is not None:
+            self.file_type = file_type
+
+
+        if original_file_name is not None:
+            self.original_file_name = original_file_name
+
 
         # Validate all fields
         self.full_clean()

@@ -1,8 +1,7 @@
 """Django ORM implementation of the invoice repository interface."""
 
 from datetime import date, timedelta
-from typing import Optional, List, Dict
-from itertools import chain
+from typing import Optional, List
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
@@ -58,7 +57,25 @@ class DjangoInvoiceRepository(InvoiceRepository):
             # Map Django's auto-generated id to domain model's
             # invoice_id parameter. Domain model stores it as self.id
             'invoice_id': db_invoice.id,  # type: ignore[attr-defined]
-            'status': InvoiceStatus.from_db_value(db_invoice.status)
+            'status': InvoiceStatus.from_db_value(db_invoice.status),
+            'uploaded_by': db_invoice.uploaded_by_id,
+            'file_path': db_invoice.file_path,
+            'buyer_name': db_invoice.buyer_name,
+            'buyer_address': db_invoice.buyer_address,
+            'buyer_email': db_invoice.buyer_email,
+            'buyer_vat': db_invoice.buyer_vat,
+            'seller_name': db_invoice.seller_name,
+            'seller_vat': db_invoice.seller_vat,
+            'payment_method': db_invoice.payment_method,
+            'currency': db_invoice.currency,
+            'iban': db_invoice.iban,
+            'bic': db_invoice.bic,
+            'payment_processor': db_invoice.payment_processor,
+            'transaction_id': db_invoice.transaction_id,
+            'subtotal': db_invoice.subtotal,
+            'vat_amount': db_invoice.vat_amount,
+            'total_amount': db_invoice.total_amount,
+            
         }
         logger.debug("Created invoice args: %s", invoice_args)
 
@@ -115,7 +132,22 @@ class DjangoInvoiceRepository(InvoiceRepository):
             file_path=file_path or '',
             status=domain_invoice.status.value,
             manual_urgency=manual_urgency_value,
-            uploaded_by_id=user_id
+            uploaded_by_id=user_id,
+            buyer_name=domain_invoice.buyer_name,
+            buyer_address=domain_invoice.buyer_address,
+            buyer_email=domain_invoice.buyer_email,
+            buyer_vat=domain_invoice.buyer_vat,
+            seller_name=domain_invoice.seller_name,
+            seller_vat=domain_invoice.seller_vat,
+            payment_method=domain_invoice.payment_method,
+            currency=domain_invoice.currency,
+            iban=domain_invoice.iban,
+            bic=domain_invoice.bic,
+            payment_processor=domain_invoice.payment_processor,
+            transaction_id=domain_invoice.transaction_id,
+            subtotal=domain_invoice.subtotal,
+            vat_amount=domain_invoice.vat_amount,
+            total_amount=domain_invoice.total_amount
         )
 
     def save(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
@@ -215,6 +247,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
                 status=invoice.status.value,
                 uploaded_by_id=user_id,
                 manual_urgency=manual_urgency_value
+                
             )
             # Save the changes to the database
             db_invoice.save()
@@ -253,34 +286,32 @@ class DjangoInvoiceRepository(InvoiceRepository):
         min_days, max_days = day_range
         
         # Create date range for query
-        min_date = today + timedelta(days=min_days) if min_days is not None else None
-        max_date = today + timedelta(days=max_days) if max_days is not None else None
+        min_date = None if min_days is None else (today + timedelta(days=min_days))
+        max_date = None if max_days is None else (today + timedelta(days=max_days))
         
         # Build query for calculated urgency
         # Only include invoices without manual override
         calculated_query = Q(manual_urgency__isnull=True)
-
-        filter_conditions: Dict[str, Optional[date]] = {}
-
-        if min_date is not None:
-            filter_conditions["due_date__gte"] = min_date
-        if max_date is not None:
-            filter_conditions["due_date__lte"] = max_date
         
-        # Apply all date range filters at once if any exist. This approach:
-        # 1. Builds all filter conditions before applying them
-        # 2. Creates only a single Q object instead of multiple ones
-        # 3. Avoids applying the same conditions multiple times
-        # 4. Follows Django best practices for dynamic filtering
-        if filter_conditions:
-            calculated_query &= Q(**filter_conditions)
+        if min_date is not None and max_date is not None:
+            # Both min and max are specified
+            calculated_query &= Q(due_date__gte=min_date, due_date__lte=max_date)
+        elif min_date is not None:
+            # Only min is specified
+            calculated_query &= Q(due_date__gte=min_date)
+        elif max_date is not None:
+            # Only max is specified
+            calculated_query &= Q(due_date__lte=max_date)
         
         # Get invoices with calculated urgency matching the requested level
         db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
         
-        # Convert to domain models and return the combined result
-        return [self._to_domain(invoice) for invoice in chain(db_invoices_with_manual, db_invoices_calculated)]
+        # Combine both querysets
+        db_invoices = list(db_invoices_with_manual) + list(db_invoices_calculated)
         
+        # Convert to domain models
+        return [self._to_domain(invoice) for invoice in db_invoices]
+
     def list_by_urgency_order(
         self, 
         status: Optional[str] = None,
@@ -302,10 +333,12 @@ class DjangoInvoiceRepository(InvoiceRepository):
         Returns:
             List of domain invoice models ordered by urgency
         """
-
-        # Efficiently create the base query in one step: if status is provided, filter by it,
-        # otherwise return all invoices. This avoids unnecessary queryset creation.
-        query = DjangoInvoice.objects.filter(status=status) if status else DjangoInvoice.objects.all()
+        # Start with base query
+        query = DjangoInvoice.objects.all()
+        
+        # Apply status filter if provided
+        if status:
+            query = query.filter(status=status)
         
         # For proper sorting:
         # 1. Invoices with manual_urgency are ordered by that value
