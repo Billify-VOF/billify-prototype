@@ -2,7 +2,7 @@
 
 from django.urls import path
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView
-
+from token_manager.views import fetch_account_details
 urlpatterns = [
     path(
         'invoices/upload/',
@@ -14,4 +14,5 @@ urlpatterns = [
         InvoicePreviewView.as_view(),
         name='invoice-preview'
     ),
+    path('accounts/', fetch_account_details, name='accounts'),
 ]
