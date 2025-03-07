@@ -164,3 +164,88 @@ def ponto_login(request):
 
     except Exception as e:
         return Response({'message': str(e)})
+    
+
+# get access token 
+def refresh_access_token():
+    """
+    Refreshes the access token using the stored refresh token, updates it in the database,
+    and returns the updated token.
+    """
+    user_id = 1  # Example user_id, adjust as needed
+    try:
+        # Retrieve the user's PontoToken instance
+        ponto_token = PontoToken.objects.get(user=user_id)
+
+        if not ponto_token.refresh_token:
+            print("Error: Refresh token not found")
+            return {"error": "Refresh token not found"}
+
+        # Prepare request data for refreshing the token
+        url = os.getenv('URL')
+        client_id = os.getenv('PONTO_CLIENT_ID')
+        client_secret = os.getenv('PONTO_CLIENT_SECRET')
+        client = convertclientidsecret(client_id, client_secret)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/vnd.api+json",
+            "Authorization": f"Basic {client}"
+        }
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": ponto_token.refresh_token,
+            "client_id": client_id,
+        }
+        encoded_data = urlencode(data).encode('utf-8')
+
+        # Set up SSL context for cert and key
+        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+        private_key_password = os.getenv("PRIVATE_KEY_PASSWORD")  # Ensure you have this in your .env
+
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
+        context.check_hostname = False
+
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_REQUIRED,
+            ca_certs=None,
+            ssl_context=context
+        )
+
+        response = http.request(
+            'POST',
+            url,
+            headers=headers,
+            body=encoded_data,
+            preload_content=True
+        )
+
+        if response.status == 200:
+            token_data = json.loads(response.data.decode('utf-8'))
+
+            # Update the stored access token and refresh token in the database
+            ponto_token.access_token = token_data.get("access_token")
+            ponto_token.refresh_token = token_data.get("refresh_token", ponto_token.refresh_token)
+            ponto_token.expires_in = token_data.get("expires_in")
+            ponto_token.save()
+
+            # Return the updated access token data
+            return {
+                "access_token": ponto_token.access_token,
+                "refresh_token": ponto_token.refresh_token,
+                "expires_in": ponto_token.expires_in,
+            }
+
+        else:
+            print("Error: Failed to refresh access token")
+            return {"error": "Failed to refresh access token"}
+
+    except PontoToken.DoesNotExist:
+        print("Error: No tokens found for this user")
+        return {"error": "No tokens found for this user"}
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return {"error": str(e)}
