@@ -31,10 +31,13 @@ class StorageRepository(ABC):
         Raises:
             StorageError: If file cannot be saved
         """
-        pass
+        file_path = f"uploads/{identifier}.pdf"
+        with open(file_path, "wb") as f:
+            f.write(file.read())
+        return file_path
 
     @abstractmethod
-    def get_file_path(self, identifier: str) -> Path:
+    def get_file_path(self, file_path) -> Path:
         """
         Get the full path to a stored file.
 
@@ -47,7 +50,7 @@ class StorageRepository(ABC):
         Raises:
             StorageError: If file cannot be found
         """
-        pass
+        return file_path 
 
     @abstractmethod
     def delete_file(self, identifier: str) -> None:

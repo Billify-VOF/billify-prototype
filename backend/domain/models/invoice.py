@@ -28,10 +28,30 @@ class Invoice:
 
     @classmethod
     def create(cls,
-               amount: Decimal,
-               due_date: date,
-               invoice_number: str,
-               status: InvoiceStatus = InvoiceStatus.PENDING
+                amount: Decimal,
+                due_date: date,
+                invoice_number: str,
+                status: InvoiceStatus = InvoiceStatus.PENDING,
+                file_size: Optional[int] = None,  
+                file_type: Optional[str] = None, 
+                file_path=None,
+                uploaded_by=None,
+                original_file_name: Optional[str] = None, 
+                buyer_name: Optional[str] = None,
+                buyer_address: Optional[str] = None,
+                buyer_vat: Optional[str] = None,
+                buyer_email: Optional[str] = None,
+                seller_name: Optional[str] = None,        
+                seller_vat: Optional[str] = None,        
+                payment_method: Optional[str] = None,        
+                currency: Optional[str] = None,        
+                iban: Optional[str] = None,        
+                bic: Optional[str] = None,        
+                payment_processor: Optional[str] = None,        
+                transaction_id: Optional[str] = None, 
+                subtotal: Optional[Decimal] = None,       
+                vat_amount: Optional[Decimal] = None,       
+                total_amount: Optional[Decimal] = None,
                ) -> 'Invoice':
         """Create a new valid invoice.
 
@@ -58,7 +78,12 @@ class Invoice:
             amount=amount,
             due_date=due_date,
             invoice_number=invoice_number,
-            status=status
+            file_size=file_size,
+            file_path=file_path,
+            file_type=file_type,
+            original_file_name=original_file_name,
+            status=status,
+            uploaded_by=uploaded_by
         )
         invoice.validate()
         return invoice
@@ -69,8 +94,29 @@ class Invoice:
         amount: Decimal,
         due_date: date,
         invoice_number: str,
+        uploaded_by: None,
+        file_path:  Optional[str] = None,
         invoice_id: Optional[int] = None,
-        status: InvoiceStatus = InvoiceStatus.PENDING
+        status: InvoiceStatus = InvoiceStatus.PENDING,
+        buyer_name: Optional[str] = None,
+        buyer_address: Optional[str] = None,
+        buyer_vat: Optional[str] = None,
+        buyer_email: Optional[str] = None,
+        seller_name: Optional[str] = None,        
+        seller_vat: Optional[str] = None,        
+        payment_method: Optional[str] = None,        
+        currency: Optional[str] = None,        
+        iban: Optional[str] = None,        
+        bic: Optional[str] = None,        
+        payment_processor: Optional[str] = None,        
+        transaction_id: Optional[str] = None, 
+        subtotal: Optional[Decimal] = None,       
+        vat_amount: Optional[Decimal] = None,       
+        total_amount: Optional[Decimal] = None,
+        file_size: Optional[int] = None,  # File size in bytes
+        file_type: Optional[str] = None,  # MIME type (e.g., "application/pdf")
+        original_file_name: Optional[str] = None,  # Original file name
+
     ) -> None:
         logger.debug("Invoice __init__ called")
         logger.debug("  amount: %s (%s)", amount, type(amount))
@@ -83,9 +129,31 @@ class Invoice:
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
+        self.file_path = file_path 
         self.invoice_number: str = invoice_number
         self.status: InvoiceStatus = status
         self._manual_urgency: Optional[UrgencyLevel] = None
+        self.buyer_name: Optional[str] = buyer_name
+        self.buyer_address: Optional[str] = buyer_address
+        self.buyer_vat: Optional[str] = buyer_vat
+        self.buyer_email: Optional[str] = buyer_email
+        self.seller_name: Optional[str] = seller_name
+        self.seller_vat: Optional[str] = seller_vat
+        self.payment_method: Optional[str] = payment_method
+        self.currency: Optional[str] = currency
+        self.iban: Optional[str] = iban
+        self.bic: Optional[str] = bic
+        self.payment_processor: Optional[str] = payment_processor
+        self.transaction_id: Optional[str] = transaction_id
+        self.subtotal: Optional[Decimal] = subtotal
+        self.vat_amount: Optional[Decimal] = vat_amount
+        self.total_amount: Optional[Decimal] = total_amount
+        self.uploaded_by:Optional[int] =None
+
+        self.file_size = file_size
+        self.file_type = file_type
+        self.original_file_name = original_file_name
+
 
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""
@@ -277,7 +345,26 @@ class Invoice:
         due_date: Optional[date] = None,
         invoice_number: Optional[str] = None,
         status: Optional[InvoiceStatus] = None,
-        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None
+        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None,
+        buyer_name: Optional[str] = None,
+        buyer_address: Optional[str] = None,
+        buyer_vat: Optional[str] = None,
+        buyer_email: Optional[str] = None,
+        seller_name: Optional[str] = None,        
+        seller_vat: Optional[str] = None,        
+        payment_method: Optional[str] = None,        
+        currency: Optional[str] = None,        
+        iban: Optional[str] = None,        
+        bic: Optional[str] = None,        
+        payment_processor: Optional[str] = None,        
+        transaction_id: Optional[str] = None, 
+        subtotal: Optional[Decimal] = None,       
+        vat_amount: Optional[Decimal] = None,       
+        total_amount: Optional[Decimal] = None,
+        file_size: Optional[int] = None,
+        file_type: Optional[str] = None,
+        original_file_name: Optional[str] = None,
+
     ) -> None:
         """Update invoice fields with validation.
 
@@ -330,6 +417,72 @@ class Invoice:
 
         if status is not None:
             self.status = status
+
+        if buyer_name is not None:
+            self.buyer_name = buyer_name
+
+        if buyer_address is not None:
+            self.buyer_address = buyer_address
+
+        if buyer_vat is not None:
+            self.buyer_vat = buyer_vat
+
+
+        if buyer_email is not None:
+            self.buyer_email = buyer_email
+
+
+        if seller_name is not None:
+            self.seller_name = seller_name
+
+
+        if seller_vat is not None:
+            self.seller_vat = seller_vat
+
+
+        if payment_method is not None:
+            self.payment_method = payment_method
+
+
+        if currency is not None:
+            self.currency = currency
+
+
+        if iban is not None:
+            self.iban = iban
+
+
+        if bic is not None:
+            self.bic = bic
+
+
+        if payment_processor is not None:
+            self.payment_processor = payment_processor
+
+
+        if transaction_id is not None:
+            self.transaction_id = transaction_id
+
+
+        if subtotal is not None:
+            self.subtotal = subtotal
+
+
+        if vat_amount is not None:
+            self.vat_amount = vat_amount
+
+
+        if total_amount is not None:
+            self.total_amount = total_amount
+
+        if file_size is not None:
+            self.file_size = file_size
+
+        if file_type is not None:
+            self.file_type = file_type
+
+        if original_file_name is not None:
+            self.original_file_name = original_file_name
             
         # Handle manual urgency if provided
         if manual_urgency is not None:
