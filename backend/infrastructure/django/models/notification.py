@@ -4,10 +4,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from typing import Optional, Dict, Any
 import logging
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from typing import Optional
 
 from domain.models.value_objects import NotificationType
 
@@ -111,27 +111,23 @@ class Notification(models.Model):
             models.Index(fields=['content_type', 'object_id'], name='notif_content_idx'),
         ]
     
-    def mark_as_read(self) -> 'Notification':
-        """Mark the notification as read with the current timestamp.
+    def __init__(self, *args, **kwargs):
+        """Initialize notification instance with additional setup.
         
-        If the notification is already read, this is a no-op.
+        Performs any necessary conversions or initializations when
+        a new instance is created, either from the database or in code.
         
-        Returns:
-            The notification instance (self) for method chaining.
+        This method is called both when creating new objects and when
+        loading existing objects from the database.
         """
-        if not self.read_at:
-            self.read_at = timezone.now()
-            self.save(update_fields=['read_at'])
-        return self
-    
-    @property
-    def is_read(self) -> bool:
-        """Check if the notification has been read.
+        super().__init__(*args, **kwargs)
         
-        Returns:
-            True if the notification has been read, False otherwise.
-        """
-        return self.read_at is not None
+        # Initialize any instance attributes that aren't directly 
+        # mapped to database fields (if needed in the future)
+        
+        # Pre-process any values that need conversion before use
+        # For now, we don't need any special initialization logic,
+        # but the structure is in place for future extensions
     
     def __str__(self) -> str:
         """Return a string representation of the notification.
@@ -154,6 +150,173 @@ class Notification(models.Model):
         username = getattr(self.user, 'username', 'unknown')
         
         return f"[{type_display}] {short_message} (for {username}) [{status}]"
+    
+    @classmethod
+    def create(
+        cls,
+        message: str,
+        type_value: str,
+        user_id: int,
+        content_type_id: Optional[int] = None,
+        object_id: Optional[int] = None,
+        is_read: bool = False
+    ) -> 'Notification':
+        """Create a new notification with validation.
+        
+        Factory method that encapsulates creation logic and ensures
+        proper validation before saving to the database.
+        
+        Args:
+            message: The notification message content
+            type_value: The notification type (must be a valid NotificationType db_value)
+            user_id: ID of the user who should receive this notification
+            content_type_id: Optional ContentType ID for related object
+            object_id: Optional ID of related object
+            is_read: Whether notification is already read (default: False)
+            
+        Returns:
+            Notification: The created and saved notification instance
+            
+        Raises:
+            ValidationError: If validation fails for any field
+        """
+        # Create notification instance
+        notification = cls(
+            message=message,
+            type=type_value,
+            user_id=user_id
+        )
+        
+        # Set optional fields if provided
+        if content_type_id is not None and object_id is not None:
+            notification.content_type_id = content_type_id
+            notification.object_id = object_id
+            
+        # Set read status if notification is already read
+        if is_read:
+            notification.read_at = timezone.now()
+        
+        # Validate and save
+        notification.full_clean()
+        notification.save()
+        
+        return notification
+    
+    def clean(self) -> None:
+        """Validate notification data before saving.
+        
+        Calls specialized validation methods for each field requiring custom validation.
+        
+        Raises:
+            ValidationError: If any validation checks fail
+        """
+        super().clean()
+        self._validate_message()
+        self._validate_type()
+    
+    def _validate_message(self) -> None:
+        """Validate the notification message.
+        
+        Ensures the message is not empty or just whitespace.
+        
+        Raises:
+            ValidationError: If message is empty or only contains whitespace
+        """
+        if not self.message or not self.message.strip():
+            raise ValidationError({
+                'message': 'Notification message cannot be empty.'
+            })
+    
+    def _validate_type(self) -> None:
+        """Validate the notification type.
+        
+        Ensures the type is one of the valid types defined in NotificationType.
+        
+        Raises:
+            ValidationError: If type is not a valid NotificationType value
+        """
+        valid_types = [t.db_value for t in NotificationType]
+        if self.type not in valid_types:
+            raise ValidationError({
+                'type': f'Invalid notification type. Must be one of: {", ".join(valid_types)}'
+            })
+    
+    def update(
+        self,
+        *,
+        message: Optional[str] = None,
+        type_value: Optional[str] = None,
+        content_type_id: Optional[int] = None,
+        object_id: Optional[int] = None,
+        mark_read: Optional[bool] = None
+    ) -> 'Notification':
+        """Update notification fields with validation.
+        
+        Encapsulates updates to notification fields, ensuring proper validation
+        is performed before saving changes.
+        
+        Args:
+            message: New notification message
+            type_value: New notification type value
+            content_type_id: New content type ID for related object
+            object_id: New object ID for related object
+            mark_read: If True, marks notification as read
+            
+        Returns:
+            Notification: The updated notification instance (self)
+            
+        Raises:
+            ValidationError: If updated fields don't meet validation requirements
+        """
+        # Update fields if provided
+        if message is not None:
+            self.message = message
+            
+        if type_value is not None:
+            self.type = type_value
+            
+        # Handle related object fields together
+        if content_type_id is not None:
+            self.content_type_id = content_type_id
+            
+        if object_id is not None:
+            self.object_id = object_id
+            
+        # Handle read status
+        if mark_read is True and not self.is_read:
+            self.read_at = timezone.now()
+        elif mark_read is False and self.is_read:
+            self.read_at = None
+        
+        # Validate all fields
+        self.full_clean()
+        
+        # Save changes
+        self.save()
+        
+        return self
+    
+    def mark_as_read(self) -> 'Notification':
+        """Mark the notification as read with the current timestamp.
+        
+        If the notification is already read, this is a no-op.
+        
+        Returns:
+            The notification instance (self) for method chaining.
+        """
+        if not self.read_at:
+            self.read_at = timezone.now()
+            self.save(update_fields=['read_at'])
+        return self
+    
+    @property
+    def is_read(self) -> bool:
+        """Check if the notification has been read.
+        
+        Returns:
+            True if the notification has been read, False otherwise.
+        """
+        return self.read_at is not None
     
     # Following YANGI (You Ain't Gonna Need It) principles, we're intentionally keeping
     # this model focused on core functionality. Additional methods like custom managers,

@@ -8,8 +8,8 @@ that all concrete repository implementations must follow.
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
-from backend.domain.models.notification import Notification
-from backend.domain.models.value_objects import NotificationType
+from domain.models.notification import Notification
+from domain.models.value_objects import NotificationType
 
 
 class NotificationRepository(ABC):
