@@ -1,0 +1,141 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start CI environment
+        run: docker-compose -f docker-compose.ci.yml up -d
+
+      - name: Wait for backend
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: http://api.localhost/
+          timeout: 300
+
+      - name: Run tests
+        run: docker-compose -f docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
+
+  build-production:
+    needs: build-test
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-test.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        run: |
+          docker build ../backend -f ../backend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+          docker push --visibility=private ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+
+      - name: Build and push Frontend
+        run: |
+          docker build ../frontend -f ../frontend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+          docker push --visibility=private ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+
+  deploy:
+    needs: build-production
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-production.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync docker-compose file
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/home/billify/app/"
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1
+        env:
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          MINIO_USER: ${{ secrets.MINIO_USER }}
+          MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /home/billify/app
+            
+            # Create environment file for Docker Compose
+            echo "POSTGRES_USER=$POSTGRES_USER" > .env
+            echo "POSTGRES_DB=$POSTGRES_DB" >> .env
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
+            echo "MINIO_USER=$MINIO_USER" >> .env
+            echo "MINIO_PASSWORD=$MINIO_PASSWORD" >> .env
+            echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY" >> .env
+            
+            # Preserve previous state
+            docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml
+
+            # Update images
+            yq eval -i "
+              .services.backend.image = \"${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}\" |
+              .services.frontend.image = \"${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}\" |
+            " docker-compose.prod.yml
+
+            # Deploy
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate
+            
+            rm -f .env
+
+            # Smoke test
+            sleep 20
+            curl -f http://app.billify.be || (echo "Smoke test failed" && exit 1)
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /home/billify/app
+            echo "Rolling back to previous configuration..."
+            
+            mv -f previous_config.yaml docker-compose.prod.yml
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
