@@ -22,7 +22,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Start CI environment
-        run: docker-compose -f docker-compose.ci.yml up -d
+        run: docker compose -f docker-compose.ci.yml up -d
 
       - name: Wait for backend
         uses: fjogeleit/http-request-action@v1
@@ -31,7 +31,7 @@ jobs:
           timeout: 300
 
       - name: Run tests
-        run: docker-compose -f docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
+        run: docker compose -f docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
 
   build-production:
     needs: build-test
