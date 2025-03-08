@@ -41,30 +41,6 @@ services:
       - minio
     networks:
       - billify_network
-    volumes:
-      - "../backend:/app"
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://api.localhost  # Backend API URL
-      - NEXT_PUBLIC_DEBUG=true
-      - NODE_ENV=development
-    restart: always
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nextjs.rule=Host(`localhost`)"
-      - "traefik.http.routers.nextjs.entrypoints=web"
-      - "traefik.http.services.nextjs.loadbalancer.server.port=3000"
-    depends_on:
-      - backend
-    networks:
-      - billify_network
-    volumes:
-      - "../frontend:/app"
-      - /app/node_modules  # Avoid overriding node_modules
-
   db:
     image: postgres:15-alpine
     volumes:
