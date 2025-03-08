@@ -25,10 +25,9 @@ jobs:
         run: docker compose -f infrastructure/docker-compose.ci.yml up -d
 
       - name: Wait for backend
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: http://api.localhost/
-          timeout: 300
+        run: |
+          sleep 20
+          curl -f http://api.localhost || (echo "Backend failed to start after 20 seconds." && exit 1)
 
       - name: Run tests
         run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
