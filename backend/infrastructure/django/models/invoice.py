@@ -299,89 +299,66 @@ class Invoice(models.Model):
             ValidationError: If updated fields don't meet validation
                 requirements
         """
-        if amount is not None:
-            self.amount = amount
+        self.amount = amount or self.amount
 
-        if due_date is not None:
-            self.due_date = due_date
+        self.due_date = due_date or self.due_date
 
-        if status is not None:
-            self.status = status
+        self.status = status or self.status
 
-        if manual_urgency is not None:
-            self.manual_urgency = manual_urgency
+        self.manual_urgency = manual_urgency or self.manual_urgency
 
-        if buyer_name is not None:
-            self.buyer_name = buyer_name
+        self.buyer_name = buyer_name or self.buyer_name
 
-        if buyer_address is not None:
-            self.buyer_address = buyer_address
+        self.buyer_address = buyer_address or self.buyer_address
 
-        if buyer_vat is not None:
-            self.buyer_vat = buyer_vat
+        self.buyer_vat = buyer_vat or self.buyer_vat
 
 
-        if buyer_email is not None:
-            self.buyer_email = buyer_email
+        self.buyer_email = buyer_email or self.buyer_email
 
 
-        if seller_name is not None:
-            self.seller_name = seller_name
+        self.seller_name = seller_name or self.seller_name
 
 
-        if seller_vat is not None:
-            self.seller_vat = seller_vat
+        self.seller_vat = seller_vat or self.seller_vat
 
 
-        if payment_method is not None:
-            self.payment_method = payment_method
+        self.payment_method = payment_method or self.payment_method
 
 
-        if currency is not None:
-            self.currency = currency
+        self.currency = currency or self.currency
 
 
-        if iban is not None:
-            self.iban = iban
+        self.iban = iban or self.iban
 
 
-        if bic is not None:
-            self.bic = bic
+        self.bic = bic or self.bic
 
 
-        if payment_processor is not None:
-            self.payment_processor = payment_processor
+        self.payment_processor = payment_processor or self.payment_processor
 
 
-        if transaction_id is not None:
-            self.transaction_id = transaction_id
+        self.transaction_id = transaction_id or self.transaction_id
 
 
-        if subtotal is not None:
-            self.subtotal = subtotal
+        self.subtotal = subtotal or self.subtotal
 
 
-        if vat_amount is not None:
-            self.vat_amount = vat_amount
+        self.vat_amount = vat_amount or self.vat_amount
 
 
-        if total_amount is not None:
-            self.total_amount = total_amount
+        self.total_amount = total_amount or self.total_amount
 
-        if uploaded_by is not None:
-            self.uploaded_by = uploaded_by
+        self.uploaded_by = uploaded_by or self.uploaded_by
 
 
-        if file_size is not None:
-            self.file_size = file_size
+        self.file_size = file_size or self.file_size
 
 
-        if file_type is not None:
-            self.file_type = file_type
+        self.file_type = file_type or self.file_type
 
 
-        if original_file_name is not None:
-            self.original_file_name = original_file_name
+        self.original_file_name = original_file_name or self.original_file_name
 
 
         # Validate all fields

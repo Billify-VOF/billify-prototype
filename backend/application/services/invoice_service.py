@@ -34,24 +34,24 @@ class InvoiceProcessingService:
     def process_invoice(self, file, user_id: int):
         """Process a new invoice file through the complete workflow."""
         try:
-            # Generate unique file identifier
+            # Generate unique identifier
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             identifier = f"invoice_{user_id}_{timestamp}"
 
-            # Store file and get file path
+            # Store file and get path
             file_path = self.storage_repository.save_file(file, identifier)
             full_path = self.storage_repository.get_file_path(file_path)
 
-            # **NEW:** Extract file metadata
-            file_size = os.path.getsize(full_path)  # File size in bytes
-            file_type = mimetypes.guess_type(full_path)[0] or "unknown"  # MIME type
-            original_file_name = file.name  # Original filename from upload
+            # Extract file metadata
+            file_size = os.path.getsize(full_path)
+            file_type = mimetypes.guess_type(full_path)[0] or "unknown"
+            original_file_name = file.name
 
-            # Extract invoice metadata from PDF
+            # Extract invoice metadata
             invoice_data = self.pdf_transformer.transform(Path(full_path))
             logger.info("PDF transformation successful: %s", invoice_data)
 
-            # Extract other invoice metadata
+            # Extract structured metadata
             invoice_metadata = {
                 "buyer_name": invoice_data.get("buyer_name"),
                 "buyer_address": invoice_data.get("buyer_address"),
@@ -70,60 +70,25 @@ class InvoiceProcessingService:
                 "total_amount": invoice_data.get("total_amount"),
             }
 
-            # Check if invoice already exists
-            existing_invoice = self.invoice_repository.get_by_number(invoice_data['invoice_number'])
-
-            if existing_invoice:
-                # Update existing invoice
-                updated_invoice = self.invoice_service.update(
-                    existing_invoice,
-                    invoice_data,
-                    file_size=file_size,
-                    file_type=file_type,
-                    original_file_name=original_file_name,
-                    **invoice_metadata  # Pass all extracted metadata
-                )
-
-                saved_invoice = self.invoice_repository.save(updated_invoice, user_id)
-
-                # Get urgency information from domain service
-                urgency_info = self.invoice_service.get_urgency_info(updated_invoice)
-
-                return {
-                    'invoice_id': saved_invoice.id,
-                    'invoice_number': saved_invoice.invoice_number,
-                    'status': saved_invoice.status,
-                    'file_path': file_path,
-                    'updated': True,
-                    **invoice_metadata,  # Include metadata in response
-                    'file_size': file_size,
-                    'file_type': file_type,
-                    'original_file_name': original_file_name,
-                    'urgency': urgency_info
-                }
-
-            # Create new invoice with metadata
-            new_invoice = self.invoice_service.create(
-                invoice_data,
+            # Delegate processing to domain service (avoid fetch-edit-save)
+            saved_invoice = self.invoice_service.process_invoice(
+                invoice_data=invoice_data,
                 file_size=file_size,
                 file_type=file_type,
                 original_file_name=original_file_name,
-                **invoice_metadata  # Pass all metadata
+                file_path=file_path,
+                user_id=user_id
             )
 
-            # Persist the invoice
-            saved_invoice = self.invoice_repository.save(new_invoice, user_id)
-
-            # Get urgency information from domain service
-            urgency_info = self.invoice_service.get_urgency_info(new_invoice)
+            urgency_info = self.invoice_service.get_urgency_info(saved_invoice)
 
             return {
                 'invoice_id': saved_invoice.id,
                 'invoice_number': saved_invoice.invoice_number,
                 'status': saved_invoice.status,
                 'file_path': file_path,
-                'updated': False,
-                **invoice_metadata,  # Include metadata in response
+                'updated': saved_invoice.is_updated,  # Controlled by domain logic
+                **invoice_metadata,
                 'file_size': file_size,
                 'file_type': file_type,
                 'original_file_name': original_file_name,
@@ -131,15 +96,11 @@ class InvoiceProcessingService:
             }
 
         except PDFTransformationError as e:
-            msg = f"Failed to extract data from invoice: {str(e)}"
-            raise ProcessingError(f"PDF_TRANSFORMATION_ERROR: {msg}") from e
+            raise ProcessingError(f"PDF_TRANSFORMATION_ERROR: {str(e)}") from e
 
         except Exception as e:
             try:
                 self.storage_repository.delete_file(file_path)
             except StorageError:
                 pass
-
-            error_type = type(e).__name__
-            msg = f"Failed to process invoice ({error_type}): {str(e)}"
-            raise ProcessingError(msg) from e
+            raise ProcessingError(f"PROCESSING_ERROR: {str(e)}") from e

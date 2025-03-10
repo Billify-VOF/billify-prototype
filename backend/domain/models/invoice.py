@@ -1,5 +1,6 @@
 """Domain model representing an invoice and its business rules."""
 
+from dataclasses import dataclass
 from decimal import Decimal
 from datetime import date
 from typing import Optional, Union
@@ -11,6 +12,37 @@ from logging import getLogger
 # Module-level logger
 logger = getLogger(__name__)
 
+@dataclass
+class BuyerInfo:
+    name: Optional[str] = None
+    address: Optional[str] = None
+    vat: Optional[str] = None
+    email: Optional[str] = None
+
+@dataclass
+class SellerInfo:
+    name: Optional[str] = None
+    vat: Optional[str] = None
+
+@dataclass
+class PaymentInfo:
+    method: Optional[str] = None
+    currency: Optional[str] = None
+    iban: Optional[str] = None
+    bic: Optional[str] = None
+    processor: Optional[str] = None
+    transaction_id: Optional[str] = None
+    subtotal: Optional[Decimal] = None
+    vat_amount: Optional[Decimal] = None
+    total_amount: Optional[Decimal] = None
+
+    
+@dataclass
+class FileInfo:
+    path: Optional[str] = None
+    size: Optional[int] = None
+    type: Optional[str] = None
+    original_name: Optional[str] = None
 
 class Invoice:
     """
@@ -26,33 +58,18 @@ class Invoice:
         _manual_urgency (Optional[UrgencyLevel]): Manual urgency override
     """
 
+    
     @classmethod
     def create(cls,
-                amount: Decimal,
-                due_date: date,
-                invoice_number: str,
-                status: InvoiceStatus = InvoiceStatus.PENDING,
-                file_size: Optional[int] = None,  
-                file_type: Optional[str] = None, 
-                file_path=None,
-                uploaded_by=None,
-                original_file_name: Optional[str] = None, 
-                buyer_name: Optional[str] = None,
-                buyer_address: Optional[str] = None,
-                buyer_vat: Optional[str] = None,
-                buyer_email: Optional[str] = None,
-                seller_name: Optional[str] = None,        
-                seller_vat: Optional[str] = None,        
-                payment_method: Optional[str] = None,        
-                currency: Optional[str] = None,        
-                iban: Optional[str] = None,        
-                bic: Optional[str] = None,        
-                payment_processor: Optional[str] = None,        
-                transaction_id: Optional[str] = None, 
-                subtotal: Optional[Decimal] = None,       
-                vat_amount: Optional[Decimal] = None,       
-                total_amount: Optional[Decimal] = None,
-               ) -> 'Invoice':
+           amount: Decimal,
+           due_date: date,
+           invoice_number: str,
+           status: InvoiceStatus = InvoiceStatus.PENDING,
+           buyer: Optional[BuyerInfo] = None,
+           seller: Optional[SellerInfo] = None,
+           payment: Optional[PaymentInfo] = None,
+           file_path: Optional[str] = None,
+           uploaded_by=None) -> 'Invoice':
         """Create a new valid invoice.
 
         Factory method that creates and validates a new invoice instance.
@@ -78,81 +95,47 @@ class Invoice:
             amount=amount,
             due_date=due_date,
             invoice_number=invoice_number,
-            file_size=file_size,
-            file_path=file_path,
-            file_type=file_type,
-            original_file_name=original_file_name,
             status=status,
-            uploaded_by=uploaded_by
+            file_path=file_path,
+            uploaded_by=uploaded_by,
+            buyer=buyer,
+            seller=seller,
+            payment=payment
         )
         invoice.validate()
         return invoice
 
+    # class Invoice:
     def __init__(
         self,
-        *,  # This makes all following arguments keyword-only
+        *,
         amount: Decimal,
         due_date: date,
         invoice_number: str,
-        uploaded_by: None,
-        file_path:  Optional[str] = None,
-        invoice_id: Optional[int] = None,
+        uploaded_by: Optional[int] = None,
         status: InvoiceStatus = InvoiceStatus.PENDING,
-        buyer_name: Optional[str] = None,
-        buyer_address: Optional[str] = None,
-        buyer_vat: Optional[str] = None,
-        buyer_email: Optional[str] = None,
-        seller_name: Optional[str] = None,        
-        seller_vat: Optional[str] = None,        
-        payment_method: Optional[str] = None,        
-        currency: Optional[str] = None,        
-        iban: Optional[str] = None,        
-        bic: Optional[str] = None,        
-        payment_processor: Optional[str] = None,        
-        transaction_id: Optional[str] = None, 
-        subtotal: Optional[Decimal] = None,       
-        vat_amount: Optional[Decimal] = None,       
-        total_amount: Optional[Decimal] = None,
-        file_size: Optional[int] = None,  # File size in bytes
-        file_type: Optional[str] = None,  # MIME type (e.g., "application/pdf")
-        original_file_name: Optional[str] = None,  # Original file name
-
+        invoice_id: Optional[int] = None,
+        buyer: Optional[BuyerInfo] = None,
+        seller: Optional[SellerInfo] = None,
+        payment: Optional[PaymentInfo] = None,
+        file: Optional[FileInfo] = None,
     ) -> None:
         logger.debug("Invoice __init__ called")
         logger.debug("  amount: %s (%s)", amount, type(amount))
         logger.debug("  due_date: %s (%s)", due_date, type(due_date))
-        logger.debug(
-            "  invoice_number: %s (%s)",
-            invoice_number,
-            type(invoice_number)
-        )
+        logger.debug("  invoice_number: %s (%s)", invoice_number, type(invoice_number))
+
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
-        self.file_path = file_path 
         self.invoice_number: str = invoice_number
         self.status: InvoiceStatus = status
-        self._manual_urgency: Optional[UrgencyLevel] = None
-        self.buyer_name: Optional[str] = buyer_name
-        self.buyer_address: Optional[str] = buyer_address
-        self.buyer_vat: Optional[str] = buyer_vat
-        self.buyer_email: Optional[str] = buyer_email
-        self.seller_name: Optional[str] = seller_name
-        self.seller_vat: Optional[str] = seller_vat
-        self.payment_method: Optional[str] = payment_method
-        self.currency: Optional[str] = currency
-        self.iban: Optional[str] = iban
-        self.bic: Optional[str] = bic
-        self.payment_processor: Optional[str] = payment_processor
-        self.transaction_id: Optional[str] = transaction_id
-        self.subtotal: Optional[Decimal] = subtotal
-        self.vat_amount: Optional[Decimal] = vat_amount
-        self.total_amount: Optional[Decimal] = total_amount
-        self.uploaded_by:Optional[int] =None
+        self.uploaded_by: Optional[int] = uploaded_by
 
-        self.file_size = file_size
-        self.file_type = file_type
-        self.original_file_name = original_file_name
+        self.buyer = buyer or BuyerInfo()  # Avoid None checks later
+        self.seller = seller or SellerInfo()
+        self.payment = payment or PaymentInfo()
+        self.file = file or FileInfo()
 
 
     def validate(self) -> None:
@@ -406,83 +389,61 @@ class Invoice:
             invoice.update(manual_urgency=False)
         """
         # Update fields that are provided (not None)
-        if amount is not None:
-            self.amount = amount
+        self.amount = amount or self.amount
 
-        if due_date is not None:
-            self.due_date = due_date
+        self.due_date = due_date or self.due_date
 
-        if invoice_number is not None:
-            self.invoice_number = invoice_number
+        self.invoice_number = invoice_number or self.invoice_number
 
-        if status is not None:
-            self.status = status
+        self.status = status or self.status
 
-        if buyer_name is not None:
-            self.buyer_name = buyer_name
+        self.buyer_name = buyer_name or self.buyer_name
 
-        if buyer_address is not None:
-            self.buyer_address = buyer_address
+        self.buyer_address = buyer_address or self.buyer_address
 
-        if buyer_vat is not None:
-            self.buyer_vat = buyer_vat
+        self.buyer_vat = buyer_vat or self.buyer_vat
 
 
-        if buyer_email is not None:
-            self.buyer_email = buyer_email
+        self.buyer_email = buyer_email or self.buyer_email
 
 
-        if seller_name is not None:
-            self.seller_name = seller_name
+        self.seller_name = seller_name or self.seller_name
 
 
-        if seller_vat is not None:
-            self.seller_vat = seller_vat
+        self.seller_vat = seller_vat or self.seller_vat
 
 
-        if payment_method is not None:
-            self.payment_method = payment_method
+        self.payment_method = payment_method or self.payment_method
 
 
-        if currency is not None:
-            self.currency = currency
+        self.currency = currency or self.currency
 
 
-        if iban is not None:
-            self.iban = iban
+        self.iban = iban or self.iban
 
 
-        if bic is not None:
-            self.bic = bic
+        self.bic = bic or self.bic
 
 
-        if payment_processor is not None:
-            self.payment_processor = payment_processor
+        self.payment_processor = payment_processor or self.payment_processor
 
 
-        if transaction_id is not None:
-            self.transaction_id = transaction_id
+        self.transaction_id = transaction_id or self.transaction_id
 
 
-        if subtotal is not None:
-            self.subtotal = subtotal
+        self.subtotal = subtotal or self.subtotal
 
 
-        if vat_amount is not None:
-            self.vat_amount = vat_amount
+        self.vat_amount = vat_amount or self.vat_amount
 
 
-        if total_amount is not None:
-            self.total_amount = total_amount
+        self.total_amount = total_amount or self.total_amount
 
-        if file_size is not None:
-            self.file_size = file_size
+        self.file_size = file_size or self.file_size
 
-        if file_type is not None:
-            self.file_type = file_type
+        self.file_type = file_type or self.file_type
 
-        if original_file_name is not None:
-            self.original_file_name = original_file_name
+        self.original_file_name = original_file_name or self.original_file_name
             
         # Handle manual urgency if provided
         if manual_urgency is not None:
