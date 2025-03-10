@@ -171,7 +171,6 @@ def fetch_account_details(request):
             headers=headers
         )
         accounts_data = json.loads(response.data.decode('utf-8'))
-        print('accounts_data',accounts_data)
         user = User.objects.get(id=user_id)
         save_record =save_or_update_account(user,accounts_data)
         return Response(save_record)
@@ -220,11 +219,9 @@ def save_or_update_account(user, account_data):
         return serializer.data
     
     except Exception as e:
-        print(f"Failed to save or update account: {e}")
         return {"error": f"Failed to save or update account: {e}"}
     
     except Exception as e:
-        print(f"Failed to save or update account: {e}")
         return None
 
 
