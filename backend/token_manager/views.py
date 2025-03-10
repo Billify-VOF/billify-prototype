@@ -56,10 +56,9 @@ def convertclientidsecret(client_id, client_secret):
 
 
 def generate_random_session_id():
-    random_number = ''.join(random.choices(string.digits, k=50))  # Generate a random 50-digit number
+    random_number = ''.join(secrets.choice(string.digits) for _ in range(50))  # Generate a secure random 50-digit number
     return f"session_{random_number}"
 
-    
 
 def load_private_key(private_key_path, password):
     # Read and load the private key
@@ -176,7 +175,6 @@ def get_transaction_history(request):
             headers=headers
         )
         accounts_data = json.loads(response.data.decode('utf-8'))
-        print(json.dumps(accounts_data),'accounts_data')
         return Response(accounts_data)
     except Exception as e:
         return Response({"error": f"Request failed: {e}"}, status=500)
