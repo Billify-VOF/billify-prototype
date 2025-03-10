@@ -154,7 +154,7 @@ def ponto_login(request):
                     "refresh_token": refresh_token,
                     "expires_in": token_data.get("expires_in"),
                 })
-            except JSONDecodeError:
+            except Exception as e:
                 # Handle invalid JSON response from the server
                 logging.exception("Failed to decode JSON response from Ponto server")
                 return Response({"error": "Invalid JSON response from server"}, status=500)
@@ -166,6 +166,7 @@ def ponto_login(request):
             }, status=500)
 
     except Exception as e:
+        logging.error(f"Failed to get url: {response.status}, {response.text}")
         return Response({'message': str(e)})
     
 
