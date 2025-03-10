@@ -11,6 +11,8 @@ from infrastructure.django.models.invoice import Invoice as DjangoInvoice
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from logging import getLogger
 from django.db import models
+from itertools import chain
+
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -257,60 +259,51 @@ class DjangoInvoiceRepository(InvoiceRepository):
                 f"Invoice {invoice.invoice_number} not found"
             ) from exc
 
-    def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
-        """Retrieve invoices matching a specific urgency level.
 
-        This method finds invoices with:
-        1. A matching manual urgency OR
-        2. A calculated urgency matching the requested level, based on due date
-        
-        Note: This requires calculating urgency for invoices that don't have
-        manual overrides, which requires accessing the domain logic.
+def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
+    """Retrieve invoices matching a specific urgency level.
 
-        Args:
-            urgency_level: The urgency level to filter by
-            
-        Returns:
-            List of domain invoice models with the specified urgency level
-        """
-        today = date.today()
-        
-        # First, find invoices with matching manual urgency
-        db_invoices_with_manual = DjangoInvoice.objects.filter(
-            manual_urgency=urgency_level.db_value
-        )
-        
-        # For calculated urgency, we need to determine the date range
-        # that would result in the requested urgency level
-        day_range = urgency_level.day_range
-        min_days, max_days = day_range
-        
-        # Create date range for query
-        min_date = None if min_days is None else (today + timedelta(days=min_days))
-        max_date = None if max_days is None else (today + timedelta(days=max_days))
-        
-        # Build query for calculated urgency
-        # Only include invoices without manual override
-        calculated_query = Q(manual_urgency__isnull=True)
-        
-        if min_date is not None and max_date is not None:
-            # Both min and max are specified
-            calculated_query &= Q(due_date__gte=min_date, due_date__lte=max_date)
-        elif min_date is not None:
-            # Only min is specified
-            calculated_query &= Q(due_date__gte=min_date)
-        elif max_date is not None:
-            # Only max is specified
-            calculated_query &= Q(due_date__lte=max_date)
-        
-        # Get invoices with calculated urgency matching the requested level
-        db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
-        
-        # Combine both querysets
-        db_invoices = list(db_invoices_with_manual) + list(db_invoices_calculated)
-        
-        # Convert to domain models
-        return [self._to_domain(invoice) for invoice in db_invoices]
+    This method finds invoices with:
+    1. A matching manual urgency OR
+    2. A calculated urgency matching the requested level, based on due date
+
+    Args:
+        urgency_level: The urgency level to filter by
+
+    Returns:
+        List of domain invoice models with the specified urgency level
+    """
+    today = date.today()
+
+    # First, find invoices with matching manual urgency
+    db_invoices_with_manual = DjangoInvoice.objects.filter(
+        manual_urgency=urgency_level.db_value
+    )
+
+    # Determine the date range based on urgency level
+    min_days, max_days = urgency_level.day_range
+    min_date = None if min_days is None else (today + timedelta(days=min_days))
+    max_date = None if max_days is None else (today + timedelta(days=max_days))
+
+    # Build query for calculated urgency (excluding manual overrides)
+    calculated_query = Q(manual_urgency__isnull=True)
+
+    if min_date is not None and max_date is not None:
+        calculated_query &= Q(due_date__gte=min_date, due_date__lte=max_date)
+    elif min_date is not None:
+        calculated_query &= Q(due_date__gte=min_date)
+    elif max_date is not None:
+        calculated_query &= Q(due_date__lte=max_date)
+
+    # Get invoices with calculated urgency
+    db_invoices_calculated = DjangoInvoice.objects.filter(calculated_query)
+
+    # Use `chain()` to lazily iterate without loading everything into memory
+    db_invoices = chain(db_invoices_with_manual, db_invoices_calculated)
+
+    # Convert to domain models
+    return [self._to_domain(invoice) for invoice in db_invoices]
+
 
     def list_by_urgency_order(
         self, 
