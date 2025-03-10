@@ -102,7 +102,6 @@ def ponto_login(request):
         }
         
         encoded_data = urlencode(data).encode('utf-8')
-        print(encoded_data,'encoded_data')
         # Create a PoolManager with the SSL context
         certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
         private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
@@ -178,7 +177,6 @@ def refresh_access_token():
         ponto_token = PontoToken.objects.get(user=user_id)
 
         if not ponto_token.refresh_token:
-            print("Error: Refresh token not found")
             return {"error": "Refresh token not found"}
 
         # Prepare request data for refreshing the token
@@ -240,12 +238,9 @@ def refresh_access_token():
             }
 
         else:
-            print("Error: Failed to refresh access token")
             return {"error": "Failed to refresh access token"}
 
     except PontoToken.DoesNotExist:
-        print("Error: No tokens found for this user")
         return {"error": "No tokens found for this user"}
     except Exception as e:
-        print(f"Error: {str(e)}")
         return {"error": str(e)}
