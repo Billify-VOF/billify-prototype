@@ -25,12 +25,15 @@ from token_manager.models import IbanityAccount
 from .serializers import IbanityAccountSerializer
 import secrets
 from .models import *
+import logging
 
 
 
 from dotenv import load_dotenv
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 PONTO_CLIENT_ID = os.getenv('PONTO_CLIENT_ID')
 PONTO_CLIENT_SECRET = os.getenv('PONTO_CLIENT_SECRET')
@@ -127,7 +130,6 @@ def create_signature(request_target, digest, created, private_key_path, private_
 
     # Base64 encode the signature
     signature = base64.b64encode(signature_bytes).decode('utf-8')
-
     return signature
 
 #Fetch Account balance retrieval
@@ -219,6 +221,7 @@ def save_or_update_account(user, account_data):
         return serializer.data
     
     except Exception as e:
+        logger.error(f"Failed to save or update account for user: {user.id}, error: {e}")
         return {"error": f"Failed to save or update account: {e}"}
     
     except Exception as e:
