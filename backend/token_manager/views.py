@@ -25,6 +25,7 @@ from token_manager.models import IbanityAccount
 from .serializers import IbanityAccountSerializer
 import secrets
 from .models import *
+import logging
 
 
 
@@ -177,6 +178,7 @@ def get_transaction_history(request):
         accounts_data = json.loads(response.data.decode('utf-8'))
         return Response(accounts_data)
     except Exception as e:
+        logger.error(f"Unexpected error occurred: {e}")
         return Response({"error": f"Request failed: {e}"}, status=500)
 
 
