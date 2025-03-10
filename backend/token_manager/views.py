@@ -56,7 +56,7 @@ def convertclientidsecret(client_id, client_secret):
 
 
 def generate_random_session_id():
-    random_number = ''.join(random.choices(string.digits, k=50))  # Generate a random 50-digit number
+    random_number = ''.join(secrets.choice(string.digits) for _ in range(50))  # Generate a secure random 50-digit number
     return f"session_{random_number}"
 
 
