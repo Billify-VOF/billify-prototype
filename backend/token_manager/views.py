@@ -25,6 +25,7 @@ from token_manager.models import IbanityAccount
 from .serializers import IbanityAccountSerializer
 import secrets
 from .models import *
+import logging
 
 
 
@@ -153,9 +154,12 @@ def ponto_login(request):
                     "refresh_token": refresh_token,
                     "expires_in": token_data.get("expires_in"),
                 })
-            except requests.exceptions.JSONDecodeError:
+            except JSONDecodeError:
+                # Handle invalid JSON response from the server
+                logging.exception("Failed to decode JSON response from Ponto server")
                 return Response({"error": "Invalid JSON response from server"}, status=500)
         else:
+            logging.error(f"Failed to get access token: {response.status}, {response.text}")
             return Response({
                 "error": "Failed to get access token",
                 "details": response.text
@@ -238,9 +242,12 @@ def refresh_access_token():
             }
 
         else:
+            logging.error(f"Failed to refresh access token: {response.status}, {response.data.decode('utf-8')}")
             return {"error": "Failed to refresh access token"}
 
     except PontoToken.DoesNotExist:
+        logging.exception("No PontoToken found for this user")
         return {"error": "No tokens found for this user"}
     except Exception as e:
+        logging.exception("Network error occurred while refreshing the access token")
         return {"error": str(e)}
