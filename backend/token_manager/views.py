@@ -46,6 +46,8 @@ KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 key = os.getenv('FERNET_KEY')
 
+logger = logging.getLogger(__name__)
+
 if key is None:
     raise ValueError("FERNET_KEY not found in the .env file!")
 key = key.encode()
@@ -80,9 +82,12 @@ def load_private_key(private_key_path, password):
 
 #Get Access token from Ponto token model
 def get_access_token(user):
-    get_token = PontoToken.objects.get(user=user)
-    access_token = decrypt_token(get_token.access_token,key)
-    return access_token
+    try:
+        get_token = PontoToken.objects.get(user=user)
+        access_token = decrypt_token(get_token.access_token,key)
+        return access_token
+    except Exception as e:
+        return Response({f"Error while retrieving the access token: {str(e)}})
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
@@ -183,6 +188,7 @@ def fetch_account_details(request):
         return Response(save_record)
 
     except Exception as e:
+        logger.error(f"Error occurred while fetching account details for user {user_id}: {str(e)}")
         return Response({"error": f"Request failed: {e}"}, status=500)
 
 
