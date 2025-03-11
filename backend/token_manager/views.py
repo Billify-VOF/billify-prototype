@@ -143,48 +143,64 @@ def create_signature(request_target, digest, created, private_key_path, private_
 #Get transaction History
 @api_view(['GET'])
 def get_transaction_history(request):
-
-    user_id = 1
-    token = get_access_token(user_id)
-    get_certificate_credentials =get_ibanity_credentials()
-    get_resourceId = IbanityAccount.objects.filter(id=user_id).first()
-    account_id = get_resourceId.account_id
-    API_BASE_URL = f"{BASE_URL}accounts/{account_id}/transactions"
-    created = str(int(time.time()))
-
-    # Calculate the digest
-    data = "" # No data for GET request
-    digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
-    digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
-
-    # Create the signature
-    request_target = "get /ponto-connect/accounts"
-    headers = {"Authorization": f"Bearer {token}"}
-    # Create an SSL context with the private key password
-    context = ssl.create_default_context()
-    context.load_cert_chain(certfile=get_certificate_credentials['certificate_path'], keyfile=get_certificate_credentials['private_key_path'], password=get_certificate_credentials['private_key_password'])
-    context.check_hostname = False
-
-    # Create a PoolManager with the SSL context
-    http = urllib3.PoolManager(
-        num_pools=50,
-        cert_reqs=ssl.CERT_NONE,  
-        ca_certs=None,
-        ssl_context=context
-    )
-
-    # Make the GET request using the PoolManager
     try:
-        response = http.request(
-            'GET',
-            API_BASE_URL,
-            headers=headers
+        user_id = request.user.id
+        token = get_access_token(user_id)
+        get_certificate_credentials =get_ibanity_credentials()
+        get_resourceId = IbanityAccount.objects.filter(id=user_id).first()
+        if not get_resourceId:
+            return Response({"error": "No Ibanity account found for this user"}, status=404)
+        account_id = get_resourceId.account_id
+        API_BASE_URL = f"{BASE_URL}accounts/{account_id}/transactions"
+        created = str(int(time.time()))
+
+        # Calculate the digest
+        data = "" # No data for GET request
+        digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
+        digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
+
+        # Create the signature
+        # request_target = "get /ponto-connect/accounts"
+        request_target = f"get /ponto-connect/accounts/{account_id}/transactions"
+        headers = {"Authorization": f"Bearer {token}"}
+        # Create an SSL context with the private key password
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=get_certificate_credentials['certificate_path'], keyfile=get_certificate_credentials['private_key_path'], password=get_certificate_credentials['private_key_password'])
+        context.check_hostname = False
+
+        # Create a PoolManager with the SSL context
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_NONE,  
+            ca_certs=None,
+            ssl_context=context
         )
-        accounts_data = json.loads(response.data.decode('utf-8'))
-        return Response(accounts_data)
+
+        # Make the GET request using the PoolManager
+        try:
+            response = http.request(
+                'GET',
+                API_BASE_URL,
+                headers=headers
+            )
+            if response.status != 200:
+                return Response(
+                    {"error": f"API request failed with status {response.status}", "details": response.data.decode('utf-8')}, 
+                    status=response.status
+                )
+            transactions_data  = json.loads(response.data.decode('utf-8'))
+            return Response(transactions_data )
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}")
+            return Response({"error": f"Request failed: {e}"}, status=500)
+    except PontoToken.DoesNotExist:
+        return Response({"error": "No access token found for this user"}, status=401)
+    except IbanityAccount.DoesNotExist:
+        return Response({"error": "No Ibanity account found for this user"}, status=404)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
     except Exception as e:
-        logger.error(f"Unexpected error occurred: {e}")
-        return Response({"error": f"Request failed: {e}"}, status=500)
+        return Response({"error": f"Request failed: {str(e)}"}, status=500)
 
 
 
