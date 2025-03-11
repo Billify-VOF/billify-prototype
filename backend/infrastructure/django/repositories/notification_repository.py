@@ -78,6 +78,7 @@ class DjangoNotificationRepository(NotificationRepository):
             
         Raises:
             ValueError: If database constraints are violated during persistence
+            ValueError: If a related entity reference is invalid or cannot be parsed
         """
         logger.debug("Saving notification for user %d: %s", user_id, notification.message)
         
@@ -96,9 +97,16 @@ class DjangoNotificationRepository(NotificationRepository):
                     model_name, object_id = parts
                     content_type = ContentType.objects.get(model=model_name)
                     object_id = int(object_id)
+                else:
+                    # Invalid format, should be "model_name:id"
+                    logger.error("Invalid related entity format: %s (expected 'model_name:id')", 
+                                notification.related_entity)
+                    raise ValueError(f"Invalid related entity format: {notification.related_entity} (expected 'model_name:id')")
             except (ValueError, ObjectDoesNotExist) as e:
-                logger.warning("Could not parse related entity %s: %s", 
-                              notification.related_entity, str(e))
+                # Log error and re-raise with more context
+                logger.error("Failed to parse related entity %s: %s", 
+                           notification.related_entity, str(e))
+                raise ValueError(f"Invalid related entity '{notification.related_entity}': {str(e)}")
         
         # Create and save the Django notification
         db_notification = DjangoNotification(
