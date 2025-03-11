@@ -83,6 +83,7 @@ def get_access_token(user):
         access_token = decrypt_token(get_token.access_token,key)
         return access_token
     except Exception as e:
+        logger.error(f"Access token not found for user {user}")
         return Response({f"Error while retrieving the access token: {str(e)}})
 
 
