@@ -159,11 +159,6 @@ def get_transaction_history(request):
 
     # Create the signature
     request_target = "get /ponto-connect/accounts"
-    signature = create_signature(request_target, digest, created, get_certificate_credentials['private_key_path'], get_certificate_credentials['private_key_password'])
-
-    # Construct the Signature header
-    signature_header = f"""keyId="{get_certificate_credentials['KEY_ID']}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
-
     headers = {"Authorization": f"Bearer {token}"}
     # Create an SSL context with the private key password
     context = ssl.create_default_context()
