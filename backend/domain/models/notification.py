@@ -5,6 +5,10 @@ from domain.models.value_objects import NotificationType
 from domain.exceptions import InvalidNotificationError
 
 
+# Constants
+MAX_NOTIFICATION_MESSAGE_LENGTH = 1000  # Maximum length for notification messages in characters
+
+
 class Notification:
     """
     Represents a notification in our system's domain model.
@@ -98,11 +102,21 @@ class Notification:
     def validate_message(self) -> None:
         """Validate the notification message.
         
+        Ensures the message is not empty and doesn't exceed the maximum length.
+        
         Raises:
-            InvalidNotificationError: If message is empty or invalid
+            InvalidNotificationError: If message is empty or exceeds maximum length
         """
+        # Check for empty message
         if not self.message or not self.message.strip():
             raise InvalidNotificationError("Notification message cannot be empty")
+        
+        # Check message length
+        if len(self.message) > MAX_NOTIFICATION_MESSAGE_LENGTH:
+            raise InvalidNotificationError(
+                f"Notification message exceeds maximum length of {MAX_NOTIFICATION_MESSAGE_LENGTH} characters. "
+                f"Current length: {len(self.message)} characters."
+            )
     
     def validate_type(self) -> None:
         """Validate the notification type.
