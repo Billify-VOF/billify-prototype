@@ -157,10 +157,6 @@ def fetch_account_details(request):
 
     # Create the signature
     request_target = "get /ponto-connect/accounts"
-    signature = create_signature(request_target, digest, created, private_key_path, PRIVATE_KEY_PASSWORD)
-
-    # Construct the Signature header
-    signature_header = f"""keyId="{KEY_ID}",created={created},algorithm="rsa-sha256",headers="(request-target) digest (created) host",signature="{signature}" """
 
     headers = {"Authorization": f"Bearer {token}"}
     # Create an SSL context with the private key password
