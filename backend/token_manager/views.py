@@ -135,18 +135,20 @@ def ponto_login(request):
                 expires_in = token_data.get("expires_in")
                 user_id = 1
                 user = User.objects.get(id=user_id)
-                
+                # Encrypt the tokens before saving to the database
+                encrypted_access_token = encrypt_token(access_token,key)
+                encrypted_refresh_token = encrypt_token(refresh_token,key)
                 try:
                     ponto_token = PontoToken.objects.get(user=user)
-                    ponto_token.access_token = access_token
-                    ponto_token.refresh_token = refresh_token
+                    ponto_token.access_token = encrypted_access_token
+                    ponto_token.refresh_token = encrypted_refresh_token
                     ponto_token.expires_in = expires_in
                     ponto_token.save()
                 except PontoToken.DoesNotExist:
                     PontoToken.objects.create(
                         user=user,
-                        access_token=access_token,
-                        refresh_token=refresh_token,
+                        access_token=encrypted_access_token,
+                        refresh_token=encrypted_refresh_token,
                         expires_in=expires_in
                     )
                 return Response({
@@ -154,8 +156,7 @@ def ponto_login(request):
                     "refresh_token": refresh_token,
                     "expires_in": token_data.get("expires_in"),
                 })
-            except Exception as e:
-                # Handle invalid JSON response from the server
+            except requests.exceptions.JSONDecodeError:
                 logging.exception("Failed to decode JSON response from Ponto server")
                 return Response({"error": "Invalid JSON response from server"}, status=500)
         else:
@@ -176,14 +177,14 @@ def refresh_access_token():
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
     """
-    user_id = 1  # Example user_id, adjust as needed
+    user_id = 1 
     try:
         # Retrieve the user's PontoToken instance
         ponto_token = PontoToken.objects.get(user=user_id)
-
         if not ponto_token.refresh_token:
             return {"error": "Refresh token not found"}
-
+        # Decrypt the stored refresh token
+        decrypted_refresh_token = decrypt_token(ponto_token.refresh_token,key)
         # Prepare request data for refreshing the token
         url = os.getenv('URL')
         client_id = os.getenv('PONTO_CLIENT_ID')
@@ -194,10 +195,9 @@ def refresh_access_token():
             "Accept": "application/vnd.api+json",
             "Authorization": f"Basic {client}"
         }
-
         data = {
             "grant_type": "refresh_token",
-            "refresh_token": ponto_token.refresh_token,
+            "refresh_token": decrypted_refresh_token,
             "client_id": client_id,
         }
         encoded_data = urlencode(data).encode('utf-8')
@@ -225,30 +225,28 @@ def refresh_access_token():
             body=encoded_data,
             preload_content=True
         )
-
         if response.status == 200:
             token_data = json.loads(response.data.decode('utf-8'))
-
+            encrypted_access_token = encrypt_token(token_data.get("access_token"),key)
+            encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token),key)
             # Update the stored access token and refresh token in the database
-            ponto_token.access_token = token_data.get("access_token")
-            ponto_token.refresh_token = token_data.get("refresh_token", ponto_token.refresh_token)
+            ponto_token.access_token = encrypted_access_token
+            ponto_token.refresh_token = encrypted_refresh_token
             ponto_token.expires_in = token_data.get("expires_in")
             ponto_token.save()
 
-            # Return the updated access token data
             return {
-                "access_token": ponto_token.access_token,
-                "refresh_token": ponto_token.refresh_token,
-                "expires_in": ponto_token.expires_in,
+                "access_token": token_data.get("access_token"),
+                "refresh_token": token_data.get("refresh_token"),
+                "expires_in": token_data.get("expires_in"),
             }
 
         else:
-            logging.error(f"Failed to refresh access token: {response.status}, {response.data.decode('utf-8')}")
+            logger.error(f"User {user_id} - Failed to refresh access token: {response.data.decode('utf-8')}")
             return {"error": "Failed to refresh access token"}
 
-    except PontoToken.DoesNotExist:
-        logging.exception("No PontoToken found for this user")
+    except Exception as e:
         return {"error": "No tokens found for this user"}
     except Exception as e:
-        logging.exception("Network error occurred while refreshing the access token")
+        logger.error(f"User {user_id} - Error occurred: {str(e)}")
         return {"error": str(e)}
