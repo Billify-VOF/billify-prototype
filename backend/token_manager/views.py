@@ -78,9 +78,12 @@ def load_private_key(private_key_path, password):
 
 #Get Access token from Ponto token model
 def get_access_token(user):
-    get_token = PontoToken.objects.get(user=user)
-    access_token = decrypt_token(get_token.access_token,key)
-    return access_token
+    try:
+        get_token = PontoToken.objects.get(user=user)
+        access_token = decrypt_token(get_token.access_token,key)
+        return access_token
+    except Exception as e:
+        return Response({f"Error while retrieving the access token: {str(e)}})
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
