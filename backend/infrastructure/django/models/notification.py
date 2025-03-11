@@ -28,7 +28,7 @@ class Notification(models.Model):
                      identifies each notification.
         user (ForeignKey): User who should receive the notification
         message (TextField): The notification message text
-        type (CharField): The type/severity of the notification (info, warning, error)
+        notification_type (CharField): The type/severity of the notification (info, warning, error)
         created_at (DateTimeField): When the notification was created
         read_at (DateTimeField): When the notification was read (null if unread)
         content_type (ForeignKey): Type of the related object (ContentType)
@@ -56,7 +56,7 @@ class Notification(models.Model):
         help_text="The notification message content"
     )
     
-    type: models.CharField = models.CharField(
+    notification_type: models.CharField = models.CharField(
         max_length=20,
         choices=[(t.db_value, t.display_name) for t in NotificationType],
         default=NotificationType.INFO.db_value,
@@ -149,7 +149,7 @@ class Notification(models.Model):
         
         # Use NotificationType enum to get display name
         # Django automatically generates get_FOO_display for choice fields
-        type_display = self.get_type_display()  # type: ignore
+        type_display = self.get_notification_type_display()  # type: ignore
         
         # Access username safely
         username = getattr(self.user, 'username', 'unknown')
@@ -160,7 +160,7 @@ class Notification(models.Model):
     def create(
         cls,
         message: str,
-        type_value: str,
+        notification_type_value: str,
         user_id: int,
         content_type_id: Optional[int] = None,
         object_id: Optional[int] = None,
@@ -173,7 +173,7 @@ class Notification(models.Model):
         
         Args:
             message: The notification message content
-            type_value: The notification type (must be a valid NotificationType db_value)
+            notification_type_value: The notification type (must be a valid NotificationType db_value)
             user_id: ID of the user who should receive this notification
             content_type_id: Optional ContentType ID for related object
             object_id: Optional ID of related object
@@ -185,12 +185,12 @@ class Notification(models.Model):
         Raises:
             ValidationError: If validation fails for any field
         """
-        logger.info("Creating notification for user_id=%s, type=%s", user_id, type_value)
+        logger.info("Creating notification for user_id=%s, notification_type=%s", user_id, notification_type_value)
         
         # Create notification instance
         notification = cls(
             message=message,
-            type=type_value,
+            notification_type=notification_type_value,
             user_id=user_id
         )
         
@@ -224,7 +224,7 @@ class Notification(models.Model):
                    getattr(self, 'id', 'new'), getattr(self, 'user_id', None))
         super().clean()
         self._validate_message()
-        self._validate_type()
+        self._validate_notification_type()
     
     def _validate_message(self) -> None:
         """Validate the notification message.
@@ -242,27 +242,27 @@ class Notification(models.Model):
                 'message': 'Notification message cannot be empty.'
             })
     
-    def _validate_type(self) -> None:
+    def _validate_notification_type(self) -> None:
         """Validate the notification type.
         
         Ensures the type is one of the valid types defined in NotificationType.
         
         Raises:
-            ValidationError: If type is not a valid NotificationType value
+            ValidationError: If notification_type is not a valid NotificationType value
         """
-        logger.debug("Validating notification type: '%s'", self.type)
+        logger.debug("Validating notification type: '%s'", self.notification_type)
         valid_types = [t.db_value for t in NotificationType]
-        if self.type not in valid_types:
-            logger.warning("Validation failed: Invalid notification type '%s'", self.type)
+        if self.notification_type not in valid_types:
+            logger.warning("Validation failed: Invalid notification type '%s'", self.notification_type)
             raise ValidationError({
-                'type': f'Invalid notification type. Must be one of: {", ".join(valid_types)}'
+                'notification_type': f'Invalid notification type. Must be one of: {", ".join(valid_types)}'
             })
     
     def update(
         self,
         *,
         message: Optional[str] = None,
-        type_value: Optional[str] = None,
+        notification_type_value: Optional[str] = None,
         content_type_id: Optional[int] = None,
         object_id: Optional[int] = None,
         mark_read: Optional[bool] = None
@@ -274,7 +274,7 @@ class Notification(models.Model):
         
         Args:
             message: New notification message
-            type_value: New notification type value
+            notification_type_value: New notification type value
             content_type_id: New content type ID for related object
             object_id: New object ID for related object
             mark_read: If True, marks notification as read
@@ -295,9 +295,9 @@ class Notification(models.Model):
                        message[:30] + '...' if len(message) > 30 else message)
             self.message = message
             
-        if type_value is not None:
-            logger.debug("Updating notification type from '%s' to '%s'", self.type, type_value)
-            self.type = type_value
+        if notification_type_value is not None:
+            logger.debug("Updating notification type from '%s' to '%s'", self.notification_type, notification_type_value)
+            self.notification_type = notification_type_value
             
         # Handle related object fields together
         if content_type_id is not None:

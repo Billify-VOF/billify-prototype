@@ -33,7 +33,7 @@ class DjangoNotificationRepository(NotificationRepository):
             db_notification: Django ORM notification model instance
             
         Returns:
-            DomainNotification: Domain model populated with database values
+            Domain notification object
         """
         logger.debug("Converting DB notification to domain model: %s", db_notification)
         
@@ -47,7 +47,7 @@ class DjangoNotificationRepository(NotificationRepository):
         # Create the domain notification object
         domain_notification = DomainNotification.create(
             message=db_notification.message,
-            type=NotificationType[db_notification.type.upper()],
+            type=NotificationType[db_notification.notification_type.upper()],
             is_read=db_notification.read_at is not None,
             related_entity=related_entity
         )
@@ -86,7 +86,7 @@ class DjangoNotificationRepository(NotificationRepository):
         db_notification = DjangoNotification(
             user_id=user_id,
             message=notification.message,
-            type=notification.type.db_value,
+            notification_type=notification.type.db_value,
         )
         
         # Set content type and object ID if available
@@ -169,7 +169,7 @@ class DjangoNotificationRepository(NotificationRepository):
         """
         db_notifications = DjangoNotification.objects.filter(
             user_id=user_id,
-            type=notification_type.db_value
+            notification_type=notification_type.db_value
         )
         
         if not db_notifications.exists():
