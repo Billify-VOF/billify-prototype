@@ -46,6 +46,9 @@ KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 key = os.getenv('FERNET_KEY')
 
+if key is None:
+    raise ValueError("FERNET_KEY not found in the .env file!")
+key = key.encode()
 
 AUTHCODE =''
 
