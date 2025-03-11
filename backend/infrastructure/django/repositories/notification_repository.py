@@ -230,6 +230,6 @@ class DjangoNotificationRepository(NotificationRepository):
             db_notification = DjangoNotification.objects.get(id=notification_id)
             db_notification.mark_as_read()
             return self._to_domain(db_notification)
-        except DjangoNotification.DoesNotExist:
+        except DjangoNotification.DoesNotExist as e:
             logger.warning("Attempted to mark non-existent notification as read: %d", notification_id)
-            raise ValueError(f"Notification with ID {notification_id} not found") 
+            raise ValueError(f"Notification with ID {notification_id} not found") from e
