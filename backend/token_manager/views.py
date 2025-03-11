@@ -26,7 +26,7 @@ from .serializers import IbanityAccountSerializer
 import secrets
 from .models import *
 import logging
-
+from utils.base import encrypt_token,decrypt_token
 
 
 from dotenv import load_dotenv
@@ -44,6 +44,7 @@ URL = os.getenv('URL')
 PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
 KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
+key = os.getenv('FERNET_KEY')
 
 
 AUTHCODE =''
@@ -77,7 +78,8 @@ def load_private_key(private_key_path, password):
 #Get Access token from Ponto token model
 def get_access_token(user):
     get_token = PontoToken.objects.get(user=user)
-    return get_token.access_token
+    access_token = decrypt_token(get_token.access_token,key)
+    return access_token
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"

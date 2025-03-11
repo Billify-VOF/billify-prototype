@@ -158,3 +158,6 @@ profile_default/
 # Translations
 *.mo
 *.pot
+
+#Migrations
+backend/token_manager/migrations/*
