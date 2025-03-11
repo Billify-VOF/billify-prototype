@@ -24,6 +24,7 @@ import time
 from token_manager.models import IbanityAccount
 from .serializers import IbanityAccountSerializer
 import secrets
+# from utils.base.py import 
 from .models import *
 import logging
 
@@ -74,7 +75,8 @@ def load_private_key(private_key_path, password):
 #Get Access token from Ponto token model
 def get_access_token(user):
     get_token = PontoToken.objects.get(user=user)
-    return get_token.access_token
+    access_token = decrypt_token(get_token.access_token,key)
+    return access_token
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
