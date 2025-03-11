@@ -161,3 +161,4 @@ profile_default/
 
 #Gitignore
 backend/token_manager/migrations/*
+backend/token_manager/migrations/__pycache__/
