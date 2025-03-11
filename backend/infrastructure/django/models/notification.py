@@ -166,10 +166,11 @@ class Notification(models.Model):
         object_id: Optional[int] = None,
         is_read: bool = False
     ) -> 'Notification':
-        """Create a new notification with validation.
+        """Create a new notification database record.
         
-        Factory method that encapsulates creation logic and ensures
-        proper validation before saving to the database.
+        Factory method that focuses on database persistence with necessary constraint validation.
+        While business rules should be validated at the domain layer, this method ensures
+        database constraints are satisfied before persisting.
         
         Args:
             message: The notification message content
@@ -183,7 +184,7 @@ class Notification(models.Model):
             Notification: The created and saved notification instance
             
         Raises:
-            ValidationError: If validation fails for any field
+            ValidationError: If database constraints are violated
         """
         logger.info("Creating notification for user_id=%s, notification_type=%s", user_id, notification_type_value)
         
@@ -206,35 +207,39 @@ class Notification(models.Model):
             logger.debug("Marking notification as read on creation")
             notification.read_at = timezone.now()
         
-        # Validate and save
+        # Validate database constraints 
         notification.full_clean()
+        
+        # Save to database
         notification.save()
         
         return notification
     
     def clean(self) -> None:
-        """Validate notification data before saving.
+        """Validate database integrity constraints.
         
-        Calls specialized validation methods for each field requiring custom validation.
+        This validation focuses on ensuring database integrity rather than
+        business rules, which should be handled at the domain layer.
         
         Raises:
-            ValidationError: If any validation checks fail
+            ValidationError: If database constraints are violated
         """
-        logger.debug("Validating notification: id=%s, user_id=%s", 
+        logger.debug("Validating notification database constraints: id=%s, user_id=%s", 
                    getattr(self, 'id', 'new'), getattr(self, 'user_id', None))
         super().clean()
         self._validate_message()
         self._validate_notification_type()
     
     def _validate_message(self) -> None:
-        """Validate the notification message.
+        """Validate the notification message meets database requirements.
         
-        Ensures the message is not empty or just whitespace.
+        Ensures the message field satisfies basic requirements for database persistence.
+        For full business rule validation, use the domain model.
         
         Raises:
             ValidationError: If message is empty or only contains whitespace
         """
-        logger.debug("Validating message: '%s'", 
+        logger.debug("Validating message field: '%s'", 
                    self.message[:30] + '...' if self.message and len(self.message) > 30 else self.message)
         if not self.message or not self.message.strip():
             logger.warning("Validation failed: Empty notification message")
@@ -243,14 +248,15 @@ class Notification(models.Model):
             })
     
     def _validate_notification_type(self) -> None:
-        """Validate the notification type.
+        """Validate the notification type meets database requirements.
         
-        Ensures the type is one of the valid types defined in NotificationType.
+        Ensures the notification_type value is one of the valid options defined in the choices.
+        This is primarily for database integrity rather than business rule validation.
         
         Raises:
-            ValidationError: If notification_type is not a valid NotificationType value
+            ValidationError: If notification_type is not a valid choice value
         """
-        logger.debug("Validating notification type: '%s'", self.notification_type)
+        logger.debug("Validating notification_type field: '%s'", self.notification_type)
         valid_types = [t.db_value for t in NotificationType]
         if self.notification_type not in valid_types:
             logger.warning("Validation failed: Invalid notification type '%s'", self.notification_type)
@@ -267,10 +273,11 @@ class Notification(models.Model):
         object_id: Optional[int] = None,
         mark_read: Optional[bool] = None
     ) -> 'Notification':
-        """Update notification fields with validation.
+        """Update notification fields with database constraint validation.
         
-        Encapsulates updates to notification fields, ensuring proper validation
-        is performed before saving changes.
+        Updates notification fields and ensures database integrity constraints
+        are satisfied. Business rules should be validated at the domain layer
+        before calling this method.
         
         Args:
             message: New notification message
@@ -283,7 +290,7 @@ class Notification(models.Model):
             Notification: The updated notification instance (self)
             
         Raises:
-            ValidationError: If updated fields don't meet validation requirements
+            ValidationError: If database constraints are violated
         """
         logger.info("Updating notification id=%s for user_id=%s", 
                   self.id, getattr(self, 'user_id', None))
@@ -316,7 +323,7 @@ class Notification(models.Model):
             logger.debug("Marking notification as unread")
             self.read_at = None
         
-        # Validate all fields
+        # Validate database constraints
         self.full_clean()
         
         # Save changes

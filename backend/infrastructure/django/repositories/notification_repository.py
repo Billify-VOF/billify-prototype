@@ -4,6 +4,7 @@ from typing import Optional, List
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 
 from domain.repositories.interfaces.notification_repository import NotificationRepository
 from domain.models.notification import Notification as DomainNotification
@@ -24,6 +25,12 @@ class DjangoNotificationRepository(NotificationRepository):
     
     It implements all methods defined in the NotificationRepository interface,
     translating between domain and database representations as needed.
+    
+    Validation Responsibilities:
+        - Domain Layer: All business rule validations are performed at the domain layer
+          before objects reach this repository.
+        - Repository Layer: This repository ensures database integrity constraints
+          are satisfied when persisting domain objects to the database.
     """
 
     def _to_domain(self, db_notification: DjangoNotification) -> DomainNotification:
@@ -57,14 +64,25 @@ class DjangoNotificationRepository(NotificationRepository):
     def save(self, notification: DomainNotification, user_id: int) -> DomainNotification:
         """Persist a notification to storage.
 
+        This method translates a domain notification into a Django ORM model and
+        persists it to the database. The domain model should be fully validated
+        before reaching this method. Database integrity constraints are checked
+        before saving.
+
         Args:
             notification: Domain model to be saved
             user_id: ID of the user the notification is for
 
         Returns:
             DomainNotification: The saved domain model with any updates
+            
+        Raises:
+            ValueError: If database constraints are violated during persistence
         """
         logger.debug("Saving notification for user %d: %s", user_id, notification.message)
+        
+        # The domain notification should already be validated by the domain layer
+        # We don't need to re-validate business rules here
         
         # Parse related entity if provided
         content_type = None
@@ -97,6 +115,15 @@ class DjangoNotificationRepository(NotificationRepository):
         # Set read status if already read
         if notification.is_read:
             db_notification.read_at = timezone.now()
+        
+        # Validate database constraints before saving
+        # While business rules are validated at the domain level, we still need to
+        # ensure database integrity constraints are satisfied
+        try:
+            db_notification.full_clean()
+        except ValidationError as e:
+            logger.error("Database validation error when saving notification: %s", str(e))
+            raise ValueError(f"Could not save notification due to validation error: {str(e)}")
         
         # Save to database
         db_notification.save()
