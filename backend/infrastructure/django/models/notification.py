@@ -120,6 +120,11 @@ class Notification(models.Model):
         This method is called both when creating new objects and when
         loading existing objects from the database.
         """
+        logger.debug("Django Notification __init__ called")
+        logger.debug("Number of args: %s", len(args))
+        for i, arg in enumerate(args):
+            logger.debug("arg[%s]: %s (type: %s)", i, arg, type(arg))
+        logger.debug("kwargs: %s", kwargs)
         super().__init__(*args, **kwargs)
         
         # Initialize any instance attributes that aren't directly 
@@ -180,6 +185,8 @@ class Notification(models.Model):
         Raises:
             ValidationError: If validation fails for any field
         """
+        logger.info("Creating notification for user_id=%s, type=%s", user_id, type_value)
+        
         # Create notification instance
         notification = cls(
             message=message,
@@ -189,11 +196,14 @@ class Notification(models.Model):
         
         # Set optional fields if provided
         if content_type_id is not None and object_id is not None:
+            logger.debug("Setting related object: content_type_id=%s, object_id=%s", 
+                        content_type_id, object_id)
             notification.content_type_id = content_type_id
             notification.object_id = object_id
             
         # Set read status if notification is already read
         if is_read:
+            logger.debug("Marking notification as read on creation")
             notification.read_at = timezone.now()
         
         # Validate and save
@@ -210,6 +220,8 @@ class Notification(models.Model):
         Raises:
             ValidationError: If any validation checks fail
         """
+        logger.debug("Validating notification: id=%s, user_id=%s", 
+                   getattr(self, 'id', 'new'), getattr(self, 'user_id', None))
         super().clean()
         self._validate_message()
         self._validate_type()
@@ -222,7 +234,10 @@ class Notification(models.Model):
         Raises:
             ValidationError: If message is empty or only contains whitespace
         """
+        logger.debug("Validating message: '%s'", 
+                   self.message[:30] + '...' if self.message and len(self.message) > 30 else self.message)
         if not self.message or not self.message.strip():
+            logger.warning("Validation failed: Empty notification message")
             raise ValidationError({
                 'message': 'Notification message cannot be empty.'
             })
@@ -235,8 +250,10 @@ class Notification(models.Model):
         Raises:
             ValidationError: If type is not a valid NotificationType value
         """
+        logger.debug("Validating notification type: '%s'", self.type)
         valid_types = [t.db_value for t in NotificationType]
         if self.type not in valid_types:
+            logger.warning("Validation failed: Invalid notification type '%s'", self.type)
             raise ValidationError({
                 'type': f'Invalid notification type. Must be one of: {", ".join(valid_types)}'
             })
@@ -268,24 +285,35 @@ class Notification(models.Model):
         Raises:
             ValidationError: If updated fields don't meet validation requirements
         """
+        logger.info("Updating notification id=%s for user_id=%s", 
+                  self.id, getattr(self, 'user_id', None))
+        
         # Update fields if provided
         if message is not None:
+            logger.debug("Updating message from '%s' to '%s'", 
+                       self.message[:30] + '...' if len(self.message) > 30 else self.message,
+                       message[:30] + '...' if len(message) > 30 else message)
             self.message = message
             
         if type_value is not None:
+            logger.debug("Updating notification type from '%s' to '%s'", self.type, type_value)
             self.type = type_value
             
         # Handle related object fields together
         if content_type_id is not None:
+            logger.debug("Updating content_type_id from %s to %s", self.content_type_id, content_type_id)
             self.content_type_id = content_type_id
             
         if object_id is not None:
+            logger.debug("Updating object_id from %s to %s", self.object_id, object_id)
             self.object_id = object_id
             
         # Handle read status
         if mark_read is True and not self.is_read:
+            logger.debug("Marking notification as read")
             self.read_at = timezone.now()
         elif mark_read is False and self.is_read:
+            logger.debug("Marking notification as unread")
             self.read_at = None
         
         # Validate all fields
@@ -293,6 +321,7 @@ class Notification(models.Model):
         
         # Save changes
         self.save()
+        logger.debug("Notification updated successfully")
         
         return self
     
@@ -305,8 +334,11 @@ class Notification(models.Model):
             The notification instance (self) for method chaining.
         """
         if not self.read_at:
+            logger.info("Marking notification id=%s as read", self.id)
             self.read_at = timezone.now()
-            self.save(update_fields=['read_at'])
+            self.save()
+        else:
+            logger.debug("Notification id=%s already marked as read", self.id)
         return self
     
     @property
