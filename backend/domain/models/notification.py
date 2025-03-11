@@ -108,7 +108,7 @@ class Notification:
             InvalidNotificationError: If message is empty or exceeds maximum length
         """
         # Check for empty message
-        if not self.message or not self.message.strip():
+        if not self.message.strip():
             raise InvalidNotificationError("Notification message cannot be empty")
         
         # Check message length
