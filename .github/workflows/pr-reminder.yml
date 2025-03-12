@@ -5,6 +5,10 @@ on:
     - cron: '0 8,13,18,23 * * *'  # Runs at 8 AM, 1 PM, 6PM and 11 PM every day
   workflow_dispatch:  # Allows manual triggering for testing
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   remind:
     runs-on: ubuntu-latest
