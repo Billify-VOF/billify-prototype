@@ -1,0 +1,130 @@
+name: PR Review Reminder
+
+on:
+  schedule:
+    - cron: '0 10 * * 1-5'  # Runs at 10:00 AM Monday-Friday
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for PRs needing review
+        id: check-prs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              sort: 'created',
+              direction: 'asc'
+            });
+            
+            if (pulls.length === 0) {
+              console.log('No open PRs to check.');
+              return;
+            }
+            
+            // Group PRs by age
+            const now = new Date();
+            const urgent = [];  // >48 hours
+            const attention = [];  // 24-48 hours
+            const recent = [];  // <24 hours
+            
+            for (const pr of pulls) {
+              const created = new Date(pr.created_at);
+              const hours = Math.floor((now - created) / (1000 * 60 * 60));
+              const reviewers = pr.requested_reviewers.map(r => r.login).join(', ');
+              
+              const details = {
+                title: pr.title,
+                url: pr.html_url,
+                author: pr.user.login,
+                hours: hours,
+                reviewers: reviewers || "No reviewers assigned"
+              };
+              
+              if (hours > 48) {
+                urgent.push(details);
+              } else if (hours > 24) {
+                attention.push(details);
+              } else {
+                recent.push(details);
+              }
+            }
+            
+            // Save results for the next step
+            core.setOutput('urgent', JSON.stringify(urgent));
+            core.setOutput('attention', JSON.stringify(attention));
+            core.setOutput('recent', JSON.stringify(recent));
+
+      - name: Send Slack notification
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const urgent = JSON.parse('${{ steps.check-prs.outputs.urgent || '[]' }}');
+            const attention = JSON.parse('${{ steps.check-prs.outputs.attention || '[]' }}');
+            const recent = JSON.parse('${{ steps.check-prs.outputs.recent || '[]' }}');
+            
+            if (urgent.length === 0 && attention.length === 0 && recent.length === 0) {
+              console.log('No PRs to notify about');
+              return;
+            }
+            
+            // Format message sections
+            let message = `:bell: *Daily PR Review Status*\n\n`;
+            
+            if (urgent.length > 0) {
+              message += `:red_circle: *Urgent - Exceeding 48 hour target (${urgent.length})*\n`;
+              urgent.forEach(pr => {
+                message += `• <${pr.url}|${pr.title}> by ${pr.author} - open for ${pr.hours} hours\n`;
+                message += `  Reviewers: ${pr.reviewers}\n`;
+              });
+              message += `\n`;
+            }
+            
+            if (attention.length > 0) {
+              message += `:warning: *Needs Attention - Over 24 hours (${attention.length})*\n`;
+              attention.forEach(pr => {
+                message += `• <${pr.url}|${pr.title}> by ${pr.author} - open for ${pr.hours} hours\n`;
+                message += `  Reviewers: ${pr.reviewers}\n`;
+              });
+              message += `\n`;
+            }
+            
+            if (recent.length > 0) {
+              message += `:new: *Recent PRs (${recent.length})*\n`;
+              recent.forEach(pr => {
+                message += `• <${pr.url}|${pr.title}> by ${pr.author} - open for ${pr.hours} hours\n`;
+                message += `  Reviewers: ${pr.reviewers}\n`;
+              });
+            }
+            
+            // Add reminder about SLA
+            message += `\n:memo: *Remember:* Our target is to review PRs within 24-48 hours of submission.`;
+            
+            // Send to Slack
+            const fetch = require('node-fetch');
+            
+            try {
+              const response = await fetch(process.env.SLACK_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Slack API responded with status: ${response.status}`);
+              }
+              
+              console.log('Slack notification sent successfully');
+            } catch (error) {
+              console.error(`Failed to send Slack notification: ${error.message}`);
+              core.setFailed('Failed to send Slack notification');
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
