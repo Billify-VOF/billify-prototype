@@ -137,24 +137,25 @@ def ponto_login(request):
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
                 expires_in = token_data.get("expires_in")
-                user_id = 1
+                user_id = request.user
                 user = User.objects.get(id=user_id)
                 # Encrypt the tokens before saving to the database
                 encrypted_access_token = encrypt_token(access_token,key)
                 encrypted_refresh_token = encrypt_token(refresh_token,key)
-                try:
-                    ponto_token = PontoToken.objects.get(user=user)
+                ponto_token, created = PontoToken.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'access_token': encrypted_access_token,
+                        'refresh_token': encrypted_refresh_token,
+                        'expires_in': expires_in,
+                    }
+                )
+                
+                if not created:  # If the token already exists, update it
                     ponto_token.access_token = encrypted_access_token
                     ponto_token.refresh_token = encrypted_refresh_token
                     ponto_token.expires_in = expires_in
                     ponto_token.save()
-                except PontoToken.DoesNotExist:
-                    PontoToken.objects.create(
-                        user=user,
-                        access_token=encrypted_access_token,
-                        refresh_token=encrypted_refresh_token,
-                        expires_in=expires_in
-                    )
                 return Response({
                     "access_token": access_token,
                     "refresh_token": refresh_token,
@@ -176,12 +177,12 @@ def ponto_login(request):
     
 
 # get access token 
-def refresh_access_token():
+def refresh_access_token(request):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
     """
-    user_id = 1 
+    user_id = request.user # or 1 
     try:
         # Retrieve the user's PontoToken instance
         ponto_token = PontoToken.objects.get(user=user_id)
