@@ -2,12 +2,12 @@ name: PR Review Reminder
 
 on:
   schedule:
-    - cron: '0 8,13,18,23 * * *'  # Runs at 8 AM, 1 PM, 6PM and 11 PM every day
+    - cron: '0 9,13,17 * * *'  # Runs at 9 AM, 1 PM, and 5 PM every day
   workflow_dispatch:  # Allows manual triggering for testing
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: read  # Need this to access PRs
 
 jobs:
   remind:
@@ -60,10 +60,11 @@ jobs:
               }
             }
             
-            // Save results for the next step
-            core.setOutput('urgent', JSON.stringify(urgent));
-            core.setOutput('attention', JSON.stringify(attention));
-            core.setOutput('recent', JSON.stringify(recent));
+            // Using the new approach with environment files
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `urgent=${JSON.stringify(urgent)}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `attention=${JSON.stringify(attention)}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `recent=${JSON.stringify(recent)}\n`);
 
       - name: Send Slack notification
         if: success()
@@ -111,9 +112,7 @@ jobs:
             // Add reminder about SLA
             message += `\n:memo: *Remember:* Our target is to review PRs within 24-48 hours of submission.`;
             
-            // Send to Slack
-            const fetch = require('node-fetch');
-            
+            // Send to Slack using built-in fetch
             try {
               const response = await fetch(process.env.SLACK_WEBHOOK_URL, {
                 method: 'POST',
