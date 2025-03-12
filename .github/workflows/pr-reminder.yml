@@ -2,7 +2,7 @@ name: PR Review Reminder
 
 on:
   schedule:
-    - cron: '0 10 * * 1-5'  # Runs at 10:00 AM Monday-Friday
+    - cron: '0 8,13,18,23 * * *'  # Runs at 8 AM, 1 PM, 6PM and 11 PM every day
   workflow_dispatch:  # Allows manual triggering for testing
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check for PRs needing review
         id: check-prs
-        uses: actions/github-script@v6
+        uses: actions/github-script@v6.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -63,7 +63,7 @@ jobs:
 
       - name: Send Slack notification
         if: success()
-        uses: actions/github-script@v6
+        uses: actions/github-script@v6.1.0
         with:
           script: |
             const urgent = JSON.parse('${{ steps.check-prs.outputs.urgent || '[]' }}');
