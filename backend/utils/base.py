@@ -17,12 +17,18 @@ key = key.encode()
 #     return Fernet.generate_key()
 # Encryption function
 def encrypt_token(token: str, key: bytes) -> str:
+    if not token or not token.strip():
+        raise ValueError("Invalid token: Token cannot be empty or whitespace.")
     fernet = Fernet(key)
     encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
     return encrypted_token.decode()  # Return the encrypted token as a string
 
 # Decryption function
 def decrypt_token(encrypted_token: str, key: bytes) -> str:
+    # Check if encrypted_token is not empty or just whitespace
+    if not encrypted_token or not encrypted_token.strip():
+        raise ValueError("Invalid token: Token cannot be empty or whitespace.")
+    
     fernet = Fernet(key)
     decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
     return decrypted_token.decode()
