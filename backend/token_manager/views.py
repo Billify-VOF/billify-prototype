@@ -250,7 +250,5 @@ def refresh_access_token():
             return {"error": "Failed to refresh access token"}
 
     except Exception as e:
-        return {"error": "No tokens found for this user"}
-    except Exception as e:
         logger.error(f"User {user_id} - Error occurred: {str(e)}")
         return {"error": str(e)}
