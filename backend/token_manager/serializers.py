@@ -18,3 +18,8 @@ class IbanityAccountSerializer(serializers.ModelSerializer):
             'holder_name',
             'resourceId'
         ]
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'account_id': {'read_only': True},
+            'authorization_expiration_expected_at': {'read_only': True}
+        }
