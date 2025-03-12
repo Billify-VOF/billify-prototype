@@ -2,17 +2,13 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
     try {
-        console.log('API route hit - starting file upload process')
+        const json = await request.json()
+        console.log("API route hit - starting invoice confirmation process", json);
         
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
-
-        const backendFormData = new FormData();
-        backendFormData.append('file', file);
-
-        const backendResponse = await fetch('http://localhost:8000/api/invoices/upload/', {
+        
+        const backendResponse = await fetch('http://localhost:8000/api/invoices/confirm/', {
             method: 'POST',
-            body: backendFormData,
+            body: json,
             credentials: 'include'
         });
 
@@ -25,18 +21,9 @@ export async function POST(request: Request) {
                 throw new Error(data.detail || 'An unexpected error occurred while processing your invoice.');
             }
 
-            // Format the response to match the expected structure
             return NextResponse.json({
                 status: 'success',
-                message: data.message,
-                invoice: data.invoice,
-                invoice_data: {
-                    invoice_number: data.invoice_data.invoice_number,
-                    amount: data.invoice_data.amount,
-                    date: data.invoice_data.date || 'N/A',
-                    supplier_name: data.invoice_data.supplier_name,
-                    urgency: data.invoice_data.urgency
-                }
+                data: data,
             });
         } else {
             throw new Error('Unexpected response format');
@@ -49,7 +36,7 @@ export async function POST(request: Request) {
         });
         return NextResponse.json({ 
             status: 'error',
-            error: 'Failed to process file',
+            error: 'Failed to process data',
             detail: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
