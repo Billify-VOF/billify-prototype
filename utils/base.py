@@ -34,6 +34,8 @@ key = key.encode()
 def encrypt_token(token: str, key: bytes) -> str:
    
     try:
+        if not token or not token.strip():
+            raise ValueError("Invalid token: Token cannot be empty or whitespace.")
         fernet = Fernet(key)
         encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
         logger.info("Token successfully encrypted.")
@@ -52,6 +54,8 @@ def encrypt_token(token: str, key: bytes) -> str:
 def decrypt_token(encrypted_token: str, key: bytes) -> str:
     
     try:
+        if not encrypted_token or not encrypted_token.strip():
+            raise ValueError("Invalid token: Token cannot be empty or whitespace.")
         fernet = Fernet(key)
         decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
         logger.info("Token successfully decrypted.")
