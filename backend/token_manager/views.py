@@ -21,7 +21,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import padding
 import time
-from token_manager.models import IbanityAccount
+from token_manager.models import IbanityAccount,PontoToken
 from .serializers import IbanityAccountSerializer
 import secrets
 from utils.base.py import encrypt_token,decrypt_token 
@@ -84,7 +84,8 @@ def get_access_token(user):
         return access_token
     except Exception as e:
         logger.error(f"Access token not found for user {user}")
-        return Response({f"Error while retrieving the access token: {str(e)}})
+        return Response({f"Error while retrieving the access token:{str(e)}"})
+
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
