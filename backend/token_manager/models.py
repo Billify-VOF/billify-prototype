@@ -19,4 +19,16 @@ class IbanityAccount(models.Model):
     resourceId = models.CharField(max_length=255, blank=True)
     def __str__(self):
         return f"{self.account_id} - {self.description}"
+    
+
+class PontoToken(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    access_token = models.CharField(max_length=255, null=True, blank=True)
+    refresh_token = models.CharField(max_length=255, null=True, blank=True)
+    expires_in = models.IntegerField(default=3600)  # Default set to 3600 seconds (1 hour)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Ponto Token for {self.user.username}"
 
