@@ -87,7 +87,7 @@ def get_access_token(user):
         access_token = decrypt_token(get_token.access_token,key)
         return access_token
     except Exception as e:
-        return Response({f"Error while retrieving the access token: {str(e)}})
+        return Response({f"Error while retrieving the access token: {str(e)}"})
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
