@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
+    'token_manager'
 ]
 
 MIDDLEWARE = [
