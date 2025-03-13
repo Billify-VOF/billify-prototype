@@ -5,20 +5,22 @@ import string
 import base64
 import ssl
 import urllib3
+from urllib3.util.ssl_ import DEFAULT_CABUNDLE_PATH
 import secrets
 import logging
-import hashlib
 from urllib.parse import urlencode
 from django.shortcuts import redirect
+from django.http import HttpRequest
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from dotenv import load_dotenv
-from utils.base import encrypt_token, decrypt_token, get_encryption_key
+from token_manager.utils.base import encrypt_token, decrypt_token, get_encryption_key
 from token_manager.models import PontoToken, IbanityAccount
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from OpenSSL import crypto
+from typing import Union, Dict, Any
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -52,7 +54,7 @@ BASE_URL = os.getenv('BASE_URL')
 # Get the encryption key
 key = get_encryption_key()
 
-def convertclientidsecret(client_id, client_secret):
+def convertclientidsecret(client_id: str, client_secret: str) -> str:
     """Convert client ID and secret to a Base64-encoded string.
     
     Args:
@@ -70,17 +72,17 @@ def convertclientidsecret(client_id, client_secret):
     return encoded_credentials
 
 
-def generate_random_session_id():
+def generate_random_session_id() -> str:
     """Generate a random session ID.
     
     Returns:
         str: A randomly generated session ID.
     """
-    random_number = ''.join(secrets.choice(string.digits) for _ in range(50))  # Generate a secure random 50-digit number
-    return f"session_{random_number}"
+    random_string = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(50))  # Generate a secure random 50-character alphanumeric string
+    return f"session_{random_string}"
 
 
-def load_private_key(private_key_path, password):
+def load_private_key(private_key_path: str, password: str):
     """Load and decrypt a private key from a file.
     
     Args:
@@ -100,9 +102,15 @@ def load_private_key(private_key_path, password):
 
 
 @api_view(['GET'])
-def ponto_login(request):
+def ponto_login(request: HttpRequest) -> Response:
     """
     Handles both the redirection to Ponto's OAuth2 login page and the callback to exchange the authorization code for an access token.
+    
+    Args:
+        request: The HTTP request.
+        
+    Returns:
+        Response: The redirect or token response.
     """
     
     session_id = generate_random_session_id()
@@ -150,7 +158,7 @@ def ponto_login(request):
         http = urllib3.PoolManager(
             num_pools=50,
             cert_reqs=ssl.CERT_REQUIRED, 
-            ca_certs=urllib3.util.ssl_.DEFAULT_CABUNDLE_PATH,
+            ca_certs=DEFAULT_CABUNDLE_PATH,
             ssl_context=context
         )
         
@@ -165,7 +173,7 @@ def ponto_login(request):
         # Process the response
         if response.status == 200:
             try:
-                token_data = json.loads(response.data.decode('utf-8'))
+                token_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
                 expires_in = token_data.get("expires_in")
@@ -208,14 +216,14 @@ def ponto_login(request):
 
 
 # Get access token from Ponto token model
-def get_access_token(user):
+def get_access_token(user) -> Union[str, Response]:
     """Get the access token for a user.
     
     Args:
         user: The user to get the access token for.
         
     Returns:
-        str: The decrypted access token.
+        Union[str, Response]: The decrypted access token or error response.
     """
     try:
         get_token = PontoToken.objects.get(user=user)
@@ -232,12 +240,12 @@ certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
 private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
 private_key_password = PRIVATE_KEY_PASSWORD
 
-def get_ibanity_credentials():
+def get_ibanity_credentials() -> dict:
     """
     Returns the credentials and API base URL for the Ibanity API.
 
     Returns:
-    - A dictionary containing the API base URL, certificate path, private key path, private key password, and key ID.
+        dict: A dictionary containing the API base URL, certificate path, private key path, private key password, and key ID.
     """
     cert_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
     priv_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
@@ -253,7 +261,7 @@ def get_ibanity_credentials():
     }
 
 
-def create_signature(request_target, digest, created, private_key_path, private_key_password):
+def create_signature(request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
     """Creates the signature string.
     
     Args:
@@ -290,7 +298,7 @@ def create_signature(request_target, digest, created, private_key_path, private_
 
 
 # Refresh the access token 
-def refresh_access_token(request):
+def refresh_access_token(request: HttpRequest):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
@@ -336,7 +344,7 @@ def refresh_access_token(request):
         http = urllib3.PoolManager(
             num_pools=50,
             cert_reqs=ssl.CERT_REQUIRED,
-            ca_certs=urllib3.util.ssl_.DEFAULT_CABUNDLE_PATH,
+            ca_certs=DEFAULT_CABUNDLE_PATH,
             ssl_context=context
         )
 
@@ -348,7 +356,7 @@ def refresh_access_token(request):
             preload_content=True
         )
         if response.status == 200:
-            token_data = json.loads(response.data.decode('utf-8'))
+            token_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
             encrypted_access_token = encrypt_token(token_data.get("access_token"), key)
             encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token), key)
             # Update the stored access token and refresh token in the database
@@ -381,7 +389,7 @@ def refresh_access_token(request):
 
 # Get transaction History
 @api_view(['GET'])
-def get_transaction_history(request):
+def get_transaction_history(request: HttpRequest):
     """Get transaction history for a user's account.
     
     Args:
@@ -399,11 +407,6 @@ def get_transaction_history(request):
             return Response({"error": "No Ibanity account found for this user"}, status=404)
         account_id = get_resourceId.account_id
         api_url = f"{BASE_URL}accounts/{account_id}/transactions"
-
-        # Calculate the digest (not used but kept for future reference)
-        data = ""  # No data for GET request
-        digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
-        digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
 
         # Create the request headers
         headers = {"Authorization": f"Bearer {token}"}
@@ -437,7 +440,7 @@ def get_transaction_history(request):
                     {"error": f"API request failed with status {response.status}", "details": response.data.decode('utf-8')}, 
                     status=response.status
                 )
-            transactions_data = json.loads(response.data.decode('utf-8'))
+            transactions_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
             return Response(transactions_data)
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}")
@@ -450,7 +453,3 @@ def get_transaction_history(request):
         return Response({"error": str(e)}, status=400)
     except Exception as e:
         return Response({"error": f"Request failed: {str(e)}"}, status=500)
-
-
-
-
