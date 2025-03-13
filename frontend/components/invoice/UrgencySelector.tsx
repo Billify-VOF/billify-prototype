@@ -66,9 +66,9 @@ export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: Urgency
                       data-tooltip-content={getDueDateMessage(urgency.level)}>
                       <div
                         className='min-w-2 min-h-2 rounded-full mx-2'
-                        style={{ backgroundColor: selected.color_code }}
+                        style={{ backgroundColor: selected?.color_code }}
                       />
-                      {selected.display_name}
+                      {selected?.display_name}
                       <Tooltip id={tooltipId} />
                     </div>
                   ) : (
