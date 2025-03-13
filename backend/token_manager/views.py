@@ -1,5 +1,7 @@
 from django.shortcuts import render
-import os,json,requests
+import os
+import json
+import requests
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
