@@ -29,6 +29,7 @@ import secrets
 from utils.base.py import encrypt_token,decrypt_token 
 from .models import *
 import logging
+import certifi
 
 
 
