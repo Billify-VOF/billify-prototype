@@ -133,29 +133,3 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
         raise RuntimeError(f"Error while decrypting token: {str(e)}") from e
-
-# Example usage code - only runs when the file is executed directly
-if __name__ == "__main__":
-    # This example code is for development/testing only
-    # It should be removed or commented out in production
-    # Example key generation (you should securely store this key)
-    key = generate_key()
-    # print(f"Generated Key: {key}")
-
-    # Example tokens
-    access_token = "example-access-token-not-real-XXXXX"
-    refresh_token = "example-refresh-token-not-real-XXXXX"
-
-    # Encrypt the tokens
-    encrypted_access_token = encrypt_token(access_token, key)
-    encrypted_refresh_token = encrypt_token(refresh_token, key)
-
-    print("\nEncrypted Access Token:", encrypted_access_token)
-    print("Encrypted Refresh Token:", encrypted_refresh_token)
-
-    # Decrypt the tokens
-    decrypted_access_token = decrypt_token(encrypted_access_token, key)
-    decrypted_refresh_token = decrypt_token(encrypted_refresh_token, key)
-
-    print("\nDecrypted Access Token:", decrypted_access_token)
-    print("Decrypted Refresh Token:", decrypted_refresh_token)
