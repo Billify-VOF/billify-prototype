@@ -29,6 +29,7 @@ import secrets
 from .models import *
 import logging
 from utils.base import encrypt_token,decrypt_token
+import certifi
 
 
 from dotenv import load_dotenv
