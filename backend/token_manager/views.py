@@ -428,9 +428,18 @@ def get_transaction_history(request: HttpRequest):
     """
     try:
         user = request.user.id
-        token = get_access_token(user)
+        try:
+            token = get_access_token(user)
+        except PontoToken.DoesNotExist:
+            return Response({"error": "No access token found for this user"}, status=401)
+        except ValueError as e:
+            return Response({"error": f"Invalid token: {str(e)}"}, status=400)
+        except Exception as e:
+            logger.error(f"Error retrieving access token: {str(e)}")
+            return Response({"error": "Failed to retrieve access token"}, status=500)
+        
         get_certificate_credentials = get_ibanity_credentials()
-        get_resourceId = IbanityAccount.objects.filter(id=user).first()
+        get_resourceId = IbanityAccount.objects.filter(user_id=user).first()
         if not get_resourceId:
             return Response({"error": "No Ibanity account found for this user"}, status=404)
         account_id = get_resourceId.account_id
@@ -477,11 +486,6 @@ def get_transaction_history(request: HttpRequest):
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}")
             return Response({"error": f"Request failed: {e}"}, status=500)
-    except PontoToken.DoesNotExist:
-        return Response({"error": "No access token found for this user"}, status=401)
-    except IbanityAccount.DoesNotExist:
-        return Response({"error": "No Ibanity account found for this user"}, status=404)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=400)
     except Exception as e:
+        logger.error(f"Unhandled exception in get_transaction_history: {str(e)}")
         return Response({"error": f"Request failed: {str(e)}"}, status=500)
