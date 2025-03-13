@@ -16,17 +16,32 @@ if key is None:
 # Ensure the key is valid (it should be a byte string)
 key = key.encode()
 
-# def generate_key():
-#     return Fernet.generate_key()
+def generate_key() -> bytes:
+    """Generate a new Fernet key for encryption/decryption.
+    
+    Returns:
+        bytes: A new Fernet key that can be stored in the .env file.
+    """
+    return Fernet.generate_key()
+
 # Encryption function
 def encrypt_token(token: str, key: bytes) -> str:
    
     try:
         if not token or not token.strip():
             raise ValueError("Invalid token: Token cannot be empty or whitespace.")
+        
+        # Additional validation to ensure token is in expected format
+        if len(token) < 8:  # Example validation - adjust based on your actual requirements
+            raise ValueError("Token is too short. Expected minimum length: 8")
+            
         fernet = Fernet(key)
         encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
-        logger.info("Token successfully encrypted.")
+        
+        # Log with truncated token ID for traceability without exposing sensitive data
+        token_prefix = token[:5] if len(token) > 5 else "****"
+        logger.info(f"Token successfully encrypted (token prefix: {token_prefix}...).")
+        
         return encrypted_token.decode()  # Return the encrypted token as a string
     
     except ValueError as ve:
@@ -44,9 +59,14 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     try:
         if not encrypted_token or not encrypted_token.strip():
             raise ValueError("Invalid token: Token cannot be empty or whitespace.")
+            
         fernet = Fernet(key)
         decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
-        logger.info("Token successfully decrypted.")
+        
+        # Log with truncated token data for traceability without exposing sensitive data
+        token_preview = decrypted_token.decode()[:5] if len(decrypted_token) > 5 else "****"
+        logger.info(f"Token successfully decrypted (token prefix: {token_preview}...).")
+        
         return decrypted_token.decode()
     
     except InvalidToken as it:
