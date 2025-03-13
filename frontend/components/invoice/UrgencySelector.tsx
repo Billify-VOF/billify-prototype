@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Switch from 'react-switch'; // Import react-switch
 import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from './types';
 import { lightenColor } from '@/app/lib/utils';
@@ -8,6 +8,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown } from 'lucide-react';
 import { Tooltip } from 'react-tooltip';
 import { getDueDateMessage } from './utils';
+import { useId } from 'react';
 
 interface UrgencySelectorProps {
   urgency?: Urgency;
@@ -15,28 +16,9 @@ interface UrgencySelectorProps {
 }
 
 export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: UrgencySelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const [selected, setSelected] = useState<Urgency>(urgency);
+  const [selected, setSelected] = useState<Urgency>();
+  const tooltipId = useId();
 
   return (
     <div
@@ -80,14 +62,14 @@ export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: Urgency
                   {selected?.display_name ? (
                     <div
                       className='flex items-center'
-                      data-tooltip-id='level-tooltip'
+                      data-tooltip-id={tooltipId}
                       data-tooltip-content={getDueDateMessage(urgency.level)}>
                       <div
                         className='min-w-2 min-h-2 rounded-full mx-2'
                         style={{ backgroundColor: selected.color_code }}
                       />
                       {selected.display_name}
-                      <Tooltip id='level-tooltip' />
+                      <Tooltip id={tooltipId} />
                     </div>
                   ) : (
                     <div className='flex items-center justify-between  p-1'>
@@ -118,11 +100,11 @@ export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: Urgency
             </DropdownMenu.Root>
           ) : (
             <div
-              data-tooltip-id='level-tooltip'
+              data-tooltip-id={tooltipId}
               data-tooltip-content={getDueDateMessage(urgency.level)}
               className='flex items-center w-36 bg-gray-200 rounded-md shadow-sm ps-2'
               style={{ backgroundColor: lightenColor(urgency.color_code, 0.8) }}>
-              <Tooltip id='level-tooltip' />
+              <Tooltip id={tooltipId} />
               <div
                 className='min-w-2 min-h-2 rounded-full'
                 style={{ backgroundColor: urgency.color_code }}></div>

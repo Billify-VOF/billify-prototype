@@ -6,7 +6,7 @@ export async function POST(request: Request) {
         console.log("API route hit - starting invoice confirmation process", json);
         
         
-        const backendResponse = await fetch('http://localhost:8000/api/invoices/confirm/', {
+        const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/confirm/`, {
             method: 'POST',
             body: json,
             credentials: 'include'

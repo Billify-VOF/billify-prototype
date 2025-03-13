@@ -122,14 +122,19 @@ const BillifyDashboard = () => {
       }
     };
 
-        // Add function to handle file upload
+    // Add function to handle file upload
     const confirmUpload = async () => {
       if (!invoiceData) return;
+      setUploadStatus('uploading');
+      setErrorMessage('');
 
       try {
         const response = await fetch('/api/invoices/confirm', {
           method: 'POST',
           body: JSON.stringify(invoiceData),
+          headers: {
+            'Content-Type': 'application/json'
+          },
           credentials: 'include'
         });
 
@@ -140,9 +145,14 @@ const BillifyDashboard = () => {
           throw new Error(data.detail || data.error || 'Failed to upload file');
         }
 
+        setUploadStatus('success');
+        // Close the dialog or show success message
+        setIsDialogOpen(false);
+
       } catch (error) {
         console.error('Upload error details:', error);
-        setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
+        setUploadStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to confirm invoice');
       }
     };
 
