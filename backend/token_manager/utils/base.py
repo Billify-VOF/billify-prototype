@@ -106,8 +106,8 @@ if __name__ == "__main__":
     # print(f"Generated Key: {key}")
 
     # Example tokens
-    access_token = "zkk8qmiaBDrMuFLQzKtcCjNAjJ8D9-wbMWSRtwOsM-0.iCUmIPDFvXegvF_DFdohpWGJJ6O0HIP-3CYqRJ_D_H4"
-    refresh_token = "dSE3_2IqmTkdHh_4ypIobWLKP06_nNMP0EAA9gHatgM.MmkJeV-ieuiQW8Oyyug-j2gbt3x5zbffjKeJpC744xI"
+    access_token = "example-access-token-not-real-XXXXX"
+    refresh_token = "example-refresh-token-not-real-XXXXX"
 
     # Encrypt the tokens
     encrypted_access_token = encrypt_token(access_token, key)
