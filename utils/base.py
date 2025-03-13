@@ -31,11 +31,11 @@ def encrypt_token(token: str, key: bytes) -> str:
     
     except ValueError as ve:
         logger.error(f"Invalid key provided for encryption: {str(ve)}")
-        raise ValueError("The encryption key provided is invalid.")
+        raise ValueError("The encryption key provided is invalid.") from ve
     
     except Exception as e:
         logger.error(f"Error while encrypting token: {str(e)}")
-        raise Exception(f"Error while encrypting token: {str(e)}")
+        raise Exception(f"Error while encrypting token: {str(e)}") from e
 
 
 # Decryption function
@@ -51,12 +51,12 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     
     except InvalidToken as it:
         logger.error(f"Invalid token provided for decryption: {str(it)}")
-        raise InvalidToken("The encrypted token is invalid.")
+        raise InvalidToken("The encrypted token is invalid.") from it
     
     except ValueError as ve:
         logger.error(f"Invalid key provided for decryption: {str(ve)}")
-        raise ValueError("The decryption key provided is invalid.")
+        raise ValueError("The decryption key provided is invalid.") from ve
     
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
-        raise Exception(f"Error while decrypting token: {str(e)}")
+        raise Exception(f"Error while decrypting token: {str(e)}") from e
