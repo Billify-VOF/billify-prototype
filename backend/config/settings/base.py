@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
     'drf_spectacular',
@@ -131,6 +132,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
+        'config.settings.auth.BearerTokenAuthentication'
     ],
     # Authentication is not required during development, for now.
     # 'DEFAULT_PERMISSION_CLASSES': [
@@ -170,6 +172,8 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
 # Storage settings
 if not DEBUG:
     # Production storage settings (S3/MinIO)
@@ -182,3 +186,42 @@ if not DEBUG:
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_VERIFY = True
     AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',  # Set to DEBUG to capture all logs
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',  # Use detailed logging format
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',  # Ensure root logger captures only INFO logs
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Show only INFO logs for Django
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Prevent debug SQL queries from being logged
+            'propagate': False,
+        },
+    },
+}
