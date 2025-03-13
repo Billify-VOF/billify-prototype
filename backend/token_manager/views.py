@@ -1,6 +1,5 @@
 import os
 import json
-import requests
 import string
 import base64
 import ssl
@@ -113,12 +112,12 @@ def ponto_login(request):
         private_key_password = PRIVATE_KEY_PASSWORD  # Password for the encrypted private key
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
-        context.check_hostname = False
+        context.check_hostname = True
         
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_NONE, 
-            ca_certs=None,
+            cert_reqs=ssl.CERT_REQUIRED, 
+            ca_certs=urllib3.util.ssl_.DEFAULT_CABUNDLE_PATH,
             ssl_context=context
         )
         
@@ -133,7 +132,7 @@ def ponto_login(request):
         # Process the response
         if response.status == 200:
             try:
-                token_data = response.json()
+                token_data = json.loads(response.data.decode('utf-8'))
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
                 expires_in = token_data.get("expires_in")
@@ -161,18 +160,18 @@ def ponto_login(request):
                     "refresh_token": refresh_token,
                     "expires_in": token_data.get("expires_in"),
                 })
-            except requests.exceptions.JSONDecodeError:
+            except json.JSONDecodeError:
                 logging.exception("Failed to decode JSON response from Ponto server")
                 return Response({"error": "Invalid JSON response from server"}, status=500)
         else:
-            logging.error(f"Failed to get access token: {response.status}, {response.text}")
+            logging.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
             return Response({
                 "error": "Failed to get access token",
-                "details": response.text
+                "details": response.data.decode('utf-8')
             }, status=500)
 
     except Exception as e:
-        logging.error(f"Failed to get url: {response.status}, {response.text}")
+        logging.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
     
 
@@ -214,12 +213,12 @@ def refresh_access_token(request):
 
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
-        context.check_hostname = False
+        context.check_hostname = True
 
         http = urllib3.PoolManager(
             num_pools=50,
             cert_reqs=ssl.CERT_REQUIRED,
-            ca_certs=None,
+            ca_certs=urllib3.util.ssl_.DEFAULT_CABUNDLE_PATH,
             ssl_context=context
         )
 
