@@ -91,14 +91,25 @@ def load_private_key(private_key_path: str, password: str):
         
     Returns:
         object: The loaded private key.
+        
+    Raises:
+        IOError: If the private key file cannot be read.
+        crypto.Error: If the private key cannot be decrypted with the given password.
     """
-    # Read and load the private key
-    with open(private_key_path, 'rb') as key_file:
-        private_key_data = key_file.read()
-
-    # Decrypt the private key with the provided password
-    private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
-    return private_key
+    try:
+        # Read and load the private key
+        with open(private_key_path, 'rb') as key_file:
+            private_key_data = key_file.read()
+        try:
+            # Decrypt the private key with the provided password
+            private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
+            return private_key
+        except crypto.Error as e:
+            logger.error(f"Failed to decrypt private key: {str(e)}")
+            raise crypto.Error(f"Failed to decrypt private key: {str(e)}") from e
+    except IOError as e:
+        logger.error(f"Failed to read private key file: {str(e)}")
+        raise IOError(f"Failed to read private key file: {str(e)}") from e
 
 
 @api_view(['GET'])
