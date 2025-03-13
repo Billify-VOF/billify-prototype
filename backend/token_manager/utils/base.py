@@ -10,7 +10,12 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Generate a key (you should store this securely in your environment or configuration file)
-def generate_key():
+def generate_key() -> bytes:
+    """Generate a secure Fernet encryption key.
+    
+    Returns:
+        bytes: A URL-safe base64-encoded 32-byte key.
+    """
     return Fernet.generate_key()
 
 # Get encryption key function
@@ -45,6 +50,8 @@ def encrypt_token(token: str, key: bytes) -> str:
         
     Raises:
         ValueError: If the token is empty or the key is invalid.
+        cryptography.fernet.InvalidToken: If the token cannot be encrypted.
+        TypeError: If there's a type mismatch in the inputs.
     """
     try:
         if not token or not token.strip():
@@ -55,12 +62,20 @@ def encrypt_token(token: str, key: bytes) -> str:
         return encrypted_token.decode()  # Return the encrypted token as a string
     
     except ValueError as ve:
-        logger.error(f"Invalid key provided for encryption: {str(ve)}")
-        raise ValueError("The encryption key provided is invalid.") from ve
+        if "Invalid token" in str(ve):
+            logger.error(f"Invalid token for encryption: {str(ve)}")
+            raise
+        else:
+            logger.error(f"Invalid key provided for encryption: {str(ve)}")
+            raise ValueError("The encryption key provided is invalid.") from ve
+    
+    except TypeError as te:
+        logger.error(f"Type error during encryption: {str(te)}")
+        raise TypeError(f"Type error during encryption: {str(te)}") from te
     
     except Exception as e:
         logger.error(f"Error while encrypting token: {str(e)}")
-        raise Exception(f"Error while encrypting token: {str(e)}") from e
+        raise RuntimeError(f"Error while encrypting token: {str(e)}") from e
 
 # Decryption function
 def decrypt_token(encrypted_token: str, key: bytes) -> str:
@@ -76,6 +91,7 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     Raises:
         InvalidToken: If the encrypted token is invalid.
         ValueError: If the encrypted token is empty or the key is invalid.
+        TypeError: If there's a type mismatch in the inputs.
     """
     try:
         if not encrypted_token or not encrypted_token.strip():
@@ -90,12 +106,20 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
         raise InvalidToken("The encrypted token is invalid.") from it
     
     except ValueError as ve:
-        logger.error(f"Invalid key provided for decryption: {str(ve)}")
-        raise ValueError("The decryption key provided is invalid.") from ve
+        if "Invalid token" in str(ve):
+            logger.error(f"Invalid token for decryption: {str(ve)}")
+            raise
+        else:
+            logger.error(f"Invalid key provided for decryption: {str(ve)}")
+            raise ValueError("The decryption key provided is invalid.") from ve
+    
+    except TypeError as te:
+        logger.error(f"Type error during decryption: {str(te)}")
+        raise TypeError(f"Type error during decryption: {str(te)}") from te
     
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
-        raise Exception(f"Error while decrypting token: {str(e)}") from e
+        raise RuntimeError(f"Error while decrypting token: {str(e)}") from e
 
 # Example usage code - only runs when the file is executed directly
 if __name__ == "__main__":
