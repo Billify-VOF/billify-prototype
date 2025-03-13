@@ -63,7 +63,7 @@ For installation instructions, refer to the main README.md.
 6. Start celery beat and worker:
    ```bash
     celery -A config worker --loglevel=info # Celery worker
-    celery -A config beat --loglevel=info # Celery beeat
+    celery -A config beat --loglevel=info # Celery beat
    ```
 ## Project structure
 
