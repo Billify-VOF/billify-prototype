@@ -64,7 +64,7 @@ def encrypt_token(token: str, key: bytes) -> str:
         try:
             Fernet(key)
         except Exception as e:
-            raise ValueError(f"Invalid encryption key format: {str(e)}")
+            raise ValueError(f"Invalid encryption key format: {str(e)}") from e
             
         fernet = Fernet(key)
         encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
@@ -113,7 +113,7 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
         try:
             Fernet(key)
         except Exception as e:
-            raise ValueError(f"Invalid decryption key format: {str(e)}")
+            raise ValueError(f"Invalid decryption key format: {str(e)}") from e
             
         fernet = Fernet(key)
         decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
