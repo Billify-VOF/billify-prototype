@@ -1,38 +1,25 @@
-from django.shortcuts import render
 import os
 import json
 import requests
-from django.contrib.auth.models import User
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.shortcuts import redirect
-from requests.auth import HTTPBasicAuth
-import random
 import string
 import base64
 import ssl
-from OpenSSL import crypto
-from urllib.parse import urlencode
 import urllib3
-import hashlib
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from cryptography.hazmat.backends import default_backend
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
-import time
-from token_manager.models import IbanityAccount
-from .serializers import IbanityAccountSerializer
 import secrets
-from .models import *
 import logging
-from utils.base import encrypt_token,decrypt_token
-import certifi
-
-
+from urllib.parse import urlencode
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from dotenv import load_dotenv
+from utils.base import encrypt_token, decrypt_token
+from token_manager.models import PontoToken
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# Load environment variables
 load_dotenv()
 
 required_env_vars = [
@@ -62,8 +49,6 @@ key = os.getenv('FERNET_KEY')
 if key is None:
     raise ValueError("FERNET_KEY not found in the .env file!")
 key = key.encode()
-
-AUTHCODE =''
 
 def convertclientidsecret(client_id, client_secret):
     
@@ -155,8 +140,8 @@ def ponto_login(request):
                 user_id = request.user
                 user = User.objects.get(id=user_id)
                 # Encrypt the tokens before saving to the database
-                encrypted_access_token = encrypt_token(access_token,key)
-                encrypted_refresh_token = encrypt_token(refresh_token,key)
+                encrypted_access_token = encrypt_token(access_token, key)
+                encrypted_refresh_token = encrypt_token(refresh_token, key)
                 ponto_token, created = PontoToken.objects.get_or_create(
                     user=user,
                     defaults={
@@ -204,7 +189,7 @@ def refresh_access_token(request):
         if not ponto_token.refresh_token:
             return {"error": "Refresh token not found"}
         # Decrypt the stored refresh token
-        decrypted_refresh_token = decrypt_token(ponto_token.refresh_token,key)
+        decrypted_refresh_token = decrypt_token(ponto_token.refresh_token, key)
         # Prepare request data for refreshing the token
         url = os.getenv('URL')
         client_id = os.getenv('PONTO_CLIENT_ID')
@@ -247,8 +232,8 @@ def refresh_access_token(request):
         )
         if response.status == 200:
             token_data = json.loads(response.data.decode('utf-8'))
-            encrypted_access_token = encrypt_token(token_data.get("access_token"),key)
-            encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token),key)
+            encrypted_access_token = encrypt_token(token_data.get("access_token"), key)
+            encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token), key)
             # Update the stored access token and refresh token in the database
             ponto_token.access_token = encrypted_access_token
             ponto_token.refresh_token = encrypted_refresh_token
