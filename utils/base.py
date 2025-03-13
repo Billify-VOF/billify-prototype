@@ -1,8 +1,11 @@
-from cryptography.fernet import Fernet
-import base64
-import json
+from cryptography.fernet import Fernet, InvalidToken
 import os
+import logging
 from dotenv import load_dotenv
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 
