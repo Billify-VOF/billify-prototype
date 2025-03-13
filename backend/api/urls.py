@@ -2,6 +2,7 @@
 
 from django.urls import path
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView
+from token_manager.views import ponto_login
 from api.views.auth import LoginView, LogoutView
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
         InvoicePreviewView.as_view(),
         name='invoice-preview'
     ),
+    path('ponto-login/', ponto_login, name='ponto_login'),
 ]

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # and endpoints.
     'infrastructure',
     'integrations',
+    'token_manager'
 ]
 
 MIDDLEWARE = [
