@@ -196,10 +196,10 @@ def refresh_access_token(request):
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
     """
-    user_id = request.user # or 1 
+    user = request.user # or 1 
     try:
         # Retrieve the user's PontoToken instance
-        ponto_token = PontoToken.objects.get(user=user_id)
+        ponto_token = PontoToken.objects.get(user=user)
         if not ponto_token.refresh_token:
             return {"error": "Refresh token not found"}
         # Decrypt the stored refresh token
@@ -261,9 +261,9 @@ def refresh_access_token(request):
             }
 
         else:
-            logger.error(f"User {user_id} - Failed to refresh access token: {response.data.decode('utf-8')}")
+            logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
             return {"error": "Failed to refresh access token"}
 
     except Exception as e:
-        logger.error(f"User {user_id} - Error occurred: {str(e)}")
+        logger.error(f"User {user} - Error occurred: {str(e)}")
         return {"error": str(e)}
