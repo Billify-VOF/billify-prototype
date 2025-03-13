@@ -5,7 +5,6 @@ import string
 import base64
 import ssl
 import urllib3
-from urllib3.util.ssl_ import DEFAULT_CABUNDLE_PATH
 import secrets
 import logging
 from urllib.parse import urlencode
@@ -20,7 +19,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from OpenSSL import crypto
-from typing import Union, Dict, Any
+from typing import Dict, Any
+import certifi
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -157,8 +157,8 @@ def ponto_login(request: HttpRequest) -> Response:
         
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED, 
-            ca_certs=DEFAULT_CABUNDLE_PATH,
+            cert_reqs=ssl.CERT_REQUIRED,  
+            ca_certs=certifi.where(),
             ssl_context=context
         )
         
@@ -215,22 +215,29 @@ def ponto_login(request: HttpRequest) -> Response:
         return Response({'message': str(e)})
 
 # Get access token from Ponto token model
-def get_access_token(user) -> Union[str, Response]:
+def get_access_token(user) -> str:
     """Get the access token for a user.
     
     Args:
         user: The user to get the access token for.
         
     Returns:
-        Union[str, Response]: The decrypted access token or error response.
+        str: The decrypted access token.
+        
+    Raises:
+        PontoToken.DoesNotExist: If no token exists for the user.
+        Exception: If there's an error decrypting the token.
     """
     try:
         get_token = PontoToken.objects.get(user=user)
         access_token = decrypt_token(get_token.access_token, key)
         return access_token
-    except Exception as e:
+    except PontoToken.DoesNotExist as e:
         logger.error(f"Access token not found for user {user}")
-        return Response({f"Error while retrieving the access token:{str(e)}"})
+        raise PontoToken.DoesNotExist(f"No token found for user {user}") from e
+    except Exception as e:
+        logger.error(f"Error retrieving access token for user {user}: {str(e)}")
+        raise Exception(f"Error while retrieving the access token: {str(e)}") from e
 
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
@@ -341,8 +348,8 @@ def refresh_access_token(request: HttpRequest):
 
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED,
-            ca_certs=DEFAULT_CABUNDLE_PATH,
+            cert_reqs=ssl.CERT_REQUIRED,  
+            ca_certs=certifi.where(),
             ssl_context=context
         )
 
@@ -414,13 +421,17 @@ def get_transaction_history(request: HttpRequest):
             keyfile=get_certificate_credentials['private_key_path'], 
             password=get_certificate_credentials['private_key_password']
         )
-        context.check_hostname = False
+        # Only disable hostname verification in development
+        if os.getenv('ENVIRONMENT') == 'development':
+            context.check_hostname = False
+        else:
+            context.check_hostname = True
 
         # Create a PoolManager with the SSL context
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_NONE,  
-            ca_certs=None,
+            cert_reqs=ssl.CERT_REQUIRED,  
+            ca_certs=certifi.where(),
             ssl_context=context
         )
 
