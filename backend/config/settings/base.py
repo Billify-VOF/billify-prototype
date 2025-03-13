@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,14 @@ SPECTACULAR_SETTINGS = {
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
+# Celery settings
+CELERY_BROKER_URL = env('REDIS_URL')
+CELERY_RESULT_BACKEND = env('REDIS_URL')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
 # Storage settings
 if not DEBUG:
     # Production storage settings (S3/MinIO)
@@ -185,7 +194,6 @@ if not DEBUG:
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_VERIFY = True
     AWS_S3_SIGNATURE_VERSION = 's3v4'
-
 
 LOGGING = {
     'version': 1,
