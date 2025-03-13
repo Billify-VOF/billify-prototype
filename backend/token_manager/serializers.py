@@ -13,10 +13,10 @@ class IbanityAccountSerializer(serializers.ModelSerializer):
             'currency',
             'authorization_expiration_expected_at',
             'current_balance',
-            'availableBalance',
+            'available_balance',
             'subtype',
             'holder_name',
-            'resourceId'
+            'resource_id'
         ]
         extra_kwargs = {
             'id': {'read_only': True},
