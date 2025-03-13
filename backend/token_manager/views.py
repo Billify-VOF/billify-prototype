@@ -279,28 +279,42 @@ def create_signature(request_target: str, digest: str, created: str, private_key
         
     Returns:
         str: The generated signature.
+        
+    Raises:
+        IOError: If the private key file cannot be read.
+        ValueError: If the private key is invalid or the signature cannot be created.
     """
     signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: api.ibanity.com"""
     
-    # Load the private key with the password
-    with open(private_key_path, "rb") as key_file:
-      private_key = serialization.load_pem_private_key(
-          key_file.read(),
-          password=private_key_password.encode(),
-          backend=default_backend()
-      )
+    try:
+        # Load the private key with the password
+        with open(private_key_path, "rb") as key_file:
+            private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=private_key_password.encode(),
+                backend=default_backend()
+            )
 
-    # Sign the message
-    signature_bytes = private_key.sign(
-        signing_string.encode('utf-8'),
-        padding.PKCS1v15(),
-        hashes.SHA256()
-    )
+        # Sign the message
+        signature_bytes = private_key.sign(
+            signing_string.encode('utf-8'),
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
 
-    # Base64 encode the signature
-    signature = base64.b64encode(signature_bytes).decode('utf-8')
+        # Base64 encode the signature
+        signature = base64.b64encode(signature_bytes).decode('utf-8')
 
-    return signature
+        return signature
+    except IOError as e:
+        logger.error(f"Failed to read private key file: {e}")
+        raise IOError(f"Failed to read private key file: {e}") from e
+    except ValueError as e:
+        logger.error(f"Invalid private key or password: {e}")
+        raise ValueError(f"Invalid private key or password: {e}") from e
+    except Exception as e:
+        logger.error(f"Failed to create signature: {e}")
+        raise ValueError(f"Failed to create signature: {e}") from e
 
 
 def refresh_access_token(request: HttpRequest):
