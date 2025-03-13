@@ -13,10 +13,10 @@ class IbanityAccount(models.Model):
     currency = models.CharField(max_length=10, blank=True)
     authorization_expiration_expected_at = models.DateTimeField(null=True, blank=True)
     current_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    availableBalance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    available_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     subtype = models.CharField(max_length=255, blank=True)
     holder_name = models.CharField(max_length=255, blank=True)
-    resourceId = models.CharField(max_length=255, blank=True)
+    resource_id = models.CharField(max_length=255, blank=True)
     def __str__(self):
         return f"{self.account_id} - {self.description}"
 
