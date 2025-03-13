@@ -7,12 +7,11 @@ import urllib3
 import secrets
 import logging
 from urllib.parse import urlencode
-from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from dotenv import load_dotenv
-from utils.base import encrypt_token, decrypt_token
+from utils.base import encrypt_token, decrypt_token, get_encryption_key
 from token_manager.models import PontoToken
 
 # Configure logger
@@ -43,11 +42,9 @@ URL = os.getenv('URL')
 PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
 KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
-key = os.getenv('FERNET_KEY')
 
-if key is None:
-    raise ValueError("FERNET_KEY not found in the .env file!")
-key = key.encode()
+# Get the encryption key
+key = get_encryption_key()
 
 def convertclientidsecret(client_id, client_secret):
     
@@ -88,8 +85,6 @@ def ponto_login(request):
     try:
         url = URL
         PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
-        if not AUTHCODE:
-                return Response({"error": "No authorization code received"}, status=400)
         client = convertclientidsecret(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
         
         # Prepare request data for the token exchange
@@ -136,8 +131,7 @@ def ponto_login(request):
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
                 expires_in = token_data.get("expires_in")
-                user_id = request.user
-                user = User.objects.get(id=user_id)
+                user = request.user
                 # Encrypt the tokens before saving to the database
                 encrypted_access_token = encrypt_token(access_token, key)
                 encrypted_refresh_token = encrypt_token(refresh_token, key)
@@ -161,17 +155,17 @@ def ponto_login(request):
                     "expires_in": token_data.get("expires_in"),
                 })
             except json.JSONDecodeError:
-                logging.exception("Failed to decode JSON response from Ponto server")
+                logger.exception("Failed to decode JSON response from Ponto server")
                 return Response({"error": "Invalid JSON response from server"}, status=500)
         else:
-            logging.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
+            logger.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
             return Response({
                 "error": "Failed to get access token",
                 "details": response.data.decode('utf-8')
             }, status=500)
 
     except Exception as e:
-        logging.exception(f"Unexpected error in ponto_login: {str(e)}")
+        logger.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
     
 
@@ -251,7 +245,10 @@ def refresh_access_token(request):
 
         else:
             logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
-            return Response({"error": "Failed to refresh access token"}, status=response.status)
+            return Response({
+                "error": "Failed to refresh access token",
+                "details": response.data.decode('utf-8')
+            }, status=response.status)
 
     except PontoToken.DoesNotExist:
         logger.error(f"User {user} - No PontoToken found")
