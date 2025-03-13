@@ -160,10 +160,10 @@ def create_signature(request_target, digest, created, private_key_path, private_
 @api_view(['GET'])
 def get_transaction_history(request):
     try:
-        user_id = request.user.id
-        token = get_access_token(user_id)
+        user = request.user.id
+        token = get_access_token(user)
         get_certificate_credentials =get_ibanity_credentials()
-        get_resourceId = IbanityAccount.objects.filter(id=user_id).first()
+        get_resourceId = IbanityAccount.objects.filter(id=user).first()
         if not get_resourceId:
             return Response({"error": "No Ibanity account found for this user"}, status=404)
         account_id = get_resourceId.account_id
