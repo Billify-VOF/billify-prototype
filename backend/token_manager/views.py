@@ -1,4 +1,5 @@
 """Token management views for Ponto integration."""
+=======
 import os
 import json
 import string
@@ -206,7 +207,6 @@ def ponto_login(request):
         logger.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
 
-
 # Get access token from Ponto token model
 def get_access_token(user):
     """Get the access token for a user.
@@ -289,7 +289,6 @@ def create_signature(request_target, digest, created, private_key_path, private_
     return signature
 
 
-# Refresh the access token 
 def refresh_access_token(request):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
@@ -376,8 +375,6 @@ def refresh_access_token(request):
         
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
-        return Response({"error": str(e)}, status=500)
-
 
 # Get transaction History
 @api_view(['GET'])
@@ -450,7 +447,3 @@ def get_transaction_history(request):
         return Response({"error": str(e)}, status=400)
     except Exception as e:
         return Response({"error": f"Request failed: {str(e)}"}, status=500)
-
-
-
-
