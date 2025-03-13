@@ -1,5 +1,7 @@
 from django.shortcuts import render
-import os,json,requests
+import os
+import json
+import requests
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -215,10 +217,10 @@ def save_or_update_account(user, account_data):
                 'currency': account_data['data'][0]['attributes']['currency'],
                 'authorization_expiration_expected_at': account_data['data'][0]['attributes']['authorizationExpirationExpectedAt'],
                 'current_balance': account_data['data'][0]['attributes']['currentBalance'],
-                'availableBalance': account_data['data'][0]['attributes']['availableBalance'],
+                'available_balance': account_data['data'][0]['attributes']['availableBalance'],
                 'subtype': account_data['data'][0]['attributes']['subtype'],
                 'holder_name': account_data['data'][0]['attributes']['holderName'],
-                'resourceId': account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+                'resource_id': account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
             }
         )
         
@@ -230,10 +232,10 @@ def save_or_update_account(user, account_data):
             account.currency = account_data['data'][0]['attributes']['currency']
             account.authorization_expiration_expected_at = account_data['data'][0]['attributes']['authorizationExpirationExpectedAt']
             account.current_balance = account_data['data'][0]['attributes']['currentBalance']
-            account.availableBalance = account_data['data'][0]['attributes']['availableBalance']
+            account.available_balance = account_data['data'][0]['attributes']['availableBalance']
             account.subtype = account_data['data'][0]['attributes']['subtype']
             account.holder_name = account_data['data'][0]['attributes']['holderName']
-            account.resourceId= account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+            account.resource_id= account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
             account.save()
         
         # Serialize the saved or updated object
