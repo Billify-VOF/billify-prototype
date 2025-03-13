@@ -13,10 +13,10 @@ class IbanityAccount(models.Model):
     currency = models.CharField(max_length=10, blank=True)
     authorization_expiration_expected_at = models.DateTimeField(null=True, blank=True)
     current_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    availableBalance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    available_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     subtype = models.CharField(max_length=255, blank=True)
     holder_name = models.CharField(max_length=255, blank=True)
-    resourceId = models.CharField(max_length=255, blank=True)
+    resource_id = models.CharField(max_length=255, blank=True)
     def __str__(self):
         return f"{self.account_id} - {self.description}"
     
@@ -25,7 +25,7 @@ class PontoToken(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     access_token = models.CharField(max_length=255, null=True, blank=True)
     refresh_token = models.CharField(max_length=255, null=True, blank=True)
-    expires_in = models.IntegerField(default=3600)  # Default set to 3600 seconds (1 hour)
+    expires_in = models.IntegerField(default=3600)  #Default set to 3600 seconds (1 hour)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
