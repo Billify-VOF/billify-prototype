@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
     'drf_spectacular',
@@ -49,7 +50,7 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
-    'token_manager',
+    'token_manager'
 ]
 
 MIDDLEWARE = [

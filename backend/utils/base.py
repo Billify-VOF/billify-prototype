@@ -21,6 +21,17 @@ console_handler.setFormatter(formatter)
 # Add the handler to the logger
 logger.addHandler(console_handler)
 
+# Get encryption key function
+def get_encryption_key():
+    # Load the Fernet encryption key from environment variable
+    key = os.getenv('FERNET_KEY')
+    if key is None:
+        logger.error("FERNET_KEY not found in the .env file!")
+        raise ValueError("FERNET_KEY not found in the .env file!")
+    
+    # Ensure the key is valid (it should be a byte string)
+    return key.encode()
+
 # Load the Fernet encryption key from environment variable
 key = os.getenv('FERNET_KEY')
 if key is None:
