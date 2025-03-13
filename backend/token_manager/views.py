@@ -181,12 +181,16 @@ def refresh_access_token(request):
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
     """
-    user = request.user # or 1 
+    user = request.user
+    # Ensure user is authenticated
+    if not user.is_authenticated:
+        return Response({"error": "User not authenticated"}, status=401)
+        
     try:
         # Retrieve the user's PontoToken instance
         ponto_token = PontoToken.objects.get(user=user)
         if not ponto_token.refresh_token:
-            return {"error": "Refresh token not found"}
+            return Response({"error": "Refresh token not found"}, status=400)
         # Decrypt the stored refresh token
         decrypted_refresh_token = decrypt_token(ponto_token.refresh_token, key)
         # Prepare request data for refreshing the token
@@ -239,16 +243,20 @@ def refresh_access_token(request):
             ponto_token.expires_in = token_data.get("expires_in")
             ponto_token.save()
 
-            return {
+            return Response({
                 "access_token": token_data.get("access_token"),
                 "refresh_token": token_data.get("refresh_token"),
                 "expires_in": token_data.get("expires_in"),
-            }
+            }, status=200)
 
         else:
             logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
-            return {"error": "Failed to refresh access token"}
+            return Response({"error": "Failed to refresh access token"}, status=response.status)
 
+    except PontoToken.DoesNotExist:
+        logger.error(f"User {user} - No PontoToken found")
+        return Response({"error": "No token found for this user"}, status=404)
+        
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
-        return {"error": str(e)}
+        return Response({"error": str(e)}, status=500)
