@@ -27,6 +27,7 @@ def get_encryption_key() -> bytes:
         
     Raises:
         ValueError: If the FERNET_KEY is not set in the environment.
+        ValueError: If the FERNET_KEY is not a valid Fernet key.
     """
     key = os.getenv('FERNET_KEY')
     if key is None:
@@ -35,7 +36,19 @@ def get_encryption_key() -> bytes:
     
     # Ensure the key is valid (it should be a byte string)
     if isinstance(key, str):
-        return key.encode()
+        key = key.encode()
+    elif not isinstance(key, bytes):
+        logger.error("FERNET_KEY must be a string or bytes!")
+        raise ValueError("FERNET_KEY must be a string or bytes!")
+    
+    # Validate key format (should be 32 bytes when decoded from url-safe base64)
+    try:
+        Fernet(key)
+    except Exception as e:
+        logger.error(f"FERNET_KEY is not a valid Fernet key: {str(e)}")
+        raise ValueError("FERNET_KEY is not a valid Fernet key. It must be URL-safe base64-encoded 32-byte key.") from e
+    
+    return key
 
 # Encryption function
 def encrypt_token(token: str, key: bytes) -> str:
