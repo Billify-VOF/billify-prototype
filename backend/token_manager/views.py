@@ -161,8 +161,8 @@ def create_signature(request_target, digest, created, private_key_path, private_
 @api_view(['GET'])
 def fetch_account_details(request):
     """Fetches accounts from the Ponto Connect API."""
-    user_id = request.user
-    token = get_access_token(user_id)
+    user = request.user
+    token = get_access_token(user)
     created = str(int(time.time()))
 
     # Calculate the digest
@@ -194,12 +194,12 @@ def fetch_account_details(request):
             headers=headers
         )
         accounts_data = json.loads(response.data.decode('utf-8'))
-        user = User.objects.get(id=user_id)
+        user = User.objects.get(id=user)
         save_record =save_or_update_account(user,accounts_data)
         return Response(save_record)
 
     except Exception as e:
-        logger.error(f"Error occurred while fetching account details for user {user_id}: {str(e)}")
+        logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
         return Response({"error": f"Request failed: {e}"}, status=500)
 
 
