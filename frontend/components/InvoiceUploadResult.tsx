@@ -1,21 +1,26 @@
-"use client"
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { PDFViewerWrapper } from './PDFViewerWrapper';
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
+import { UrgencySelector } from './invoice/UrgencySelector';
+import { DEFAULT_URGENCY, Urgency } from './invoice/types';
+import { getDueDateMessage } from './invoice/utils';
 
-interface InvoiceData {
+export interface InvoiceData {
+  invoice_id: number;
   invoice_number: string;
   amount: string;
   date: string;
   supplier_name?: string;
+  status: string;
+  urgency?: Urgency;
 }
 
 interface Invoice {
@@ -36,29 +41,37 @@ export interface UploadResult {
 
 interface Props {
   result: UploadResult;
+  onChange: (data: InvoiceData) => void;
 }
 
-export function InvoiceUploadResult({ result }: Props) {
+export function InvoiceUploadResult({ result, onChange }: Props) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+    invoice_id: 0,
     invoice_number: '',
     amount: '',
     date: '',
-    supplier_name: ''
+    supplier_name: '',
+    status: 'pending',
+    urgency: result?.invoice_data?.urgency || DEFAULT_URGENCY,
   });
+  const [autoCalculatedUrgency, setAutoCalculatedUrgency] = useState<Urgency | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [open, setOpen] = useState(false);
-  
-  // Log whenever component renders
-  console.log('Current date state:', date);
+  // const [isManualSelected, setisManualSelected] = useState(false);
 
-  useEffect(() => {
+  useEffect(() => {    
     if (result?.invoice_data) {
+      const formattedDate = result?.invoice_data?.date ? format(new Date(result.invoice_data.date), 'yyyy-MM-dd') : '';
       setInvoiceData({
+        invoice_id: result.invoice_data.invoice_id || 0,
+        status: result.invoice_data.status || 'pending',
         invoice_number: result.invoice_data.invoice_number || '',
         amount: result.invoice_data.amount || '',
-        date: result.invoice_data.date || '',
-        supplier_name: result.invoice_data.supplier_name || ''
+        date: formattedDate,
+        supplier_name: result.invoice_data.supplier_name || '',
+        urgency: result.invoice_data.urgency || DEFAULT_URGENCY,
       });
+      setAutoCalculatedUrgency(result.invoice_data.urgency);
       if (result.invoice_data.date) {
         setDate(new Date(result.invoice_data.date));
       }
@@ -72,6 +85,7 @@ export function InvoiceUploadResult({ result }: Props) {
 
   useEffect(() => {
     console.log('InvoiceData state changed:', invoiceData);
+    onChange(invoiceData);
   }, [invoiceData]);
 
   console.log('Popover open state:', open);
@@ -99,6 +113,29 @@ export function InvoiceUploadResult({ result }: Props) {
       });
     }
   };
+
+  const handleUrgencySelect = (urgency: Urgency) => {
+    if (urgency.is_manual) {
+      setInvoiceData((prev) => ({
+        ...prev,
+        urgency,
+      }));
+    } else {
+      setDate(result.invoice_data?.date ? new Date(result.invoice_data.date) : undefined);
+      const formattedDate = result?.invoice_data?.date
+        ? format(new Date(result.invoice_data.date), 'yyyy-MM-dd')
+        : '';
+      setInvoiceData((prev) => ({
+        ...prev,
+        date: formattedDate || '',
+        urgency: autoCalculatedUrgency,
+      }));
+    }
+  };
+
+  const getUrgencyDateMessage = (slectedDate: Date) => {
+    return `${format(slectedDate, "dd/MM/yyyy")} ${invoiceData.urgency?.is_manual ? '' : getDueDateMessage(invoiceData.urgency?.level)}`;
+  }
 
   if (!result || !result.status) {
     return null;
@@ -134,7 +171,7 @@ export function InvoiceUploadResult({ result }: Props) {
               open={open} 
               onOpenChange={(isOpen) => {
                 console.log('Popover state changing to:', isOpen);
-                setOpen(isOpen);  // Simplify this to always update
+                setOpen(!!(true && invoiceData.urgency?.is_manual));
               }}
               modal={true}  // Make it modal to prevent outside interference
             >
@@ -147,11 +184,11 @@ export function InvoiceUploadResult({ result }: Props) {
                   )}
                   onClick={() => {
                     console.log('Button clicked, setting open to true');
-                    setOpen(true);
+                    setOpen(!!(true && invoiceData.urgency?.is_manual));
                   }}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {date ? getUrgencyDateMessage(date) : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
@@ -205,6 +242,17 @@ export function InvoiceUploadResult({ result }: Props) {
                 </div>
               </PopoverContent>
             </Popover>
+          </div>
+
+         {/* Urgency Selector */}
+         <div>
+            <label className='block text-sm font-medium text-gray-700'>Urgency:</label>
+            <div className='mt-1 block w-full rounded-md border border-gray-300'>
+              <UrgencySelector
+                urgency={invoiceData.urgency}
+                onChange={handleUrgencySelect}
+              />
+            </div>
           </div>
         </div>
 

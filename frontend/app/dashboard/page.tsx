@@ -9,19 +9,20 @@ import {
 } from '@/components/ui/icons'
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
-import { InvoiceUploadResult } from '@/components/InvoiceUploadResult'
+import { InvoiceData, InvoiceUploadResult } from '@/components/InvoiceUploadResult'
 import SearchComponent from '@/components/SearchComponent'
 import { dummySearchResults, SearchItemResult } from '@/components/types'
 import SearchResultItem from '@/components/SearchResultItem'
 import NotificationBell from '@/components/NotificationBell'
+import { INVOICES_DATA } from '@/components/invoice/types'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
-type InvoiceStatus = 'urgent' | 'warning' | 'safe';
+type InvoiceStatus = 'overdue' | 'pending' | 'paid';
 
 const statusColors: Record<InvoiceStatus, string> = {
-  urgent: 'bg-red-100 text-red-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-  safe: 'bg-green-100 text-green-800'
+  overdue: 'bg-red-100 text-red-800',
+  pending: 'bg-yellow-100 text-yellow-800',
+  paid: 'bg-green-100 text-green-800'
 };
 
 const BillifyDashboard = () => {
@@ -33,7 +34,8 @@ const BillifyDashboard = () => {
     const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
     const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
-
+    const [invoiceData, setInvoiceData] = useState<InvoiceData>();
+    
     // Reset all states when dialog is closed
     const handleDialogOpenChange = (open: boolean) => {
       setIsDialogOpen(open);
@@ -120,6 +122,30 @@ const BillifyDashboard = () => {
       }
     };
 
+        // Add function to handle file upload
+    const confirmUpload = async () => {
+      if (!invoiceData) return;
+
+      try {
+        const response = await fetch('/api/invoices/confirm', {
+          method: 'POST',
+          body: JSON.stringify(invoiceData),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        console.log('Server response:', data);
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || 'Failed to upload file');
+        }
+
+      } catch (error) {
+        console.error('Upload error details:', error);
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
+      }
+    };
+
     // Sample data
     const financialData = {
       cashSaldo: 25000,
@@ -127,12 +153,6 @@ const BillifyDashboard = () => {
       outgoingInvoices: 8000,
       btwSaldo: 3500
     };
-  
-    const invoices = [
-      { id: 1, amount: 1200, dueDate: '2024-12-01', status: 'urgent' },
-      { id: 2, amount: 800, dueDate: '2024-12-10', status: 'warning' },
-      { id: 3, amount: 2500, dueDate: '2024-12-25', status: 'safe' }
-    ];
 
     const onSearch = async (query: string) => {
       // TODO: Implement search functionality
@@ -277,13 +297,16 @@ const BillifyDashboard = () => {
                           <div className="h-full flex flex-col">
                             <h2 className="text-lg font-semibold mb-4">Invoice Preview</h2>
                             <div className="flex-1 flex gap-6 overflow-hidden">
-                              <InvoiceUploadResult result={uploadedInvoiceData} />
+                              <InvoiceUploadResult result={uploadedInvoiceData} onChange={(invoiceData) => {
+                                setInvoiceData(invoiceData)
+                              }} />
                             </div>
                             <button
                               className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 mt-4"
                               disabled={uploadStatus === 'uploading'}
                               type="button"
                               aria-label="Confirm Upload"
+                              onClick={confirmUpload}
                             >
                               Confirm Upload
                             </button>
@@ -295,12 +318,12 @@ const BillifyDashboard = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {invoices.map(invoice => {
+                  {INVOICES_DATA.map(invoice => {
                     return (
-                      <div key={invoice.id} className="flex items-center justify-between p-4 bg-white rounded-lg">
+                      <div key={invoice.invoice_number} className="flex items-center justify-between p-4 bg-white rounded-lg">
                         <div>
-                          <div className="font-semibold">Invoice #{invoice.id}</div>
-                          <div className="text-gray-500 text-sm">Due: {invoice.dueDate}</div>
+                          <div className="font-semibold">Invoice #{invoice.invoice_number}</div>
+                          <div className="text-gray-500 text-sm">Due: {invoice.date}</div>
                         </div>
                         <div className="flex items-center gap-4">
                           <span className={`px-3 py-1 rounded-full ${statusColors[invoice.status as InvoiceStatus]}`}>
