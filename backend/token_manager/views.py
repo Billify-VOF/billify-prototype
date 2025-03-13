@@ -214,7 +214,6 @@ def ponto_login(request: HttpRequest) -> Response:
         logger.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
 
-
 # Get access token from Ponto token model
 def get_access_token(user) -> Union[str, Response]:
     """Get the access token for a user.
@@ -297,7 +296,6 @@ def create_signature(request_target: str, digest: str, created: str, private_key
     return signature
 
 
-# Refresh the access token 
 def refresh_access_token(request: HttpRequest):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
@@ -384,8 +382,6 @@ def refresh_access_token(request: HttpRequest):
         
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
-        return Response({"error": str(e)}, status=500)
-
 
 # Get transaction History
 @api_view(['GET'])

@@ -1,0 +1,236 @@
+name: Weekly PR Metrics Report
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Runs at 9 AM every Monday
+  workflow_dispatch:  # For manual triggering
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate PR metrics
+        id: metrics
+        uses: actions/github-script@v6.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Set the timeframe for the report
+            const now = new Date();
+            const oneWeekAgo = new Date(now);
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            // Get PRs created, closed, or updated in the past week
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 100
+            });
+            
+            // Filter PRs updated in the last week
+            const recentPrs = prs.filter(pr => {
+              const updatedAt = new Date(pr.updated_at);
+              return updatedAt >= oneWeekAgo;
+            });
+            
+            // Get detailed metrics for each PR
+            const prMetrics = [];
+            for (const pr of recentPrs) {
+              // Get reviews
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+              
+              // Calculate time to first review
+              let firstReviewTime = null;
+              if (reviews.length > 0) {
+                const createdAt = new Date(pr.created_at);
+                const firstReview = reviews.sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at))[0];
+                const firstReviewAt = new Date(firstReview.submitted_at);
+                firstReviewTime = (firstReviewAt - createdAt) / (1000 * 60 * 60); // in hours
+              }
+              
+              // Calculate time to merge if applicable
+              let timeToMerge = null;
+              if (pr.merged_at) {
+                const createdAt = new Date(pr.created_at);
+                const mergedAt = new Date(pr.merged_at);
+                timeToMerge = (mergedAt - createdAt) / (1000 * 60 * 60); // in hours
+              }
+              
+              // Find reviewers
+              const reviewers = new Set();
+              reviews.forEach(review => {
+                if (review.user && review.user.login) {
+                  reviewers.add(review.user.login);
+                }
+              });
+              
+              prMetrics.push({
+                number: pr.number,
+                title: pr.title,
+                author: pr.user.login,
+                state: pr.state,
+                merged: !!pr.merged_at,
+                created_at: pr.created_at,
+                updated_at: pr.updated_at,
+                merged_at: pr.merged_at,
+                reviewers: Array.from(reviewers),
+                review_count: reviews.length,
+                first_review_time: firstReviewTime,
+                time_to_merge: timeToMerge
+              });
+            }
+            
+            // Calculate statistics
+            const stats = {
+              total_prs: recentPrs.length,
+              merged_prs: recentPrs.filter(pr => pr.merged_at).length,
+              closed_without_merge: recentPrs.filter(pr => pr.state === 'closed' && !pr.merged_at).length,
+              open_prs: recentPrs.filter(pr => pr.state === 'open').length,
+              avg_time_to_first_review: null,
+              avg_time_to_merge: null,
+              prs_meeting_sla: 0,
+              reviewer_leaderboard: {}
+            };
+            
+            // Calculate average times
+            const firstReviewTimes = prMetrics.filter(pr => pr.first_review_time !== null).map(pr => pr.first_review_time);
+            if (firstReviewTimes.length > 0) {
+              stats.avg_time_to_first_review = firstReviewTimes.reduce((sum, time) => sum + time, 0) / firstReviewTimes.length;
+            }
+            
+            const mergeTimes = prMetrics.filter(pr => pr.time_to_merge !== null).map(pr => pr.time_to_merge);
+            if (mergeTimes.length > 0) {
+              stats.avg_time_to_merge = mergeTimes.reduce((sum, time) => sum + time, 0) / mergeTimes.length;
+            }
+            
+            // Count PRs meeting SLA (review within 48 hours)
+            stats.prs_meeting_sla = prMetrics.filter(pr => pr.first_review_time !== null && pr.first_review_time <= 48).length;
+            
+            // Build reviewer leaderboard
+            const reviewerStats = {};
+            prMetrics.forEach(pr => {
+              pr.reviewers.forEach(reviewer => {
+                if (!reviewerStats[reviewer]) {
+                  reviewerStats[reviewer] = { count: 0, fast_reviews: 0 };
+                }
+                reviewerStats[reviewer].count++;
+                
+                // Check if this was a fast review (< 24 hours)
+                if (pr.first_review_time !== null && pr.first_review_time <= 24) {
+                  reviewerStats[reviewer].fast_reviews++;
+                }
+              });
+            });
+            
+            // Sort reviewers by number of reviews
+            stats.reviewer_leaderboard = Object.entries(reviewerStats)
+              .sort((a, b) => b[1].count - a[1].count)
+              .map(([name, data]) => ({ 
+                name, 
+                reviews: data.count, 
+                fast_reviews: data.fast_reviews,
+                fast_review_percent: data.count > 0 ? Math.round((data.fast_reviews / data.count) * 100) : 0
+              }));
+            
+            // Format data for slack
+            const formattedDate = now.toISOString().split('T')[0];
+            const reportData = {
+              date: formattedDate,
+              stats: stats,
+              prs: prMetrics
+            };
+            
+            // Store the data for the next step
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `report_data=${JSON.stringify(reportData)}\n`);
+            console.log("PR metrics generated successfully");
+            
+      - name: Send metrics to Slack
+        uses: actions/github-script@v6.1.0
+        with:
+          script: |
+            const reportData = JSON.parse('${{ steps.metrics.outputs.report_data }}');
+            
+            // Format the message
+            let message = `:chart_with_upwards_trend: *Weekly PR Metrics Report (${reportData.date})*\n\n`;
+            
+            const stats = reportData.stats;
+            message += `*Summary*\n`;
+            message += `• Total PRs: ${stats.total_prs}\n`;
+            message += `• Merged: ${stats.merged_prs}\n`;
+            message += `• Closed without merge: ${stats.closed_without_merge}\n`;
+            message += `• Still open: ${stats.open_prs}\n`;
+            
+            if (stats.avg_time_to_first_review !== null) {
+              message += `• Average time to first review: ${Math.round(stats.avg_time_to_first_review)} hours\n`;
+            }
+            
+            if (stats.avg_time_to_merge !== null) {
+              message += `• Average time to merge: ${Math.round(stats.avg_time_to_merge)} hours\n`;
+            }
+            
+            const slaPercent = stats.total_prs > 0 
+              ? Math.round((stats.prs_meeting_sla / stats.total_prs) * 100)
+              : 0;
+            message += `• PRs meeting review SLA (48h): ${stats.prs_meeting_sla}/${stats.total_prs} (${slaPercent}%)\n\n`;
+            
+            // Reviewer leaderboard
+            if (stats.reviewer_leaderboard.length > 0) {
+              message += `*:trophy: Reviewer Leaderboard*\n`;
+              stats.reviewer_leaderboard.slice(0, 5).forEach((reviewer, index) => {
+                const medal = index === 0 ? ':first_place_medal:' : 
+                              index === 1 ? ':second_place_medal:' : 
+                              index === 2 ? ':third_place_medal:' : '•';
+                message += `${medal} ${reviewer.name}: ${reviewer.reviews} reviews (${reviewer.fast_review_percent}% within 24h)\n`;
+              });
+              message += '\n';
+            }
+            
+            // PRs still awaiting review
+            const openPrs = reportData.prs.filter(pr => pr.state === 'open' && pr.first_review_time === null);
+            if (openPrs.length > 0) {
+              message += `*:eyes: PRs Awaiting Review*\n`;
+              openPrs.forEach(pr => {
+                const createdAt = new Date(pr.created_at);
+                const now = new Date();
+                const hoursOpen = Math.round((now - createdAt) / (1000 * 60 * 60));
+                message += `• <${pr.html_url}|${pr.title}> by ${pr.author} - open for ${hoursOpen} hours\n`;
+              });
+              message += '\n';
+            }
+            
+            message += `*:rocket: Our goal: Review all PRs within 48 hours and respond to feedback within 48 hours*`;
+            
+            // Send to Slack
+            try {
+              const response = await fetch(process.env.SLACK_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Slack API responded with status: ${response.status}`);
+              }
+              
+              console.log('Weekly metrics report sent to Slack successfully');
+            } catch (error) {
+              console.error(`Failed to send metrics to Slack: ${error.message}`);
+              core.setFailed('Failed to send metrics to Slack');
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
