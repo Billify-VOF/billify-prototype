@@ -42,6 +42,7 @@ For installation instructions, refer to the main README.md.
    DATABASE_URL=postgres://billify:your_password@localhost:5432/billify
    ALLOWED_HOSTS=localhost,127.0.0.1
    CORS_ALLOWED_ORIGINS=http://localhost:3000
+   REDIS_URL=redis://localhost:6379/0
    ```
 
 4. Set up the database:
@@ -59,6 +60,11 @@ For installation instructions, refer to the main README.md.
    python manage.py runserver
    ```
 
+6. Start celery beat and worker:
+   ```bash
+    celery -A config worker --loglevel=info # Celery worker
+    celery -A config beat --loglevel=info # Celery beeat
+   ```
 ## Project structure
 
 ```
