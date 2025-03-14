@@ -1,3 +1,13 @@
+# Pull Request Template
+
+## Important Note on Migrations
+⚠️ **DO NOT include migration files when creating a PR to the main branch**
+
+To prevent conflicts on the production server:
+- Do not include migration files when submitting your PR
+- Migration files should only be added directly to the main branch
+- Migration files should NOT be added to .gitignore
+
 ## Description
 <!-- Provide a brief, clear description of what this PR accomplishes -->
 
@@ -15,9 +25,52 @@ Closes #
 <!-- Mark with an 'x' all that apply -->
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 - [ ] Refactoring (no functional changes)
+
+## Code Quality
+### Type Checking
+<!-- Indicate if your code includes type checking -->
+- [ ] TypeScript (frontend): Properly typed with interfaces/types for all components, functions, and variables
+- [ ] Python (backend): Includes type hints for function parameters and return values
+- [ ] No type hints/checks included (please explain why): 
+
+### Documentation
+<!-- Verify your code is properly documented -->
+- [ ] All functions/methods have descriptive docstrings
+- [ ] Docstrings follow the project's standard format
+- [ ] Module-level documentation explains the purpose and usage of the component
+
+## Domain-Driven Design (Backend)
+<!-- For backend changes, verify alignment with DDD principles -->
+### Architecture Compliance
+- [ ] Clear separation between domain, application, and infrastructure layers
+- [ ] Domain layer contains only business logic with no external dependencies
+- [ ] Application services orchestrate use cases without containing business rules
+
+### Infrastructure Layer
+- [ ] Infrastructure layer properly separates technical concerns from domain logic
+- [ ] Implements interfaces defined in the domain layer (e.g., repositories, services, event handlers)
+- [ ] Handles all external system interactions (databases, message queues, external APIs, file systems)
+- [ ] Contains data persistence implementations (ORM configurations, database migrations, query builders)
+- [ ] Manages cross-cutting concerns (logging, security, caching, monitoring)
+- [ ] Converts between domain objects and external data formats (DTOs, API responses)
+- [ ] Infrastructure-specific exceptions are caught and translated to domain exceptions
+- [ ] Technical details are encapsulated and not exposed to higher layers
+
+### Domain Modeling
+- [ ] Business concepts are properly modeled as entities, value objects, or aggregates
+- [ ] Entities have identity and lifecycle
+- [ ] Value objects are immutable and represent concepts with no identity
+- [ ] Aggregates enforce consistency boundaries and invariants
+- [ ] Domain events used for cross-aggregate communication
+- [ ] Rich domain models with behavior, not anemic data containers
+
+### Repository Pattern
+- [ ] Domain repositories handle persistence without exposing implementation details
+- [ ] Repositories work with domain objects, not DTOs or ORM models
+- [ ] Query objects or specifications used for complex queries
+- [ ] N/A - This PR doesn't involve backend domain logic
 
 ## Testing Performed
 <!-- Describe the testing you've done to verify your changes -->
@@ -36,6 +89,7 @@ Closes #
 - [ ] My changes generate no new warnings or errors
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass with my changes
+- [ ] I have confirmed my PR does NOT include migration files
 
 ## Billify Development Workflow Compliance
 <!-- Ensure your PR follows Billify's development guidelines -->
@@ -51,6 +105,9 @@ Closes #
 
 ## Reviewer Guidelines
 <!-- Instructions for reviewers -->
-- Please review within 24-48 hours (our target SLA)
+- Please review within 24-48 hours (our target)
 - Focus on: [Specific areas that need careful review]
+- Ensure the code maintains consistency with the rest of the codebase
+- Verify DDD principles are properly applied (no mixed responsibilities, clear boundaries)
+- Check that proper documentation and type hints are included
 - Suggested testing approach: [any specific testing advice]
