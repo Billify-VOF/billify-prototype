@@ -1,70 +1,37 @@
-from django.contrib.auth import authenticate, get_user_model
-from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
-import re
 
-User = get_user_model()  # Get the user model dynamically
+from application.services.authentication_service import AuthenticationService
+from domain.services.authentication_service import AuthenticationService as DomainAuthService
+from infrastructure.django.repositories.account_repository import DjangoAccountRepository
+
+# Dependency Injection
+account_repository = DjangoAccountRepository()
+domain_auth_service = DomainAuthService(account_repository)
+auth_service = AuthenticationService(domain_auth_service)
+
 
 class LoginView(APIView):
-    """
-    API endpoint for user login using email or username.
-    - Accepts `email` or `username` and `password` as input.
-    - Returns a Bearer token if credentials are valid.
-    """
-    permission_classes = [AllowAny]  # Allow anyone to attempt login
+    permission_classes = [AllowAny]
 
     def post(self, request):
         identifier = request.data.get("username") or request.data.get("email")
         password = request.data.get("password")
 
-        # Validate input fields
         if not identifier or not password:
-            return Response(
-                {"error": "Email/Username and password are required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Email/Username and password are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if the input is an email (basic regex check)
-        if re.match(r"[^@]+@[^@]+\.[^@]+", identifier):
-            try:
-                user = User.objects.get(email=identifier)
-                username = user.username  # Retrieve the username for authentication
-            except User.DoesNotExist:
-                return Response(
-                    {"error": "User with this email does not exist."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            username = identifier  # Treat as a username
+        success, response_data = auth_service.login(identifier, password)
 
-        # Authenticate user
-        user = authenticate(username=username, password=password)
+        return Response(response_data, status=status.HTTP_200_OK if success else status.HTTP_401_UNAUTHORIZED)
 
-        if user is not None:
-            # Generate or retrieve existing authentication token
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"error": "Invalid credentials."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
 
 class LogoutView(APIView):
-    """
-    API endpoint for user logout.
-    - Requires authentication (user must be logged in).
-    - Deletes the user's authentication token to log them out.
-    """
-    permission_classes = [IsAuthenticated]  # User must be logged in
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Delete the authentication token (log out user)
-        request.auth.delete()
-        return Response(
-            {"message": "Successfully logged out."},
-            status=status.HTTP_200_OK
-        )
+        success = auth_service.logout(request.user.id)
+        return Response({"message": "Successfully logged out." if success else "Logout failed."},
+                        status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST)

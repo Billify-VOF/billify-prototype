@@ -30,8 +30,8 @@ required_env_vars = [
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 
 # If there are any missing variables, raise an error with the list of missing vars
-if missing_vars:
-    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
+# if missing_vars:
+#     raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
 PONTO_CLIENT_ID = os.getenv('PONTO_CLIENT_ID')
 PONTO_CLIENT_SECRET = os.getenv('PONTO_CLIENT_SECRET')
@@ -44,7 +44,7 @@ KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 
 # Get the encryption key
-key = get_encryption_key()
+# key = get_encryption_key()
 
 def convertclientidsecret(client_id, client_secret):
     
