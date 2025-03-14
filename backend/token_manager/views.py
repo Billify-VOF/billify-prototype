@@ -23,7 +23,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import padding
 import time
-from token_manager.models import IbanityAccount
+from token_manager.models import IbanityAccount, PontoToken
 from .serializers import IbanityAccountSerializer
 import secrets
 from .models import *
@@ -38,7 +38,7 @@ load_dotenv()
 required_env_vars = [
     'PONTO_CLIENT_ID', 'PONTO_CLIENT_SECRET', 'PONTO_AUTH_URL', 
     'PONTO_TOKEN_URL', 'PONTO_REDIRECT_URI', 'URL', 
-    'PRIVATE_KEY_PASSWORD', 'KEY_ID', 'BASE_URL'
+    'PRIVATE_KEY_PASSWORD', 'KEY_ID', 'BASE_URL', 'FERNET_KEY'
 ]
 
 # Check if any of the required environment variables are missing
@@ -140,29 +140,28 @@ def get_ibanity_credentials():
 @api_view(['GET'])
 def fetch_account_details(request):
     """Fetches accounts from the Ponto Connect API."""
+    if not request.user.is_authenticated:
+        return Response({"error": "Authentication required"}, status=401)
+        
     user = request.user
     token = get_access_token(user)
-    created = str(int(time.time()))
-
-    # Calculate the digest
-    data = ""
-    digest_hash = hashlib.sha512(data.encode('utf-8')).digest()
-    digest = "SHA-512=" + base64.b64encode(digest_hash).decode('utf-8')
+    
+    if not token:
+        return Response({"error": "No access token found for user"}, status=404)
 
     # Create the signature
-    request_target = "get /ponto-connect/accounts"
-
     headers = {"Authorization": f"Bearer {token}"}
+    
     # Create an SSL context with the private key password
     context = ssl.create_default_context()
     context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=PRIVATE_KEY_PASSWORD)
-    context.check_hostname = False
+    context.check_hostname = True
 
     # Create a PoolManager with the SSL context
     http = urllib3.PoolManager(
         num_pools=50,
-        cert_reqs=ssl.CERT_NONE,  
-        ca_certs=None,
+        cert_reqs=ssl.CERT_REQUIRED,  
+        ca_certs=certifi.where(),
         ssl_context=context
     )
 
@@ -173,8 +172,16 @@ def fetch_account_details(request):
             headers=headers
         )
         accounts_data = json.loads(response.data.decode('utf-8'))
-        user = User.objects.get(id=user)
-        save_record =save_or_update_account(user,accounts_data)
+        
+        # Check if the accounts data contains any accounts
+        if not accounts_data.get('data'):
+            return Response({"error": "No accounts found"}, status=404)
+            
+        save_record = save_or_update_account(user, accounts_data)
+        
+        if isinstance(save_record, dict) and "error" in save_record:
+            return Response(save_record, status=500)
+            
         return Response(save_record)
 
     except Exception as e:
@@ -184,7 +191,12 @@ def fetch_account_details(request):
 
 #Save and update the record in db
 def save_or_update_account(user, account_data):
+    """Save or update account information in the database."""
     try:
+        # Check if there are any accounts in the data
+        if not account_data.get('data') or len(account_data['data']) == 0:
+            return {"error": "No account data available"}
+            
         # Check if account already exists for the user
         account, created = IbanityAccount.objects.get_or_create(
             user=user,
@@ -204,17 +216,25 @@ def save_or_update_account(user, account_data):
         )
         
         if not created:
-            # Update existing account
-            account.description = account_data['data'][0]['attributes']['description']
-            account.product = account_data['data'][0]['attributes']['product']
-            account.reference = account_data['data'][0]['attributes']['reference']
-            account.currency = account_data['data'][0]['attributes']['currency']
-            account.authorization_expiration_expected_at = account_data['data'][0]['attributes']['authorizationExpirationExpectedAt']
-            account.current_balance = account_data['data'][0]['attributes']['currentBalance']
-            account.available_balance = account_data['data'][0]['attributes']['availableBalance']
-            account.subtype = account_data['data'][0]['attributes']['subtype']
-            account.holder_name = account_data['data'][0]['attributes']['holderName']
-            account.resource_id= account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+            # Map API fields to model fields
+            field_mapping = {
+                'description': 'description',
+                'product': 'product',
+                'reference': 'reference',
+                'currency': 'currency',
+                'authorizationExpirationExpectedAt': 'authorization_expiration_expected_at',
+                'currentBalance': 'current_balance',
+                'availableBalance': 'available_balance',
+                'subtype': 'subtype',
+                'holderName': 'holder_name'
+            }
+            
+            # Update account fields
+            for api_field, model_field in field_mapping.items():
+                setattr(account, model_field, account_data['data'][0]['attributes'][api_field])
+                
+            # Update resource_id separately since it's in a different structure
+            account.resource_id = account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
             account.save()
         
         # Serialize the saved or updated object
@@ -227,6 +247,204 @@ def save_or_update_account(user, account_data):
     
     except Exception as e:
         return None
+
+
+@api_view(['GET'])
+def ponto_login(request):
+    """
+    Handles both the redirection to Ponto's OAuth2 login page and the callback to exchange the authorization code for an access token.
+    """
+    
+    session_id = generate_random_session_id()
+    auth_url = (
+        f"{os.getenv('PONTO_AUTH_URL')}?"
+        f"client_id={os.getenv('PONTO_CLIENT_ID')}&"
+        f"redirect_uri={os.getenv('PONTO_REDIRECT_URI')}&"
+        f"response_type=code&"
+        f"scope=ai+pi+offline_access&"
+        f"state={session_id}"
+    )
+    AUTHCODE = request.GET.get('code')
+    if not AUTHCODE:
+        # Redirect user to Ponto's login page if no code is provided
+        return redirect(auth_url)
+
+    # Step 2: Exchange authorization code for access token
+    try:
+        url = URL
+        PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
+        client = convertclientidsecret(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
+        
+        # Prepare request data for the token exchange
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/vnd.api+json",
+            "Authorization": f"Basic {client}"
+        }
+        
+        data = {
+            "grant_type": "authorization_code", 
+            "code": AUTHCODE,                  
+            "redirect_uri": PONTO_REDIRECT_URI,
+        }
+        
+        encoded_data = urlencode(data).encode('utf-8')
+        # Create a PoolManager with the SSL context
+        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+        private_key_password = PRIVATE_KEY_PASSWORD  # Password for the encrypted private key
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
+        context.check_hostname = True
+        
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_REQUIRED, 
+            ca_certs=certifi.where(),
+            ssl_context=context
+        )
+        
+        response = http.request(
+            'POST',
+            url,
+            headers=headers,
+            body=encoded_data,
+            preload_content=True
+        )
+        
+        # Process the response
+        if response.status == 200:
+            try:
+                token_data = json.loads(response.data.decode('utf-8'))
+                access_token = token_data.get("access_token")
+                refresh_token = token_data.get("refresh_token")
+                expires_in = token_data.get("expires_in")
+                user = request.user
+                # Encrypt the tokens before saving to the database
+                encrypted_access_token = encrypt_token(access_token, key)
+                encrypted_refresh_token = encrypt_token(refresh_token, key)
+                ponto_token, created = PontoToken.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'access_token': encrypted_access_token,
+                        'refresh_token': encrypted_refresh_token,
+                        'expires_in': expires_in,
+                    }
+                )
+                
+                if not created:  # If the token already exists, update it
+                    ponto_token.access_token = encrypted_access_token
+                    ponto_token.refresh_token = encrypted_refresh_token
+                    ponto_token.expires_in = expires_in
+                    ponto_token.save()
+                return Response({
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "expires_in": token_data.get("expires_in"),
+                })
+            except json.JSONDecodeError:
+                logger.exception("Failed to decode JSON response from Ponto server")
+                return Response({"error": "Invalid JSON response from server"}, status=500)
+        else:
+            logger.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
+            return Response({
+                "error": "Failed to get access token",
+                "details": response.data.decode('utf-8')
+            }, status=500)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in ponto_login: {str(e)}")
+        return Response({'message': str(e)})
+
+
+@api_view(['POST'])
+def refresh_access_token(request):
+    """
+    Refreshes the access token using the stored refresh token, updates it in the database,
+    and returns the updated token.
+    """
+    user = request.user
+    # Ensure user is authenticated
+    if not user.is_authenticated:
+        return Response({"error": "User not authenticated"}, status=401)
+        
+    try:
+        # Retrieve the user's PontoToken instance
+        ponto_token = PontoToken.objects.get(user=user)
+        if not ponto_token.refresh_token:
+            return Response({"error": "Refresh token not found"}, status=400)
+        # Decrypt the stored refresh token
+        decrypted_refresh_token = decrypt_token(ponto_token.refresh_token, key)
+        # Prepare request data for refreshing the token
+        url = os.getenv('URL')
+        client_id = os.getenv('PONTO_CLIENT_ID')
+        client_secret = os.getenv('PONTO_CLIENT_SECRET')
+        client = convertclientidsecret(client_id, client_secret)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/vnd.api+json",
+            "Authorization": f"Basic {client}"
+        }
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": decrypted_refresh_token,
+            "client_id": client_id,
+        }
+        encoded_data = urlencode(data).encode('utf-8')
+
+        # Set up SSL context for cert and key
+        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+        private_key_password = os.getenv("PRIVATE_KEY_PASSWORD")  # Ensure you have this in your .env
+
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
+        context.check_hostname = True
+
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_REQUIRED,
+            ca_certs=certifi.where(),
+            ssl_context=context
+        )
+
+        response = http.request(
+            'POST',
+            url,
+            headers=headers,
+            body=encoded_data,
+            preload_content=True
+        )
+        if response.status == 200:
+            token_data = json.loads(response.data.decode('utf-8'))
+            encrypted_access_token = encrypt_token(token_data.get("access_token"), key)
+            encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token), key)
+            # Update the stored access token and refresh token in the database
+            ponto_token.access_token = encrypted_access_token
+            ponto_token.refresh_token = encrypted_refresh_token
+            ponto_token.expires_in = token_data.get("expires_in")
+            ponto_token.save()
+
+            return Response({
+                "access_token": token_data.get("access_token"),
+                "refresh_token": token_data.get("refresh_token"),
+                "expires_in": token_data.get("expires_in"),
+            }, status=200)
+
+        else:
+            logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
+            return Response({
+                "error": "Failed to refresh access token",
+                "details": response.data.decode('utf-8')
+            }, status=response.status)
+
+    except PontoToken.DoesNotExist:
+        logger.error(f"User {user} - No PontoToken found")
+        return Response({"error": "No token found for this user"}, status=404)
+        
+    except Exception as e:
+        logger.error(f"User {user} - Error occurred: {str(e)}")
+        return Response({"error": str(e)}, status=500)
 
 
 
