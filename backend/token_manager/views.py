@@ -1,12 +1,8 @@
-from django.shortcuts import render
 import os
 import json
-import requests
-from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import redirect
-from requests.auth import HTTPBasicAuth
 import random
 import string
 import base64
@@ -14,25 +10,18 @@ import ssl
 from OpenSSL import crypto
 from urllib.parse import urlencode
 import urllib3
-import hashlib
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from cryptography.hazmat.backends import default_backend
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
-import time
 from token_manager.models import IbanityAccount, PontoToken
 from .serializers import IbanityAccountSerializer
-import secrets
 from .models import *
 import logging
-from utils.base import encrypt_token,decrypt_token
 import certifi
-
-
 from dotenv import load_dotenv
+from utils.base import encrypt_token, decrypt_token
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Load environment variables
 load_dotenv()
 
 required_env_vars = [
@@ -48,9 +37,6 @@ missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 PONTO_CLIENT_ID = os.getenv('PONTO_CLIENT_ID')
 PONTO_CLIENT_SECRET = os.getenv('PONTO_CLIENT_SECRET')
 PONTO_AUTH_URL = os.getenv('PONTO_AUTH_URL')
@@ -62,13 +48,9 @@ KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 key = os.getenv('FERNET_KEY')
 
-logger = logging.getLogger(__name__)
-
 if key is None:
     raise ValueError("FERNET_KEY not found in the .env file!")
 key = key.encode()
-
-AUTHCODE =''
 
 def convertclientidsecret(client_id, client_secret):
     
@@ -79,12 +61,9 @@ def convertclientidsecret(client_id, client_secret):
 
     return encoded_credentials
 
-
 def generate_random_session_id():
     random_number = ''.join(random.choices(string.digits, k=50))  # Generate a random 50-digit number
     return f"session_{random_number}"
-
-    
 
 def load_private_key(private_key_path, password):
     # Read and load the private key
@@ -95,7 +74,6 @@ def load_private_key(private_key_path, password):
     private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
     return private_key
 
-
 #Get Access token from Ponto token model
 def get_access_token(user):
     try:
@@ -105,7 +83,6 @@ def get_access_token(user):
     except Exception as e:
         logger.error(f"Error while retrieving the access token for user {user.id}: {e}")
         return None
-
 
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
 
@@ -134,7 +111,6 @@ def get_ibanity_credentials():
         "private_key_password": private_key_password,
         "KEY_ID": KEY_ID
     }
-
 
 #Fetch Account balance retrieval
 @api_view(['GET'])
@@ -187,7 +163,6 @@ def fetch_account_details(request):
     except Exception as e:
         logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
         return Response({"error": f"Request failed: {e}"}, status=500)
-
 
 #Save and update the record in db
 def save_or_update_account(user, account_data):
@@ -248,7 +223,6 @@ def save_or_update_account(user, account_data):
     except Exception as e:
         return None
 
-
 @api_view(['GET'])
 def ponto_login(request):
     """
@@ -299,7 +273,7 @@ def ponto_login(request):
         
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED, 
+            cert_reqs=ssl.CERT_REQUIRED,
             ca_certs=certifi.where(),
             ssl_context=context
         )
@@ -355,7 +329,6 @@ def ponto_login(request):
     except Exception as e:
         logger.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
-
 
 @api_view(['POST'])
 def refresh_access_token(request):
@@ -445,6 +418,3 @@ def refresh_access_token(request):
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
         return Response({"error": str(e)}, status=500)
-
-
-
