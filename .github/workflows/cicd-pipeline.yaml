@@ -37,6 +37,9 @@ jobs:
               sleep $interval
           done
           
+          docker logs infrastructure-traefik-1
+          docker logs infrastructure-backend-1
+          
           echo "Smoke test failed after $attempts attempts"
           exit 1
 
