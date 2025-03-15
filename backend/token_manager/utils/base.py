@@ -38,16 +38,16 @@ def encrypt_token(token: str, key: bytes) -> str:
             raise ValueError("Invalid token: Token cannot be empty or whitespace.")
         fernet = Fernet(key)
         encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
-        logger.info("Token successfully encrypted.")
+        logger.debug("Token successfully encrypted.")
         return encrypted_token.decode()  # Return the encrypted token as a string
     
     except ValueError as ve:
-        logger.error(f"Invalid key provided for encryption: {str(ve)}")
-        raise ValueError("The encryption key provided is invalid.") from ve
+        logger.error(f"Invalid input provided for encryption: {str(ve)}")
+        raise ValueError(f"Invalid input for encryption: {str(ve)}") from ve
     
     except Exception as e:
         logger.error(f"Error while encrypting token: {str(e)}")
-        raise Exception(f"Error while encrypting token: {str(e)}") from e
+        raise
 
 
 # Decryption function
@@ -58,17 +58,17 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
             raise ValueError("Invalid token: Token cannot be empty or whitespace.")
         fernet = Fernet(key)
         decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
-        logger.info("Token successfully decrypted.")
+        logger.debug("Token successfully decrypted.")
         return decrypted_token.decode()
     
     except InvalidToken as it:
         logger.error(f"Invalid token provided for decryption: {str(it)}")
-        raise InvalidToken("The encrypted token is invalid.") from it
+        raise InvalidToken("The encrypted token is invalid or corrupted.") from it
     
     except ValueError as ve:
-        logger.error(f"Invalid key provided for decryption: {str(ve)}")
-        raise ValueError("The decryption key provided is invalid.") from ve
+        logger.error(f"Invalid input provided for decryption: {str(ve)}")
+        raise ValueError(f"Invalid input for decryption: {str(ve)}") from ve
     
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
-        raise Exception(f"Error while decrypting token: {str(e)}") from e
+        raise
