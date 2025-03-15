@@ -80,7 +80,7 @@ try:
     key = fernet_key.encode()
 except Exception as e:
     logger.error(f"Invalid FERNET_KEY format: {e}")
-    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}")
+    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}") from e
 
 def convertclientidsecret(client_id, client_secret):
     """Concatenate and base64 encode client credentials."""
@@ -100,15 +100,15 @@ def load_private_key(private_key_path, password):
             private_key_data = key_file.read()
         private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
         return private_key
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         logger.error(f"Private key file not found at {private_key_path}")
-        raise FileNotFoundError(f"Private key file not found at {private_key_path}")
+        raise FileNotFoundError(f"Private key file not found at {private_key_path}") from e
     except (IOError, PermissionError) as e:
         logger.error(f"Error reading private key file: {str(e)}")
-        raise IOError(f"Error reading private key file: {str(e)}")
+        raise IOError(f"Error reading private key file: {str(e)}") from e
     except Exception as e:
         logger.error(f"Error loading private key: {str(e)}")
-        raise
+        raise Exception(f"Error loading private key: {str(e)}") from e
 
 def get_access_token(user):
     """Get decrypted access token for the specified user."""

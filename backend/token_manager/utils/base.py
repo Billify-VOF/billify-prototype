@@ -29,7 +29,7 @@ if key is None:
 
 # Ensure the key is valid (it should be a byte string)
 # Fernet keys must be 32 bytes base64-encoded (resulting in a 44-character string)
-if not len(key) == 44:
+if len(key) != 44:
     logger.error("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
     raise ValueError("FERNET_KEY has invalid length. Please provide a valid 32-byte key encoded in base64.")
 key = key.encode()
@@ -51,7 +51,7 @@ def encrypt_token(token: str, key: bytes) -> str:
     
     except Exception as e:
         logger.error(f"Error while encrypting token: {str(e)}")
-        raise
+        raise Exception(f"Error while encrypting token: {str(e)}") from e
 
 
 # Decryption function
@@ -75,4 +75,4 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
-        raise
+        raise Exception(f"Error while decrypting token: {str(e)}") from e
