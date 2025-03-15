@@ -28,6 +28,10 @@ if key is None:
     raise ValueError("FERNET_KEY not found in the .env file!")
 
 # Ensure the key is valid (it should be a byte string)
+# Fernet keys must be 32 bytes base64-encoded (resulting in a 44-character string)
+if not len(key) == 44:
+    logger.error("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
+    raise ValueError("FERNET_KEY has invalid length. Please provide a valid 32-byte key encoded in base64.")
 key = key.encode()
 
 # Encryption function
