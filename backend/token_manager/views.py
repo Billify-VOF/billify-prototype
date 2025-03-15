@@ -1,18 +1,25 @@
-import os
-import json
-import secrets
-import string
+# Standard library imports
 import base64
-import ssl
+import json
 import logging
-from OpenSSL import crypto
-from urllib.parse import urlencode
-import urllib3
+import os
+import ssl
+import string
+
+# Third-party imports
 import certifi
+import secrets
+import urllib3
+from OpenSSL import crypto
+from dotenv import load_dotenv
+from urllib.parse import urlencode
+
+# Django imports
 from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from dotenv import load_dotenv
+
+# Local imports
 from .models import IbanityAccount, PontoToken
 from .serializers import IbanityAccountSerializer
 from .utils.base import encrypt_token, decrypt_token
@@ -46,11 +53,8 @@ URL = os.getenv('URL')
 PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
 KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
-key = os.getenv('FERNET_KEY')
-
-if key is None:
-    raise ValueError("FERNET_KEY not found in the .env file!")
-key = key.encode()
+# Retrieve the FERNET_KEY (validation will be done in base.py)
+key = os.getenv('FERNET_KEY').encode()
 
 def convertclientidsecret(client_id, client_secret):
     """Concatenate and base64 encode client credentials."""
@@ -89,14 +93,14 @@ certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
 private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
 private_key_password = PRIVATE_KEY_PASSWORD
 
-def get_ibanity_credentials():
+def get_ibanity_credentials(base_url=BASE_URL, key_id=KEY_ID, private_key_pwd=PRIVATE_KEY_PASSWORD):
     """Returns the credentials and API base URL for the Ibanity API."""
     return {
-        "API_BASE_URL": API_BASE_URL,
+        "API_BASE_URL": f"{base_url}accounts?page[limit]=3",
         "certificate_path": certificate_path,
         "private_key_path": private_key_path,
-        "private_key_password": private_key_password,
-        "KEY_ID": KEY_ID
+        "private_key_password": private_key_pwd,
+        "KEY_ID": key_id
     }
 
 @api_view(['GET'])
