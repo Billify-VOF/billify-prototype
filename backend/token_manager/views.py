@@ -26,7 +26,8 @@ from .utils.base import encrypt_token, decrypt_token
 
 # Configure logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Set appropriate log level based on environment
+logger.setLevel(logging.DEBUG if os.getenv('ENVIRONMENT') == 'development' else logging.INFO)
 
 # Load environment variables
 load_dotenv()
@@ -69,10 +70,20 @@ def generate_random_session_id():
 
 def load_private_key(private_key_path, password):
     """Load and decrypt private key."""
-    with open(private_key_path, 'rb') as key_file:
-        private_key_data = key_file.read()
-    private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
-    return private_key
+    try:
+        with open(private_key_path, 'rb') as key_file:
+            private_key_data = key_file.read()
+        private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
+        return private_key
+    except FileNotFoundError:
+        logger.error(f"Private key file not found at {private_key_path}")
+        raise FileNotFoundError(f"Private key file not found at {private_key_path}")
+    except (IOError, PermissionError) as e:
+        logger.error(f"Error reading private key file: {str(e)}")
+        raise IOError(f"Error reading private key file: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error loading private key: {str(e)}")
+        raise
 
 def get_access_token(user):
     """Get decrypted access token for the specified user."""
@@ -89,8 +100,8 @@ def get_access_token(user):
 
 # API settings for account balance retrieval
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
-certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+certificate_path = os.getenv('CERTIFICATE_PATH', os.path.join(os.path.dirname(__file__), 'certificate.pem'))
+private_key_path = os.getenv('PRIVATE_KEY_PATH', os.path.join(os.path.dirname(__file__), 'private_key.pem'))
 private_key_password = PRIVATE_KEY_PASSWORD
 
 def get_ibanity_credentials(base_url=BASE_URL, key_id=KEY_ID, private_key_pwd=PRIVATE_KEY_PASSWORD):
