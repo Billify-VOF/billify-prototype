@@ -1,6 +1,6 @@
 import os
 import json
-import random
+import secrets
 import string
 import base64
 import ssl
@@ -60,7 +60,7 @@ def convertclientidsecret(client_id, client_secret):
 
 def generate_random_session_id():
     """Generate a random session ID for authentication."""
-    random_number = ''.join(random.choices(string.digits, k=50))
+    random_number = ''.join(secrets.choice(string.digits) for _ in range(50))
     return f"session_{random_number}"
 
 def load_private_key(private_key_path, password):
@@ -76,6 +76,9 @@ def get_access_token(user):
         get_token = PontoToken.objects.get(user=user)
         access_token = decrypt_token(get_token.access_token, key)
         return access_token
+    except PontoToken.DoesNotExist:
+        logger.error(f"No token found for user {user.id}")
+        return None
     except Exception as e:
         logger.error(f"Error while retrieving the access token for user {user.id}: {e}")
         return None
@@ -142,7 +145,12 @@ def fetch_account_details(request):
             return Response(save_record, status=500)
             
         return Response(save_record)
-
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding JSON response for user {user}: {str(e)}")
+        return Response({"error": f"Invalid JSON response: {e}"}, status=500)
+    except urllib3.exceptions.HTTPError as e:
+        logger.error(f"HTTP error while fetching account details for user {user}: {str(e)}")
+        return Response({"error": f"HTTP request failed: {e}"}, status=500)
     except Exception as e:
         logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
         return Response({"error": f"Request failed: {e}"}, status=500)
@@ -198,6 +206,12 @@ def save_or_update_account(user, account_data):
         serializer = IbanityAccountSerializer(account)
         return serializer.data
     
+    except IndexError as e:
+        logger.error(f"Invalid account data structure for user: {user.id}, error: {e}")
+        return {"error": f"Invalid account data structure: {e}"}
+    except KeyError as e:
+        logger.error(f"Missing key in account data for user: {user.id}, error: {e}")
+        return {"error": f"Missing data in account information: {e}"}
     except Exception as e:
         logger.error(f"Failed to save or update account for user: {user.id}, error: {e}")
         return {"error": f"Failed to save or update account: {e}"}
