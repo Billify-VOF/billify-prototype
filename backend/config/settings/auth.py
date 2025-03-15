@@ -4,4 +4,4 @@ class BearerTokenAuthentication(TokenAuthentication):
     """
     Custom authentication class to use 'Bearer' instead of 'Token'.
     """
-    keyword = "Bearer"  # Change from 'Token' to 'Bearer' 
+    keyword = "Bearer"  # Change from 'Token' to 'Bearer'
