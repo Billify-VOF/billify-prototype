@@ -1,22 +1,22 @@
 import os
 import json
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.shortcuts import redirect
 import random
 import string
 import base64
 import ssl
+import logging
 from OpenSSL import crypto
 from urllib.parse import urlencode
 import urllib3
-from token_manager.models import IbanityAccount, PontoToken
-from .serializers import IbanityAccountSerializer
-from .models import *
-import logging
 import certifi
+from django.shortcuts import redirect
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from dotenv import load_dotenv
-from utils.base import encrypt_token, decrypt_token
+from .models import IbanityAccount, PontoToken
+from .serializers import IbanityAccountSerializer
+from .utils.base import encrypt_token, decrypt_token
+
 # Configure logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -53,57 +53,41 @@ if key is None:
 key = key.encode()
 
 def convertclientidsecret(client_id, client_secret):
-    
-    # Concatenate client_id and client_secret with a colon
+    """Concatenate and base64 encode client credentials."""
     client_credentials = f"{client_id}:{client_secret}"
-    # Base64 encode the client credentials
     encoded_credentials = base64.b64encode(client_credentials.encode('utf-8')).decode('utf-8')
-
     return encoded_credentials
 
 def generate_random_session_id():
-    random_number = ''.join(random.choices(string.digits, k=50))  # Generate a random 50-digit number
+    """Generate a random session ID for authentication."""
+    random_number = ''.join(random.choices(string.digits, k=50))
     return f"session_{random_number}"
 
 def load_private_key(private_key_path, password):
-    # Read and load the private key
+    """Load and decrypt private key."""
     with open(private_key_path, 'rb') as key_file:
         private_key_data = key_file.read()
-
-    # Decrypt the private key with the provided password
     private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
     return private_key
 
-#Get Access token from Ponto token model
 def get_access_token(user):
+    """Get decrypted access token for the specified user."""
     try:
         get_token = PontoToken.objects.get(user=user)
-        access_token = decrypt_token(get_token.access_token,key)
+        access_token = decrypt_token(get_token.access_token, key)
         return access_token
     except Exception as e:
         logger.error(f"Error while retrieving the access token for user {user.id}: {e}")
         return None
 
+# API settings for account balance retrieval
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
-
 certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
 private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
 private_key_password = PRIVATE_KEY_PASSWORD
-KEY_ID = KEY_ID # Replace with your actual Key ID
 
 def get_ibanity_credentials():
-    """
-    Returns the credentials and API base URL for the Ibanity API.
-
-    Returns:
-    - A dictionary containing the API base URL, certificate path, private key path, private key password, and key ID.
-    """
-    # API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
-    certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-    private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
-    private_key_password = PRIVATE_KEY_PASSWORD
-    KEY_ID = os.getenv('KEY_ID')  # Replace with your actual Key ID
-
+    """Returns the credentials and API base URL for the Ibanity API."""
     return {
         "API_BASE_URL": API_BASE_URL,
         "certificate_path": certificate_path,
@@ -112,7 +96,6 @@ def get_ibanity_credentials():
         "KEY_ID": KEY_ID
     }
 
-#Fetch Account balance retrieval
 @api_view(['GET'])
 def fetch_account_details(request):
     """Fetches accounts from the Ponto Connect API."""
@@ -164,7 +147,6 @@ def fetch_account_details(request):
         logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
         return Response({"error": f"Request failed: {e}"}, status=500)
 
-#Save and update the record in db
 def save_or_update_account(user, account_data):
     """Save or update account information in the database."""
     try:
@@ -219,16 +201,13 @@ def save_or_update_account(user, account_data):
     except Exception as e:
         logger.error(f"Failed to save or update account for user: {user.id}, error: {e}")
         return {"error": f"Failed to save or update account: {e}"}
-    
-    except Exception as e:
-        return None
 
 @api_view(['GET'])
 def ponto_login(request):
     """
-    Handles both the redirection to Ponto's OAuth2 login page and the callback to exchange the authorization code for an access token.
+    Handles both the redirection to Ponto's OAuth2 login page and the callback
+    to exchange the authorization code for an access token.
     """
-    
     session_id = generate_random_session_id()
     auth_url = (
         f"{os.getenv('PONTO_AUTH_URL')}?"
