@@ -26,8 +26,13 @@ from .utils.base import encrypt_token, decrypt_token
 
 # Configure logger
 logger = logging.getLogger(__name__)
-# Set appropriate log level based on environment
-logger.setLevel(logging.DEBUG if os.getenv('ENVIRONMENT') == 'development' else logging.INFO)
+# Get log level from environment variable with a default of INFO
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+try:
+    logger.setLevel(getattr(logging, log_level))
+except AttributeError:
+    logger.warning(f"Invalid log level '{log_level}', defaulting to INFO")
+    logger.setLevel(logging.INFO)
 
 # Load environment variables
 load_dotenv()
@@ -54,8 +59,28 @@ URL = os.getenv('URL')
 PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
 KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
-# Retrieve the FERNET_KEY (validation will be done in base.py)
-key = os.getenv('FERNET_KEY').encode()
+
+# Paths for certificates and keys
+certificate_path = os.getenv('CERTIFICATE_PATH', os.path.join(os.path.dirname(__file__), 'certificate.pem'))
+private_key_path = os.getenv('PRIVATE_KEY_PATH', os.path.join(os.path.dirname(__file__), 'private_key.pem'))
+private_key_password = PRIVATE_KEY_PASSWORD
+
+# Validate and retrieve the FERNET_KEY
+fernet_key = os.getenv('FERNET_KEY')
+if fernet_key is None:
+    raise ValueError("FERNET_KEY not found in environment variables")
+
+# Verify the FERNET_KEY format (should be a 44-character base64 encoded string)
+if len(fernet_key) != 44:
+    raise ValueError("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
+
+try:
+    # Check if the key is base64 encoded
+    base64.urlsafe_b64decode(fernet_key)
+    key = fernet_key.encode()
+except Exception as e:
+    logger.error(f"Invalid FERNET_KEY format: {e}")
+    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}")
 
 def convertclientidsecret(client_id, client_secret):
     """Concatenate and base64 encode client credentials."""
@@ -100,9 +125,6 @@ def get_access_token(user):
 
 # API settings for account balance retrieval
 API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
-certificate_path = os.getenv('CERTIFICATE_PATH', os.path.join(os.path.dirname(__file__), 'certificate.pem'))
-private_key_path = os.getenv('PRIVATE_KEY_PATH', os.path.join(os.path.dirname(__file__), 'private_key.pem'))
-private_key_password = PRIVATE_KEY_PASSWORD
 
 # This function is reserved for future expansion of the Ibanity API integration
 # It will be used when implementing additional Ibanity API endpoints
@@ -301,9 +323,6 @@ def ponto_login(request):
         
         encoded_data = urlencode(data).encode('utf-8')
         # Create a PoolManager with the SSL context
-        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
-        private_key_password = PRIVATE_KEY_PASSWORD  # Password for the encrypted private key
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
         context.check_hostname = True
@@ -403,10 +422,6 @@ def refresh_access_token(request):
         encoded_data = urlencode(data).encode('utf-8')
 
         # Set up SSL context for cert and key
-        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
-        private_key_password = os.getenv("PRIVATE_KEY_PASSWORD")  # Ensure you have this in your .env
-
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
         context.check_hostname = True
