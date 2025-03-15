@@ -99,12 +99,14 @@ jobs:
             cd /home/billify/app
             
             # Create environment file for Docker Compose
-            echo "POSTGRES_USER=$POSTGRES_USER" > .env
-            echo "POSTGRES_DB=$POSTGRES_DB" >> .env
-            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
-            echo "MINIO_USER=$MINIO_USER" >> .env
-            echo "MINIO_PASSWORD=$MINIO_PASSWORD" >> .env
-            echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY" >> .env
+            cat <<EOF > .env
+            POSTGRES_USER=$POSTGRES_USER
+            POSTGRES_DB=$POSTGRES_DB
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            MINIO_USER=$MINIO_USER
+            MINIO_PASSWORD=$MINIO_PASSWORD
+            DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
+            EOF
             
             # Preserve previous state
             docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml
