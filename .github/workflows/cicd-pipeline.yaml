@@ -26,8 +26,19 @@ jobs:
 
       - name: Wait for backend
         run: |
-          sleep 20
-          curl -f http://api.localhost || (echo "Backend failed to start after 20 seconds." && exit 1)
+          attempts=12
+          interval=10
+          for ((i=1; i<=attempts; i++)); do
+              if curl -f http://api.localhost; then
+                  echo "Smoke test passed"
+                  exit 0
+              fi
+              echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
+              sleep $interval
+          done
+          
+          echo "Smoke test failed after $attempts attempts"
+          exit 1
 
       - name: Run tests
         run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
@@ -124,8 +135,19 @@ jobs:
             rm -f .env
 
             # Smoke test
-            sleep 20
-            curl -f http://app.billify.be || (echo "Smoke test failed" && exit 1)
+            attempts=12
+            interval=10
+            for ((i=1; i<=attempts; i++)); do
+                if curl -f http://app.billify.be; then
+                    echo "Smoke test passed"
+                    exit 0
+                fi
+                echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
+                sleep $interval
+            done
+            
+            echo "Smoke test failed after $attempts attempts"
+            exit 1
 
       - name: Rollback on failure
         if: failure()
