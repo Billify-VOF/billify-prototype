@@ -162,21 +162,45 @@ def save_or_update_account(user, account_data):
         if not account_data.get('data') or len(account_data['data']) == 0:
             return {"error": "No account data available"}
             
+        # Validate account data structure
+        account_info = account_data['data'][0]
+        if 'id' not in account_info:
+            return {"error": "Missing account ID in data"}
+            
+        if 'attributes' not in account_info:
+            return {"error": "Missing attributes in account data"}
+            
+        attributes = account_info['attributes']
+        required_attrs = ['description', 'product', 'reference', 'currency', 
+                          'authorizationExpirationExpectedAt', 'currentBalance',
+                          'availableBalance', 'subtype', 'holderName']
+                          
+        missing_attrs = [attr for attr in required_attrs if attr not in attributes]
+        if missing_attrs:
+            return {"error": f"Missing required attributes: {', '.join(missing_attrs)}"}
+            
+        # Validate meta data
+        if ('meta' not in account_info or 
+            'latestSynchronization' not in account_info['meta'] or
+            'attributes' not in account_info['meta']['latestSynchronization'] or
+            'resourceId' not in account_info['meta']['latestSynchronization']['attributes']):
+            return {"error": "Missing resourceId in account data"}
+            
         # Check if account already exists for the user
         account, created = IbanityAccount.objects.get_or_create(
             user=user,
-            account_id=account_data['data'][0]['id'],
+            account_id=account_info['id'],
             defaults={
-                'description': account_data['data'][0]['attributes']['description'],
-                'product': account_data['data'][0]['attributes']['product'],
-                'reference': account_data['data'][0]['attributes']['reference'],
-                'currency': account_data['data'][0]['attributes']['currency'],
-                'authorization_expiration_expected_at': account_data['data'][0]['attributes']['authorizationExpirationExpectedAt'],
-                'current_balance': account_data['data'][0]['attributes']['currentBalance'],
-                'available_balance': account_data['data'][0]['attributes']['availableBalance'],
-                'subtype': account_data['data'][0]['attributes']['subtype'],
-                'holder_name': account_data['data'][0]['attributes']['holderName'],
-                'resource_id': account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+                'description': attributes['description'],
+                'product': attributes['product'],
+                'reference': attributes['reference'],
+                'currency': attributes['currency'],
+                'authorization_expiration_expected_at': attributes['authorizationExpirationExpectedAt'],
+                'current_balance': attributes['currentBalance'],
+                'available_balance': attributes['availableBalance'],
+                'subtype': attributes['subtype'],
+                'holder_name': attributes['holderName'],
+                'resource_id': account_info['meta']['latestSynchronization']['attributes']['resourceId']
             }
         )
         
@@ -196,10 +220,10 @@ def save_or_update_account(user, account_data):
             
             # Update account fields
             for api_field, model_field in field_mapping.items():
-                setattr(account, model_field, account_data['data'][0]['attributes'][api_field])
+                setattr(account, model_field, attributes[api_field])
                 
             # Update resource_id separately since it's in a different structure
-            account.resource_id = account_data['data'][0]['meta']['latestSynchronization']['attributes']['resourceId']
+            account.resource_id = account_info['meta']['latestSynchronization']['attributes']['resourceId']
             account.save()
         
         # Serialize the saved or updated object
