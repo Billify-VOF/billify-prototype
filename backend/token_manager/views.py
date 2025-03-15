@@ -104,8 +104,13 @@ certificate_path = os.getenv('CERTIFICATE_PATH', os.path.join(os.path.dirname(__
 private_key_path = os.getenv('PRIVATE_KEY_PATH', os.path.join(os.path.dirname(__file__), 'private_key.pem'))
 private_key_password = PRIVATE_KEY_PASSWORD
 
+# This function is reserved for future expansion of the Ibanity API integration
+# It will be used when implementing additional Ibanity API endpoints
 def get_ibanity_credentials(base_url=BASE_URL, key_id=KEY_ID, private_key_pwd=PRIVATE_KEY_PASSWORD):
-    """Returns the credentials and API base URL for the Ibanity API."""
+    """
+    Returns the credentials and API base URL for the Ibanity API.
+    This function is for future use when implementing additional Ibanity API endpoints.
+    """
     return {
         "API_BASE_URL": f"{base_url}accounts?page[limit]=3",
         "certificate_path": certificate_path,
