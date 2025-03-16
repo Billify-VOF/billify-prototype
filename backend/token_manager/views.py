@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from dotenv import load_dotenv
-from utils.base import encrypt_token, decrypt_token, get_encryption_key
+from token_manager.utils.base import encrypt_token, decrypt_token, get_encryption_key
 from token_manager.models import PontoToken
 
 # Configure logger
