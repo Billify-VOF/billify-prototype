@@ -1,11 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 # Create your models here.
 
 
 class IbanityAccount(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     account_id = models.CharField(max_length=255, unique=True)
     description = models.CharField(max_length=255, blank=True)
     product = models.CharField(max_length=255, blank=True)
@@ -22,7 +22,7 @@ class IbanityAccount(models.Model):
 
 
 class PontoToken(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     access_token = models.CharField(max_length=255, null=True, blank=True,unique=True)
     refresh_token = models.CharField(max_length=255, null=True, blank=True,unique=True)#add unique true
     expires_in = models.IntegerField(default=3600)
