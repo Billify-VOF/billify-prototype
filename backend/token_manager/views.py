@@ -1,29 +1,44 @@
 """Token management views for Ponto integration."""
-import os
-import json
-import string
 import base64
-import ssl
-import urllib3
-import secrets
+import json
 import logging
+import os
+import ssl
+import string
+
+# Third-party imports
+import certifi
+import secrets
+import urllib3
+from OpenSSL import crypto
+from dotenv import load_dotenv
 from urllib.parse import urlencode
+
+# Django imports
 from django.shortcuts import redirect
 from django.http import HttpRequest
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from dotenv import load_dotenv
+
+# Local imports
+from .serializers import IbanityAccountSerializer
+from .utils.base import encrypt_token, decrypt_token
 from token_manager.utils.base import encrypt_token, decrypt_token, get_encryption_key
 from token_manager.models import PontoToken, IbanityAccount
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
-from OpenSSL import crypto
 from typing import Dict, Any
-import certifi
 
 # Configure logger
 logger = logging.getLogger(__name__)
+# Get log level from environment variable with a default of INFO
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+try:
+    logger.setLevel(getattr(logging, log_level))
+except AttributeError:
+    logger.warning(f"Invalid log level '{log_level}', defaulting to INFO")
+    logger.setLevel(logging.INFO)
 
 # Load environment variables
 load_dotenv()
@@ -31,7 +46,7 @@ load_dotenv()
 required_env_vars = [
     'PONTO_CLIENT_ID', 'PONTO_CLIENT_SECRET', 'PONTO_AUTH_URL', 
     'PONTO_TOKEN_URL', 'PONTO_REDIRECT_URI', 'URL', 
-    'PRIVATE_KEY_PASSWORD', 'KEY_ID', 'BASE_URL'
+    'PRIVATE_KEY_PASSWORD', 'KEY_ID', 'BASE_URL', 'FERNET_KEY'
 ]
 
 # Check if any of the required environment variables are missing
@@ -51,8 +66,27 @@ PRIVATE_KEY_PASSWORD = os.getenv('PRIVATE_KEY_PASSWORD')
 KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 
-# Get the encryption key
-key = get_encryption_key()
+# Paths for certificates and keys
+certificate_path = os.getenv('CERTIFICATE_PATH', os.path.join(os.path.dirname(__file__), 'certificate.pem'))
+private_key_path = os.getenv('PRIVATE_KEY_PATH', os.path.join(os.path.dirname(__file__), 'private_key.pem'))
+private_key_password = PRIVATE_KEY_PASSWORD
+
+# Validate and retrieve the FERNET_KEY
+fernet_key = os.getenv('FERNET_KEY')
+if fernet_key is None:
+    raise ValueError("FERNET_KEY not found in environment variables")
+
+# Verify the FERNET_KEY format (should be a 44-character base64 encoded string)
+if len(fernet_key) != 44:
+    raise ValueError("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
+
+try:
+    # Check if the key is base64 encoded
+    base64.urlsafe_b64decode(fernet_key)
+    key = fernet_key.encode()
+except Exception as e:
+    logger.error(f"Invalid FERNET_KEY format: {e}")
+    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}") from e
 
 def convertclientidsecret(client_id: str, client_secret: str) -> str:
     """Convert client ID and secret to a Base64-encoded string.
@@ -66,11 +100,8 @@ def convertclientidsecret(client_id: str, client_secret: str) -> str:
     """
     # Concatenate client_id and client_secret with a colon
     client_credentials = f"{client_id}:{client_secret}"
-    # Base64 encode the client credentials
     encoded_credentials = base64.b64encode(client_credentials.encode('utf-8')).decode('utf-8')
-
     return encoded_credentials
-
 
 def generate_random_session_id() -> str:
     """Generate a random session ID.
@@ -80,7 +111,6 @@ def generate_random_session_id() -> str:
     """
     random_string = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(50))  # Generate a secure random 50-character alphanumeric string
     return f"session_{random_string}"
-
 
 def load_private_key(private_key_path: str, password: str):
     """Load and decrypt a private key from a file.
@@ -111,11 +141,183 @@ def load_private_key(private_key_path: str, password: str):
         logger.error(f"Failed to read private key file: {str(e)}")
         raise IOError(f"Failed to read private key file: {str(e)}") from e
 
+def get_access_token(user):
+    """Get decrypted access token for the specified user."""
+    try:
+        get_token = PontoToken.objects.get(user=user)
+        access_token = decrypt_token(get_token.access_token, key)
+        return access_token
+    except PontoToken.DoesNotExist:
+        logger.error(f"No token found for user {user.id}")
+        return None
+    except Exception as e:
+        logger.error(f"Error while retrieving the access token for user {user.id}: {e}")
+        return None
+
+# API settings for account balance retrieval
+API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
+
+# This function is reserved for future expansion of the Ibanity API integration
+# It will be used when implementing additional Ibanity API endpoints
+def get_ibanity_credentials(base_url=BASE_URL, key_id=KEY_ID, private_key_pwd=PRIVATE_KEY_PASSWORD):
+    """
+    Returns the credentials and API base URL for the Ibanity API.
+    This function is for future use when implementing additional Ibanity API endpoints.
+    """
+    return {
+        "API_BASE_URL": f"{base_url}accounts?page[limit]=3",
+        "certificate_path": certificate_path,
+        "private_key_path": private_key_path,
+        "private_key_password": private_key_pwd,
+        "KEY_ID": key_id
+    }
+
+@api_view(['GET'])
+def fetch_account_details(request):
+    """Fetches accounts from the Ponto Connect API."""
+    if not request.user.is_authenticated:
+        return Response({"error": "Authentication required"}, status=401)
+        
+    user = request.user
+    token = get_access_token(user)
+    
+    if not token:
+        return Response({"error": "No access token found for user"}, status=404)
+
+    # Create the signature
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Create an SSL context with the private key password
+    context = ssl.create_default_context()
+    context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=PRIVATE_KEY_PASSWORD)
+    context.check_hostname = True
+
+    # Create a PoolManager with the SSL context
+    http = urllib3.PoolManager(
+        num_pools=50,
+        cert_reqs=ssl.CERT_REQUIRED,  
+        ca_certs=certifi.where(),
+        ssl_context=context
+    )
+
+    try:
+        response = http.request(
+            'GET',
+            API_BASE_URL,
+            headers=headers
+        )
+        accounts_data = json.loads(response.data.decode('utf-8'))
+        
+        # Check if the accounts data contains any accounts
+        if not accounts_data.get('data'):
+            return Response({"error": "No accounts found"}, status=404)
+            
+        save_record = save_or_update_account(user, accounts_data)
+        
+        if isinstance(save_record, dict) and "error" in save_record:
+            return Response(save_record, status=500)
+            
+        return Response(save_record)
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding JSON response for user {user}: {str(e)}")
+        return Response({"error": f"Invalid JSON response: {e}"}, status=500)
+    except urllib3.exceptions.HTTPError as e:
+        logger.error(f"HTTP error while fetching account details for user {user}: {str(e)}")
+        return Response({"error": f"HTTP request failed: {e}"}, status=500)
+    except Exception as e:
+        logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
+        return Response({"error": f"Request failed: {e}"}, status=500)
+
+def save_or_update_account(user, account_data):
+    """Save or update account information in the database."""
+    try:
+        # Check if there are any accounts in the data
+        if not account_data.get('data') or len(account_data['data']) == 0:
+            return {"error": "No account data available"}
+            
+        # Validate account data structure
+        account_info = account_data['data'][0]
+        if 'id' not in account_info:
+            return {"error": "Missing account ID in data"}
+            
+        if 'attributes' not in account_info:
+            return {"error": "Missing attributes in account data"}
+            
+        attributes = account_info['attributes']
+        required_attrs = ['description', 'product', 'reference', 'currency', 
+                          'authorizationExpirationExpectedAt', 'currentBalance',
+                          'availableBalance', 'subtype', 'holderName']
+                          
+        missing_attrs = [attr for attr in required_attrs if attr not in attributes]
+        if missing_attrs:
+            return {"error": f"Missing required attributes: {', '.join(missing_attrs)}"}
+            
+        # Validate meta data
+        if ('meta' not in account_info or 
+            'latestSynchronization' not in account_info['meta'] or
+            'attributes' not in account_info['meta']['latestSynchronization'] or
+            'resourceId' not in account_info['meta']['latestSynchronization']['attributes']):
+            return {"error": "Missing resourceId in account data"}
+            
+        # Check if account already exists for the user
+        account, created = IbanityAccount.objects.get_or_create(
+            user=user,
+            account_id=account_info['id'],
+            defaults={
+                'description': attributes['description'],
+                'product': attributes['product'],
+                'reference': attributes['reference'],
+                'currency': attributes['currency'],
+                'authorization_expiration_expected_at': attributes['authorizationExpirationExpectedAt'],
+                'current_balance': attributes['currentBalance'],
+                'available_balance': attributes['availableBalance'],
+                'subtype': attributes['subtype'],
+                'holder_name': attributes['holderName'],
+                'resource_id': account_info['meta']['latestSynchronization']['attributes']['resourceId']
+            }
+        )
+        
+        if not created:
+            # Map API fields to model fields
+            field_mapping = {
+                'description': 'description',
+                'product': 'product',
+                'reference': 'reference',
+                'currency': 'currency',
+                'authorizationExpirationExpectedAt': 'authorization_expiration_expected_at',
+                'currentBalance': 'current_balance',
+                'availableBalance': 'available_balance',
+                'subtype': 'subtype',
+                'holderName': 'holder_name'
+            }
+            
+            # Update account fields
+            for api_field, model_field in field_mapping.items():
+                setattr(account, model_field, attributes[api_field])
+                
+            # Update resource_id separately since it's in a different structure
+            account.resource_id = account_info['meta']['latestSynchronization']['attributes']['resourceId']
+            account.save()
+        
+        # Serialize the saved or updated object
+        serializer = IbanityAccountSerializer(account)
+        return serializer.data
+    
+    except IndexError as e:
+        logger.error(f"Invalid account data structure for user: {user.id}, error: {e}")
+        return {"error": f"Invalid account data structure: {e}"}
+    except KeyError as e:
+        logger.error(f"Missing key in account data for user: {user.id}, error: {e}")
+        return {"error": f"Missing data in account information: {e}"}
+    except Exception as e:
+        logger.error(f"Failed to save or update account for user: {user.id}, error: {e}")
+        return {"error": f"Failed to save or update account: {e}"}
 
 @api_view(['GET'])
 def ponto_login(request: HttpRequest) -> Response:
     """
-    Handles both the redirection to Ponto's OAuth2 login page and the callback to exchange the authorization code for an access token.
+    Handles both the redirection to Ponto's OAuth2 login page and the callback
+    to exchange the authorization code for an access token.
     
     Args:
         request: The HTTP request.
@@ -123,7 +325,6 @@ def ponto_login(request: HttpRequest) -> Response:
     Returns:
         Response: The redirect or token response.
     """
-    
     session_id = generate_random_session_id()
     auth_url = (
         f"{os.getenv('PONTO_AUTH_URL')}?"
@@ -159,16 +360,13 @@ def ponto_login(request: HttpRequest) -> Response:
         
         encoded_data = urlencode(data).encode('utf-8')
         # Create a PoolManager with the SSL context
-        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
-        private_key_password = PRIVATE_KEY_PASSWORD  # Password for the encrypted private key
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
         context.check_hostname = True
         
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED,  
+            cert_reqs=ssl.CERT_REQUIRED,
             ca_certs=certifi.where(),
             ssl_context=context
         )
@@ -327,7 +525,7 @@ def create_signature(request_target: str, digest: str, created: str, private_key
         logger.error(f"Failed to create signature: {e}")
         raise ValueError(f"Failed to create signature: {e}") from e
 
-
+@api_view(['POST'])
 def refresh_access_token(request: HttpRequest):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
@@ -363,17 +561,13 @@ def refresh_access_token(request: HttpRequest):
         encoded_data = urlencode(data).encode('utf-8')
 
         # Set up SSL context for cert and key
-        certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
-        private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
-        private_key_password = os.getenv("PRIVATE_KEY_PASSWORD")  # Ensure you have this in your .env
-
         context = ssl.create_default_context()
         context.load_cert_chain(certfile=certificate_path, keyfile=private_key_path, password=private_key_password)
         context.check_hostname = True
 
         http = urllib3.PoolManager(
             num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED,  
+            cert_reqs=ssl.CERT_REQUIRED,
             ca_certs=certifi.where(),
             ssl_context=context
         )
@@ -414,6 +608,7 @@ def refresh_access_token(request: HttpRequest):
         
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
+        return Response({"error": str(e)}, status=500)
 
 # Get transaction History
 @api_view(['GET'])

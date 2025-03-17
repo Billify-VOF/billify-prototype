@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
-    'token_manager'
+    'token_manager',
 ]
 
 MIDDLEWARE = [
@@ -185,7 +185,6 @@ if not DEBUG:
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_VERIFY = True
     AWS_S3_SIGNATURE_VERSION = 's3v4'
-
 
 LOGGING = {
     'version': 1,
