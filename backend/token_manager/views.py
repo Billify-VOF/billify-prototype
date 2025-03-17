@@ -29,7 +29,7 @@ required_env_vars = [
 # Check if any of the required environment variables are missing
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 
-If there are any missing variables, raise an error with the list of missing vars
+# If there are any missing variables, raise an error with the list of missing vars
 if missing_vars:
     raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
