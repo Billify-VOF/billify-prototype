@@ -2,11 +2,11 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_user_model
 
-# Get the custom user model dynamically
-CustomUser = get_user_model()
+# Get the account model dynamically
+Account = get_user_model()
 
-@admin.register(CustomUser)
-class CustomUserAdmin(UserAdmin):
+@admin.register(Account)
+class AccountAdmin(UserAdmin):
     """
     Register CustomUser model in the Django admin.
     """
