@@ -1,0 +1,87 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+        
+      - name: Frontend Lint
+        working-directory: ./frontend
+        run: npm run lint
+        
+      - name: Frontend Tests
+        working-directory: ./frontend
+        run: npm test
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Backend Tests
+        working-directory: ./backend
+        run: python -m pytest
+
+  verify-staging-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Verify PR is from staging
+        if: github.event_name == 'pull_request'
+        run: |
+          SOURCE_BRANCH=${{ github.head_ref }}
+          if [ "$SOURCE_BRANCH" != "staging" ]; then
+            echo "Error: Pull requests to main must come from the staging branch"
+            exit 1
+          fi
+          echo "Pull request is correctly sourced from staging branch"
+
+  deploy-production:
+    needs: [test, verify-staging-merge]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Production Environment
+        run: |
+          echo "Deploying to production environment"
+          # Add your production deployment steps here
+          # This could be deploying to a cloud provider, updating a container, etc.
+          # Example for AWS:
+          # - name: Configure AWS credentials
+          #   uses: aws-actions/configure-aws-credentials@v1
+          #   with:
+          #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          #     aws-region: eu-west-1
+          #
+          # - name: Deploy to production
+          #   run: aws s3 sync ./build s3://production-bucket/ 
