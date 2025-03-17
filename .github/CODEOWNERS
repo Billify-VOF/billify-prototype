@@ -1,0 +1,26 @@
+# This file identifies the code owners for this repository
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @christianvuye will be requested for review when someone opens a PR.
+* @christianvuye
+
+# Specific directory ownership
+# While @christianvuye has final approval on everything, you could specify
+# additional reviewers for specific areas if desired
+
+# Backend code
+/backend/ @christianvuye
+
+# Frontend code 
+/frontend/ @christianvuye
+
+# Documentation
+/docs/ @christianvuye
+
+# Infrastructure
+/infrastructure/ @christianvuye
+
+# GitHub Actions and CI/CD
+/.github/ @christianvuye
