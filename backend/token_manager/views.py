@@ -1,4 +1,4 @@
-# Standard library imports
+"""Token management views for Ponto integration."""
 import base64
 import json
 import logging
@@ -16,13 +16,19 @@ from urllib.parse import urlencode
 
 # Django imports
 from django.shortcuts import redirect
+from django.http import HttpRequest
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 # Local imports
-from .models import IbanityAccount, PontoToken
 from .serializers import IbanityAccountSerializer
 from .utils.base import encrypt_token, decrypt_token
+from token_manager.utils.base import encrypt_token, decrypt_token, get_encryption_key
+from token_manager.models import PontoToken, IbanityAccount
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.backends import default_backend
+from typing import Dict, Any
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -82,33 +88,58 @@ except Exception as e:
     logger.error(f"Invalid FERNET_KEY format: {e}")
     raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}") from e
 
-def convertclientidsecret(client_id, client_secret):
-    """Concatenate and base64 encode client credentials."""
+def convertclientidsecret(client_id: str, client_secret: str) -> str:
+    """Convert client ID and secret to a Base64-encoded string.
+    
+    Args:
+        client_id (str): The client ID.
+        client_secret (str): The client secret.
+        
+    Returns:
+        str: Base64-encoded client credentials.
+    """
+    # Concatenate client_id and client_secret with a colon
     client_credentials = f"{client_id}:{client_secret}"
     encoded_credentials = base64.b64encode(client_credentials.encode('utf-8')).decode('utf-8')
     return encoded_credentials
 
-def generate_random_session_id():
-    """Generate a random session ID for authentication."""
-    random_number = ''.join(secrets.choice(string.digits) for _ in range(50))
-    return f"session_{random_number}"
+def generate_random_session_id() -> str:
+    """Generate a random session ID.
+    
+    Returns:
+        str: A randomly generated session ID.
+    """
+    random_string = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(50))  # Generate a secure random 50-character alphanumeric string
+    return f"session_{random_string}"
 
-def load_private_key(private_key_path, password):
-    """Load and decrypt private key."""
+def load_private_key(private_key_path: str, password: str):
+    """Load and decrypt a private key from a file.
+    
+    Args:
+        private_key_path (str): Path to the private key file.
+        password (str): Password to decrypt the private key.
+        
+    Returns:
+        object: The loaded private key.
+        
+    Raises:
+        IOError: If the private key file cannot be read.
+        crypto.Error: If the private key cannot be decrypted with the given password.
+    """
     try:
+        # Read and load the private key
         with open(private_key_path, 'rb') as key_file:
             private_key_data = key_file.read()
-        private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
-        return private_key
-    except FileNotFoundError as e:
-        logger.error(f"Private key file not found at {private_key_path}")
-        raise FileNotFoundError(f"Private key file not found at {private_key_path}") from e
-    except (IOError, PermissionError) as e:
-        logger.error(f"Error reading private key file: {str(e)}")
-        raise IOError(f"Error reading private key file: {str(e)}") from e
-    except Exception as e:
-        logger.error(f"Error loading private key: {str(e)}")
-        raise Exception(f"Error loading private key: {str(e)}") from e
+        try:
+            # Decrypt the private key with the provided password
+            private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
+            return private_key
+        except crypto.Error as e:
+            logger.error(f"Failed to decrypt private key: {str(e)}")
+            raise crypto.Error(f"Failed to decrypt private key: {str(e)}") from e
+    except IOError as e:
+        logger.error(f"Failed to read private key file: {str(e)}")
+        raise IOError(f"Failed to read private key file: {str(e)}") from e
 
 def get_access_token(user):
     """Get decrypted access token for the specified user."""
@@ -283,10 +314,16 @@ def save_or_update_account(user, account_data):
         return {"error": f"Failed to save or update account: {e}"}
 
 @api_view(['GET'])
-def ponto_login(request):
+def ponto_login(request: HttpRequest) -> Response:
     """
     Handles both the redirection to Ponto's OAuth2 login page and the callback
     to exchange the authorization code for an access token.
+    
+    Args:
+        request: The HTTP request.
+        
+    Returns:
+        Response: The redirect or token response.
     """
     session_id = generate_random_session_id()
     auth_url = (
@@ -297,15 +334,15 @@ def ponto_login(request):
         f"scope=ai+pi+offline_access&"
         f"state={session_id}"
     )
-    AUTHCODE = request.GET.get('code')
-    if not AUTHCODE:
+    auth_code = request.GET.get('code')
+    if not auth_code:
         # Redirect user to Ponto's login page if no code is provided
         return redirect(auth_url)
 
     # Step 2: Exchange authorization code for access token
     try:
         url = URL
-        PONTO_REDIRECT_URI = os.getenv('PONTO_REDIRECT_URI')
+        ponto_redirect_uri = os.getenv('PONTO_REDIRECT_URI')
         client = convertclientidsecret(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
         
         # Prepare request data for the token exchange
@@ -317,8 +354,8 @@ def ponto_login(request):
         
         data = {
             "grant_type": "authorization_code", 
-            "code": AUTHCODE,                  
-            "redirect_uri": PONTO_REDIRECT_URI,
+            "code": auth_code,                  
+            "redirect_uri": ponto_redirect_uri,
         }
         
         encoded_data = urlencode(data).encode('utf-8')
@@ -345,7 +382,7 @@ def ponto_login(request):
         # Process the response
         if response.status == 200:
             try:
-                token_data = json.loads(response.data.decode('utf-8'))
+                token_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
                 access_token = token_data.get("access_token")
                 refresh_token = token_data.get("refresh_token")
                 expires_in = token_data.get("expires_in")
@@ -386,8 +423,110 @@ def ponto_login(request):
         logger.exception(f"Unexpected error in ponto_login: {str(e)}")
         return Response({'message': str(e)})
 
+# Get access token from Ponto token model
+def get_access_token(user) -> str:
+    """Get the access token for a user.
+    
+    Args:
+        user: The user to get the access token for.
+        
+    Returns:
+        str: The decrypted access token.
+        
+    Raises:
+        PontoToken.DoesNotExist: If no token exists for the user.
+        Exception: If there's an error decrypting the token.
+    """
+    try:
+        get_token = PontoToken.objects.get(user=user)
+        access_token = decrypt_token(get_token.access_token, key)
+        return access_token
+    except PontoToken.DoesNotExist as e:
+        logger.error(f"Access token not found for user {user}")
+        raise PontoToken.DoesNotExist(f"No token found for user {user}") from e
+    except Exception as e:
+        logger.error(f"Error retrieving access token for user {user}: {str(e)}")
+        raise Exception(f"Error while retrieving the access token: {str(e)}") from e
+
+
+API_BASE_URL = f"{BASE_URL}accounts?page[limit]=3"
+
+certificate_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+private_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+private_key_password = PRIVATE_KEY_PASSWORD
+
+def get_ibanity_credentials() -> dict:
+    """
+    Returns the credentials and API base URL for the Ibanity API.
+
+    Returns:
+        dict: A dictionary containing the API base URL, certificate path, private key path, private key password, and key ID.
+    """
+    cert_path = os.path.join(os.path.dirname(__file__), 'certificate.pem')
+    priv_key_path = os.path.join(os.path.dirname(__file__), 'private_key.pem')
+    priv_key_pass = PRIVATE_KEY_PASSWORD
+    key_id = os.getenv('KEY_ID')  # Replace with your actual Key ID
+
+    return {
+        "API_BASE_URL": API_BASE_URL,
+        "certificate_path": cert_path,
+        "private_key_path": priv_key_path,
+        "private_key_password": priv_key_pass,
+        "KEY_ID": key_id
+    }
+
+
+def create_signature(request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
+    """Creates the signature string.
+    
+    Args:
+        request_target (str): The request target.
+        digest (str): The digest value.
+        created (str): The created timestamp.
+        private_key_path (str): Path to the private key file.
+        private_key_password (str): Password for the private key.
+        
+    Returns:
+        str: The generated signature.
+        
+    Raises:
+        IOError: If the private key file cannot be read.
+        ValueError: If the private key is invalid or the signature cannot be created.
+    """
+    signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: api.ibanity.com"""
+    
+    try:
+        # Load the private key with the password
+        with open(private_key_path, "rb") as key_file:
+            private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=private_key_password.encode(),
+                backend=default_backend()
+            )
+
+        # Sign the message
+        signature_bytes = private_key.sign(
+            signing_string.encode('utf-8'),
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
+
+        # Base64 encode the signature
+        signature = base64.b64encode(signature_bytes).decode('utf-8')
+
+        return signature
+    except IOError as e:
+        logger.error(f"Failed to read private key file: {e}")
+        raise IOError(f"Failed to read private key file: {e}") from e
+    except ValueError as e:
+        logger.error(f"Invalid private key or password: {e}")
+        raise ValueError(f"Invalid private key or password: {e}") from e
+    except Exception as e:
+        logger.error(f"Failed to create signature: {e}")
+        raise ValueError(f"Failed to create signature: {e}") from e
+
 @api_view(['POST'])
-def refresh_access_token(request):
+def refresh_access_token(request: HttpRequest):
     """
     Refreshes the access token using the stored refresh token, updates it in the database,
     and returns the updated token.
@@ -441,7 +580,7 @@ def refresh_access_token(request):
             preload_content=True
         )
         if response.status == 200:
-            token_data = json.loads(response.data.decode('utf-8'))
+            token_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
             encrypted_access_token = encrypt_token(token_data.get("access_token"), key)
             encrypted_refresh_token = encrypt_token(token_data.get("refresh_token", decrypted_refresh_token), key)
             # Update the stored access token and refresh token in the database
@@ -470,3 +609,78 @@ def refresh_access_token(request):
     except Exception as e:
         logger.error(f"User {user} - Error occurred: {str(e)}")
         return Response({"error": str(e)}, status=500)
+
+# Get transaction History
+@api_view(['GET'])
+def get_transaction_history(request: HttpRequest):
+    """Get transaction history for a user's account.
+    
+    Args:
+        request: The HTTP request.
+        
+    Returns:
+        Response: The transaction history data.
+    """
+    try:
+        user = request.user.id
+        try:
+            token = get_access_token(user)
+        except PontoToken.DoesNotExist:
+            return Response({"error": "No access token found for this user"}, status=401)
+        except ValueError as e:
+            return Response({"error": f"Invalid token: {str(e)}"}, status=400)
+        except Exception as e:
+            logger.error(f"Error retrieving access token: {str(e)}")
+            return Response({"error": "Failed to retrieve access token"}, status=500)
+        
+        get_certificate_credentials = get_ibanity_credentials()
+        get_resourceId = IbanityAccount.objects.filter(user_id=user).first()
+        if not get_resourceId:
+            return Response({"error": "No Ibanity account found for this user"}, status=404)
+        account_id = get_resourceId.account_id
+        api_url = f"{BASE_URL}accounts/{account_id}/transactions"
+
+        # Create the request headers
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Create an SSL context with the private key password
+        context = ssl.create_default_context()
+        context.load_cert_chain(
+            certfile=get_certificate_credentials['certificate_path'], 
+            keyfile=get_certificate_credentials['private_key_path'], 
+            password=get_certificate_credentials['private_key_password']
+        )
+        # Only disable hostname verification in development
+        if os.getenv('ENVIRONMENT') == 'development':
+            context.check_hostname = False
+        else:
+            context.check_hostname = True
+
+        # Create a PoolManager with the SSL context
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_REQUIRED,  
+            ca_certs=certifi.where(),
+            ssl_context=context
+        )
+
+        # Make the GET request using the PoolManager
+        try:
+            response = http.request(
+                'GET',
+                api_url,
+                headers=headers
+            )
+            if response.status != 200:
+                return Response(
+                    {"error": f"API request failed with status {response.status}", "details": response.data.decode('utf-8')}, 
+                    status=response.status
+                )
+            transactions_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
+            return Response(transactions_data)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}")
+            return Response({"error": f"Request failed: {e}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unhandled exception in get_transaction_history: {str(e)}")
+        return Response({"error": f"Request failed: {str(e)}"}, status=500)
