@@ -160,6 +160,10 @@ profile_default/
 *.mo
 *.pot
 
+<<<<<<< HEAD
+#Migrations
+=======
 #Migrations file
+>>>>>>> main
 backend/token_manager/migrations/*
 backend/token_manager/migrations/__pycache__/

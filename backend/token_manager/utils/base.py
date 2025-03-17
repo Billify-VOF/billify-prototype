@@ -1,22 +1,25 @@
-from cryptography.fernet import Fernet, InvalidToken
 import os
 import logging
+from cryptography.fernet import Fernet, InvalidToken
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from the .env file
 load_dotenv()
 
-# Configure logger
+# Initialize logger
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG) 
 
-# Generate a key (you should store this securely in your environment or configuration file)
-def generate_key() -> bytes:
-    """Generate a secure Fernet encryption key.
-    
-    Returns:
-        bytes: A URL-safe base64-encoded 32-byte key.
-    """
-    return Fernet.generate_key()
+# Create a console handler and set the logging level
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create a formatter and attach it to the handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(console_handler)
 
 # Get encryption key function
 def get_encryption_key() -> bytes:
@@ -71,24 +74,16 @@ def encrypt_token(token: str, key: bytes) -> str:
             raise ValueError("Invalid token: Token cannot be empty or whitespace.")
         fernet = Fernet(key)
         encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
-        logger.info("Token successfully encrypted.")
+        logger.debug("Token successfully encrypted.")
         return encrypted_token.decode()  # Return the encrypted token as a string
     
     except ValueError as ve:
-        if "Invalid token" in str(ve):
-            logger.error(f"Invalid token for encryption: {str(ve)}")
-            raise
-        else:
-            logger.error(f"Invalid key provided for encryption: {str(ve)}")
-            raise ValueError("The encryption key provided is invalid.") from ve
-    
-    except TypeError as te:
-        logger.error(f"Type error during encryption: {str(te)}")
-        raise TypeError(f"Type error during encryption: {str(te)}") from te
+        logger.error(f"Invalid input provided for encryption: {str(ve)}")
+        raise ValueError(f"Invalid input for encryption: {str(ve)}") from ve
     
     except Exception as e:
         logger.error(f"Error while encrypting token: {str(e)}")
-        raise RuntimeError(f"Error while encrypting token: {str(e)}") from e
+        raise Exception(f"Error while encrypting token: {str(e)}") from e
 
 # Decryption function
 def decrypt_token(encrypted_token: str, key: bytes) -> str:
@@ -116,7 +111,7 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     
     except InvalidToken as it:
         logger.error(f"Invalid token provided for decryption: {str(it)}")
-        raise InvalidToken("The encrypted token is invalid.") from it
+        raise InvalidToken("The encrypted token is invalid or corrupted.") from it
     
     except ValueError as ve:
         if "Invalid token" in str(ve):
@@ -129,7 +124,3 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     except TypeError as te:
         logger.error(f"Type error during decryption: {str(te)}")
         raise TypeError(f"Type error during decryption: {str(te)}") from te
-    
-    except Exception as e:
-        logger.error(f"Error while decrypting token: {str(e)}")
-        raise RuntimeError(f"Error while decrypting token: {str(e)}") from e
