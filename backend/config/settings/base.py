@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     # Local apps
-    'apps.accounts',
     'apps.invoices',
     'apps.cashflow',
     # 'api' is not included here as it's not a Django app -> it actually could
@@ -172,7 +171,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTH_USER_MODEL = 'infrastructure.Account'
 
 # Storage settings
 if not DEBUG:
