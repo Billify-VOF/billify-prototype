@@ -132,4 +132,4 @@ def decrypt_token(encrypted_token: str, key: bytes) -> str:
     
     except Exception as e:
         logger.error(f"Error while decrypting token: {str(e)}")
-        raise RuntimeError(f"Error while decrypting token: {str(e)}") from e 
+        raise RuntimeError(f"Error while decrypting token: {str(e)}") from e
