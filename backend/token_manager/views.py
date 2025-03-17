@@ -44,7 +44,7 @@ KEY_ID = os.getenv('KEY_ID')
 BASE_URL = os.getenv('BASE_URL')
 
 # Get the encryption key
-# key = get_encryption_key()
+key = get_encryption_key()
 
 def convertclientidsecret(client_id, client_secret):
     
