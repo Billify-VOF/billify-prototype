@@ -6,6 +6,13 @@ export enum UrgencyLevel {
   LOW = 'LOW',
 }
 
+export interface Urgency {
+  level: string;
+  display_name: string;
+  color_code: string;
+  is_manual?: boolean;
+}
+
 export const URGENCY_LEVELS: Urgency[] = [
   { level: UrgencyLevel.OVERDUE, display_name: 'Overdue', color_code: '#8B0000' },
   { level: UrgencyLevel.CRITICAL, display_name: 'Critical', color_code: '#FF0000' },
@@ -20,13 +27,6 @@ export const DEFAULT_URGENCY: Urgency = {
   color_code: '#D3D3D3',
   is_manual: false,
 };
-
-export interface Urgency {
-  level: string;
-  display_name: string;
-  color_code: string;
-  is_manual?: boolean;
-}
 
 export const INVOICES_DATA = [
   {
