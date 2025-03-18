@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PDFViewerWrapper } from './PDFViewerWrapper';
-import { format } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -11,7 +11,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { UrgencySelector } from './invoice/UrgencySelector';
 import { DEFAULT_URGENCY, Urgency } from './invoice/types';
-import { getDueDateMessage } from './invoice/utils';
+import { getDueDateMessage, calculateUrgencyFromDays } from './invoice/utils';
 
 export interface InvoiceData {
   invoice_id: number;
@@ -106,9 +106,19 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         const formattedDate = format(newDate, 'yyyy-MM-dd');
         // Log the formatted date
         console.log('Formatted date:', formattedDate);
+
+        let updatedUrgency = prev.urgency;
+        if (!prev.urgency?.is_manual) {
+          const today = new Date();
+          const diffDays = differenceInDays(newDate, today);
+
+          updatedUrgency = {...calculateUrgencyFromDays(diffDays), is_manual: false};
+        }
+
         return {
           ...prev,
-          date: formattedDate
+          date: formattedDate,
+          urgency: updatedUrgency,
         };
       });
     }
@@ -171,7 +181,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
               open={open} 
               onOpenChange={(isOpen) => {
                 console.log('Popover state changing to:', isOpen);
-                setOpen(!!(true && invoiceData.urgency?.is_manual));
+                setOpen(isOpen);
               }}
               modal={true}  // Make it modal to prevent outside interference
             >
@@ -184,7 +194,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                   )}
                   onClick={() => {
                     console.log('Button clicked, setting open to true');
-                    setOpen(!!(true && invoiceData.urgency?.is_manual));
+                    setOpen(true);
                   }}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />

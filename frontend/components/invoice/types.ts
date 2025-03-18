@@ -1,9 +1,17 @@
+export enum UrgencyLevel {
+  OVERDUE = 'OVERDUE',
+  CRITICAL = 'CRITICAL',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
+
 export const URGENCY_LEVELS: Urgency[] = [
-  { level: 'OVERDUE', display_name: 'Overdue', color_code: '#8B0000' },
-  { level: 'CRITICAL', display_name: 'Critical', color_code: '#FF0000' },
-  { level: 'HIGH', display_name: 'High', color_code: '#FFA500' },
-  { level: 'MEDIUM', display_name: 'Medium', color_code: '#FFD700' },
-  { level: 'LOW', display_name: 'Low', color_code: '#008000' },
+  { level: UrgencyLevel.OVERDUE, display_name: 'Overdue', color_code: '#8B0000' },
+  { level: UrgencyLevel.CRITICAL, display_name: 'Critical', color_code: '#FF0000' },
+  { level: UrgencyLevel.HIGH, display_name: 'High', color_code: '#FFA500' },
+  { level: UrgencyLevel.MEDIUM, display_name: 'Medium', color_code: '#FFD700' },
+  { level: UrgencyLevel.LOW, display_name: 'Low', color_code: '#008000' },
 ];
 
 export const DEFAULT_URGENCY: Urgency = {
