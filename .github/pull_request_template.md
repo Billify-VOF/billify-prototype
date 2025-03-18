@@ -1,11 +1,11 @@
 # Pull Request Template
 
 ## Important Note on Migrations
-⚠️ **DO NOT include migration files when creating a PR to the main branch**
+⚠️ **DO NOT include migration files when creating a PR to the staging branch**
 
 To prevent conflicts on the production server:
 - Do not include migration files when submitting your PR
-- Migration files should only be added directly to the main branch
+- Migration files should only be added directly to the staging branch
 - Migration files should NOT be added to .gitignore
 
 ## Description
