@@ -178,28 +178,28 @@ class Invoice(models.Model):
         """Create a new Invoice instance with validation."""
         instance = cls(
             invoice_number=invoice_number,
-        amount=amount,
-        due_date=due_date,
-        uploaded_by_id=uploaded_by,
-        file_path=file_path,
-        buyer_name=buyer_name or "",
-        buyer_address=buyer_address or "",
-        buyer_vat=buyer_vat or "",
-        buyer_email=buyer_email or "",
-        seller_name=seller_name or "",
-        seller_vat=seller_vat or "",
-        payment_method=payment_method or "",
-        currency=currency or "",
-        iban=iban or "",
-        bic=bic or "",
-        payment_processor=payment_processor or "",
-        transaction_id=transaction_id or "",
-        subtotal=subtotal or Decimal("0.00"),
-        vat_amount=vat_amount or Decimal("0.00"),
-        total_amount=total_amount or Decimal("0.00"),
-        file_size=file_size or 0,
-        file_type=file_type or "unknown",
-        original_file_name=original_file_name or "unknown"
+            amount=amount,
+            due_date=due_date,
+            uploaded_by_id=uploaded_by,
+            file_path=file_path,
+            buyer_name=buyer_name if buyer_name is not None else None,
+            buyer_address=buyer_address if buyer_address is not None else None,
+            buyer_vat=buyer_vat if buyer_vat is not None else None,
+            buyer_email=buyer_email if buyer_email is not None else None,
+            seller_name=seller_name if seller_name is not None else None,
+            seller_vat=seller_vat if seller_vat is not None else None,
+            payment_method=payment_method if payment_method is not None else None,
+            currency=currency if currency is not None else None,
+            iban=iban if iban is not None else None,
+            bic=bic if bic is not None else None,
+            payment_processor=payment_processor if payment_processor is not None else None,
+            transaction_id=transaction_id if transaction_id is not None else None,
+            subtotal=subtotal if subtotal is not None else None,
+            vat_amount=vat_amount if vat_amount is not None else None,
+            total_amount=total_amount if total_amount is not None else None,
+            file_size=file_size if file_size is not None else None,
+            file_type=file_type if file_type is not None else None,
+            original_file_name=original_file_name if original_file_name is not None else None
         )
         instance.full_clean()
         return instance
@@ -266,100 +266,33 @@ class Invoice(models.Model):
         buyer_address: Optional[str] = None,
         buyer_vat: Optional[str] = None,
         buyer_email: Optional[str] = None,
-        seller_name: Optional[str] = None,        
-        seller_vat: Optional[str] = None,        
-        payment_method: Optional[str] = None,        
-        currency: Optional[str] = None,        
-        iban: Optional[str] = None,        
-        bic: Optional[str] = None,        
-        payment_processor: Optional[str] = None,        
-        transaction_id: Optional[str] = None, 
-        subtotal: Optional[Decimal] = None,       
-        vat_amount: Optional[Decimal] = None,       
+        seller_name: Optional[str] = None,
+        seller_vat: Optional[str] = None,
+        payment_method: Optional[str] = None,
+        currency: Optional[str] = None,
+        iban: Optional[str] = None,
+        bic: Optional[str] = None,
+        payment_processor: Optional[str] = None,
+        transaction_id: Optional[str] = None,
+        subtotal: Optional[Decimal] = None,
+        vat_amount: Optional[Decimal] = None,
         total_amount: Optional[Decimal] = None,
         uploaded_by: Optional[int] = None,
         file_size: Optional[int] = None,
         file_type: Optional[str] = None,
-        original_file_name: Optional[str] = None
-
+        original_file_name: Optional[str] = None,
     ) -> None:
         """Update invoice fields with validation.
 
-        Encapsulates updates to invoice fields, ensuring proper validation
-        is performed before saving changes.
-
-        Args:
-            amount: New invoice amount
-            due_date: New invoice due date
-            status: New invoice status
-            uploaded_by_id: ID of user performing the update
-            manual_urgency: Manual override for invoice urgency level
+        Updates only the fields that are not None, ensuring proper validation.
 
         Raises:
-            ValidationError: If updated fields don't meet validation
-                requirements
+            ValidationError: If updated fields don't meet validation requirements.
         """
-        self.amount = amount or self.amount
+        fields_to_update = {key: value for key, value in locals().items() if key != "self" and value is not None}
 
-        self.due_date = due_date or self.due_date
-
-        self.status = status or self.status
-
-        self.manual_urgency = manual_urgency or self.manual_urgency
-
-        self.buyer_name = buyer_name or self.buyer_name
-
-        self.buyer_address = buyer_address or self.buyer_address
-
-        self.buyer_vat = buyer_vat or self.buyer_vat
-
-
-        self.buyer_email = buyer_email or self.buyer_email
-
-
-        self.seller_name = seller_name or self.seller_name
-
-
-        self.seller_vat = seller_vat or self.seller_vat
-
-
-        self.payment_method = payment_method or self.payment_method
-
-
-        self.currency = currency or self.currency
-
-
-        self.iban = iban or self.iban
-
-
-        self.bic = bic or self.bic
-
-
-        self.payment_processor = payment_processor or self.payment_processor
-
-
-        self.transaction_id = transaction_id or self.transaction_id
-
-
-        self.subtotal = subtotal or self.subtotal
-
-
-        self.vat_amount = vat_amount or self.vat_amount
-
-
-        self.total_amount = total_amount or self.total_amount
-
-        self.uploaded_by = uploaded_by or self.uploaded_by
-
-
-        self.file_size = file_size or self.file_size
-
-
-        self.file_type = file_type or self.file_type
-
-
-        self.original_file_name = original_file_name or self.original_file_name
-
+        for field, value in fields_to_update.items():
+            setattr(self, field, value)
 
         # Validate all fields
         self.full_clean()

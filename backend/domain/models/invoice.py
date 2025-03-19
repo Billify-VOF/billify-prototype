@@ -347,12 +347,10 @@ class Invoice:
         file_size: Optional[int] = None,
         file_type: Optional[str] = None,
         original_file_name: Optional[str] = None,
-
     ) -> None:
         """Update invoice fields with validation.
 
-        This method allows updating one or more invoice fields and ensures
-        that all business rules are validated after the update.
+        Updates fields while ensuring validation rules are met.
 
         Args:
             amount (Optional[Decimal]): New invoice amount
@@ -361,104 +359,28 @@ class Invoice:
             status (Optional[InvoiceStatus]): New invoice status
             manual_urgency (Optional[Union[UrgencyLevel, bool]]): New urgency level
                 or False to clear manual urgency and switch to automatic calculation
-
-        Raises:
-            InvalidInvoiceError: If the updated data violates business rules
-
-        Example:
-            invoice = Invoice(amount=100, due_date=date(2023, 1, 1),
-                             invoice_number="INV-001")
-
-            # Update just the amount
-            invoice.update(amount=Decimal("150.00"))
-
-            # Update multiple fields
-            invoice.update(
-                amount=Decimal("200.00"),
-                due_date=date(2023, 2, 1),
-                status=InvoiceStatus.PAID
-            )
-            
-            # Set manual urgency alongside other updates
-            invoice.update(
-                amount=Decimal("300.00"),
-                manual_urgency=UrgencyLevel.HIGH
-            )
-            
-            # Clear manual urgency and return to automatic calculation
-            invoice.update(manual_urgency=False)
         """
-        # Update fields that are provided (not None)
-        self.amount = amount or self.amount
+        # Collect all non-None fields dynamically
+        fields_to_update = {
+            key: value for key, value in locals().items()
+            if key != "self" and value is not None
+        }
 
-        self.due_date = due_date or self.due_date
-
-        self.invoice_number = invoice_number or self.invoice_number
-
-        self.status = status or self.status
-
-        self.buyer_name = buyer_name or self.buyer_name
-
-        self.buyer_address = buyer_address or self.buyer_address
-
-        self.buyer_vat = buyer_vat or self.buyer_vat
-
-
-        self.buyer_email = buyer_email or self.buyer_email
-
-
-        self.seller_name = seller_name or self.seller_name
-
-
-        self.seller_vat = seller_vat or self.seller_vat
-
-
-        self.payment_method = payment_method or self.payment_method
-
-
-        self.currency = currency or self.currency
-
-
-        self.iban = iban or self.iban
-
-
-        self.bic = bic or self.bic
-
-
-        self.payment_processor = payment_processor or self.payment_processor
-
-
-        self.transaction_id = transaction_id or self.transaction_id
-
-
-        self.subtotal = subtotal or self.subtotal
-
-
-        self.vat_amount = vat_amount or self.vat_amount
-
-
-        self.total_amount = total_amount or self.total_amount
-
-        self.file_size = file_size or self.file_size
-
-        self.file_type = file_type or self.file_type
-
-        self.original_file_name = original_file_name or self.original_file_name
-            
-        # Handle manual urgency if provided
-        if manual_urgency is not None:
+        # Handle manual urgency separately
+        if "manual_urgency" in fields_to_update:
+            manual_urgency = fields_to_update.pop("manual_urgency")
             if manual_urgency is False:
-                # Special case: False means clear the manual override
                 self.clear_manual_urgency()
             elif isinstance(manual_urgency, UrgencyLevel):
-                # Set the manual urgency level
                 self.set_urgency_manually(manual_urgency)
             else:
                 raise InvalidInvoiceError(
                     f"Expected UrgencyLevel or False, got {type(manual_urgency)}"
                 )
-        else:  # manual_urgency is None
-            logger.debug("Update: No change to urgency settings")
+
+        # Apply updates dynamically
+        for field, value in fields_to_update.items():
+            setattr(self, field, value)
 
         # Validate the updated invoice
         self.validate()
