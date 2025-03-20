@@ -1,10 +1,7 @@
 """Token management views for Ponto integration."""
-import base64
 import json
 import logging
-import os
 import ssl
-import string
 
 # Third-party imports
 import certifi
@@ -15,23 +12,17 @@ from urllib.parse import urlencode
 from django.shortcuts import redirect
 from django.http import HttpRequest
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 # Local imports
-from domain.models.ponto import PontoToken, IbanityAccount
 from infrastructure.django.repositories.ponto_repository import DjangoIbanityAccountRepository, DjangoPontoTokenRepository
 from domain.services.ponto_service import IbanityAccountService, PontoTokenService
 from integrations.providers.ponto import PontoProvider
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.backends import default_backend
 from typing import Dict, Any
 
 from config.settings.base import LOG_LEVEL, PONTO_CLIENT_ID, PONTO_CLIENT_SECRET, \
     PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, \
-    PONTO_PRIVATE_KEY_PASSWORD, PONTO_SIGNATURE_KEY_ID, FERNET_KEY, \
-    PONTO_CERTIFICATE_PATH, PONTO_PRIVATE_KEY_PATH
+    PONTO_SIGNATURE_KEY_ID, FERNET_KEY
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -85,9 +76,7 @@ class PontoView(APIView):
         headers = {"Authorization": f"Bearer {token}"}
         
         # Create an SSL context with the private key password
-        context = ssl.create_default_context()
-        context.load_cert_chain(certfile=PONTO_CERTIFICATE_PATH, keyfile=PONTO_PRIVATE_KEY_PATH, password=PONTO_PRIVATE_KEY_PASSWORD)
-        context.check_hostname = True
+        context = PontoProvider.create_ssl_context()
 
         # Create a PoolManager with the SSL context
         http = urllib3.PoolManager(
@@ -170,9 +159,7 @@ class PontoView(APIView):
             
             encoded_data = urlencode(data).encode('utf-8')
             # Create a PoolManager with the SSL context
-            context = ssl.create_default_context()
-            context.load_cert_chain(certfile=PONTO_CERTIFICATE_PATH, keyfile=PONTO_PRIVATE_KEY_PATH, password=PONTO_PRIVATE_KEY_PASSWORD)
-            context.check_hostname = True
+            context = PontoProvider.create_ssl_context()
             
             http = urllib3.PoolManager(
                 num_pools=50,
@@ -198,8 +185,8 @@ class PontoView(APIView):
                     expires_in = token_data.get("expires_in")
                     user = request.user
                     # Encrypt the tokens before saving to the database
-                    encrypted_access_token = PontoProvider.encrypt_token(access_token, FERNET_KEY)
-                    encrypted_refresh_token = PontoProvider.encrypt_token(refresh_token, FERNET_KEY)
+                    encrypted_access_token = PontoProvider.encrypt_token(access_token)
+                    encrypted_refresh_token = PontoProvider.encrypt_token(refresh_token)
                     self.pontoTokenService.add_or_update(user=user, data={
                         'access_token': encrypted_access_token,
                         'refresh_token': encrypted_refresh_token,
@@ -240,7 +227,7 @@ class PontoView(APIView):
             if not ponto_token.refresh_token:
                 return Response({"error": "Refresh token not found"}, status=400)
             # Decrypt the stored refresh token
-            decrypted_refresh_token = PontoProvider.decrypt_token(ponto_token.refresh_token, PONTO_SIGNATURE_KEY_ID)
+            decrypted_refresh_token = PontoProvider.decrypt_token(ponto_token.refresh_token)
             # Prepare request data for refreshing the token
             client = PontoProvider.generate_client_credentials(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
             headers = {
@@ -256,9 +243,7 @@ class PontoView(APIView):
             encoded_data = urlencode(data).encode('utf-8')
 
             # Set up SSL context for cert and key
-            context = ssl.create_default_context()
-            context.load_cert_chain(certfile=PONTO_CERTIFICATE_PATH, keyfile=PONTO_PRIVATE_KEY_PATH, password=PONTO_PRIVATE_KEY_PASSWORD)
-            context.check_hostname = True
+            context = PontoProvider.create_ssl_context()
 
             http = urllib3.PoolManager(
                 num_pools=50,
@@ -277,8 +262,8 @@ class PontoView(APIView):
 
             if response.status == 200:
                 token_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
-                encrypted_access_token = PontoProvider.encrypt_token(token_data.get("access_token"), FERNET_KEY)
-                encrypted_refresh_token = PontoProvider.encrypt_token(token_data.get("refresh_token", decrypted_refresh_token), FERNET_KEY)
+                encrypted_access_token = PontoProvider.encrypt_token(token_data.get("access_token"))
+                encrypted_refresh_token = PontoProvider.encrypt_token(token_data.get("refresh_token", decrypted_refresh_token))
                 # Update the stored access token and refresh token in the database
                 ponto_token.access_token = encrypted_access_token
                 ponto_token.refresh_token = encrypted_refresh_token
@@ -295,10 +280,7 @@ class PontoView(APIView):
                 return Response({
                     "error": "Failed to refresh access token",
                     "details": response.data.decode('utf-8')
-                }, status=response.status)
-        except PontoToken.DoesNotExist:
-            logger.error(f"User {user} - No PontoToken found")
-            return Response({"error": "No token found for this user"}, status=404)            
+                }, status=response.status)     
         except Exception as e:
             logger.error(f"User {user} - Error occurred: {str(e)}")
             return Response({"error": str(e)}, status=500)
@@ -317,8 +299,6 @@ class PontoView(APIView):
             user = request.user.id
             try:
                 token = self.pontoTokenService.get_access_token(user)
-            except PontoToken.DoesNotExist:
-                return Response({"error": "No access token found for this user"}, status=401)
             except ValueError as e:
                 return Response({"error": f"Invalid token: {str(e)}"}, status=400)
             except Exception as e:
@@ -335,17 +315,7 @@ class PontoView(APIView):
             headers = {"Authorization": f"Bearer {token}"}
             
             # Create an SSL context with the private key password
-            context = ssl.create_default_context()
-            context.load_cert_chain(
-                certfile=PONTO_CERTIFICATE_PATH,
-                keyfile=PONTO_PRIVATE_KEY_PATH,
-                password=PONTO_PRIVATE_KEY_PASSWORD
-            )
-            # Only disable hostname verification in development
-            if os.getenv('ENVIRONMENT') == 'development':
-                context.check_hostname = False
-            else:
-                context.check_hostname = True
+            context = PontoProvider.create_ssl_context()
 
             # Create a PoolManager with the SSL context
             http = urllib3.PoolManager(

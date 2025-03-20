@@ -3,12 +3,16 @@ import secrets
 import base64
 import string
 
-from cryptography.fernet import Fernet, InvalidToken
-from OpenSSL import crypto
+import ssl
 
-from config.settings.base import PONTO_CONNECT_BASE_URL, \
-    PONTO_PRIVATE_KEY_PASSWORD, PONTO_SIGNATURE_KEY_ID, FERNET_KEY, \
-    PONTO_CERTIFICATE_PATH, PONTO_PRIVATE_KEY_PATH
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.backends import default_backend
+
+from config.settings.base import FERNET_KEY, PONTO_CERTIFICATE_PATH, \
+                          PONTO_PRIVATE_KEY_PATH, PONTO_PRIVATE_KEY_PASSWORD, \
+                          ENVIRONMENT, PONTO_SIGNATURE_KEY_ID
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -26,7 +30,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-class PontoProvider():
+class PontoProvider:
   """Provide utils functions like encrypt, decrypt for integration with Ponto"""
 
   # Encryption function
@@ -36,7 +40,6 @@ class PontoProvider():
       
       Args:
           token (str): The token to encrypt.
-          key (bytes): The encryption key.
           
       Returns:
           str: The encrypted token as a string.
@@ -69,7 +72,6 @@ class PontoProvider():
       
       Args:
           encrypted_token (str): The encrypted token to decrypt.
-          key (bytes): The decryption key.
           
       Returns:
           str: The decrypted token as a string.
@@ -82,7 +84,7 @@ class PontoProvider():
       try:
           if not encrypted_token or not encrypted_token.strip():
               raise ValueError("Invalid token: Token cannot be empty or whitespace.")
-          fernet = Fernet(FERNET_KEY)
+          fernet = Fernet(PONTO_SIGNATURE_KEY_ID)
           decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
           logger.info("Token successfully decrypted.")
           return decrypted_token.decode()
@@ -128,36 +130,6 @@ class PontoProvider():
       """
       random_string = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(50))  # Generate a secure random 50-character alphanumeric string
       return f"session_{random_string}"
-
-  @staticmethod
-  def load_private_key(private_key_path: str, password: str):
-      """Load and decrypt a private key from a file.
-      
-      Args:
-          private_key_path (str): Path to the private key file.
-          password (str): Password to decrypt the private key.
-          
-      Returns:
-          object: The loaded private key.
-          
-      Raises:
-          IOError: If the private key file cannot be read.
-          crypto.Error: If the private key cannot be decrypted with the given password.
-      """
-      try:
-          # Read and load the private key
-          with open(private_key_path, 'rb') as key_file:
-              private_key_data = key_file.read()
-          try:
-              # Decrypt the private key with the provided password
-              private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_data, passphrase=password.encode())
-              return private_key
-          except crypto.Error as e:
-              logger.error(f"Failed to decrypt private key: {str(e)}")
-              raise crypto.Error(f"Failed to decrypt private key: {str(e)}") from e
-      except IOError as e:
-          logger.error(f"Failed to read private key file: {str(e)}")
-          raise IOError(f"Failed to read private key file: {str(e)}") from e
 
   @staticmethod
   def create_signature(request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
@@ -208,3 +180,19 @@ class PontoProvider():
       except Exception as e:
           logger.error(f"Failed to create signature: {e}")
           raise ValueError(f"Failed to create signature: {e}") from e
+        
+  @staticmethod
+  def create_ssl_context():
+    """Create and configure an SSL context."""
+    context = ssl.create_default_context()
+    context.load_cert_chain(
+        certfile=PONTO_CERTIFICATE_PATH,
+        keyfile=PONTO_PRIVATE_KEY_PATH,
+        password=PONTO_PRIVATE_KEY_PASSWORD
+    )
+    # Only disable hostname verification in development
+    if ENVIRONMENT == 'development':
+        context.check_hostname = False
+    else:
+        context.check_hostname = True
+    return context
