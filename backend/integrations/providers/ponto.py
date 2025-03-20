@@ -128,7 +128,7 @@ class PontoProvider:
       Returns:
           str: A randomly generated session ID.
       """
-      random_string = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(50))  # Generate a secure random 50-character alphanumeric string
+      random_string = secrets.token_urlsafe(50)  # Generate a secure random 50-character alphanumeric string
       return f"session_{random_string}"
 
   @staticmethod
