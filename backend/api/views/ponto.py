@@ -21,8 +21,7 @@ from integrations.providers.ponto import PontoProvider
 from typing import Dict, Any
 
 from config.settings.base import LOG_LEVEL, PONTO_CLIENT_ID, PONTO_CLIENT_SECRET, \
-    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, \
-    PONTO_SIGNATURE_KEY_ID, FERNET_KEY
+    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL
 
 # Configure logger
 logger = logging.getLogger(__name__)
