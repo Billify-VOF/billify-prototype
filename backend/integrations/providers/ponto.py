@@ -11,9 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 
 from config.settings.base import FERNET_KEY, PONTO_CERTIFICATE_PATH, \
-                          PONTO_PRIVATE_KEY_PATH, PONTO_PRIVATE_KEY_PASSWORD, \
-                          ENVIRONMENT, PONTO_SIGNATURE_KEY_ID
-
+                          PONTO_PRIVATE_KEY_PATH, PONTO_PRIVATE_KEY_PASSWORD
 # Initialize logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) 
@@ -84,7 +82,7 @@ class PontoProvider:
       try:
           if not encrypted_token or not encrypted_token.strip():
               raise ValueError("Invalid token: Token cannot be empty or whitespace.")
-          fernet = Fernet(PONTO_SIGNATURE_KEY_ID)
+          fernet = Fernet(FERNET_KEY)
           decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
           logger.info("Token successfully decrypted.")
           return decrypted_token.decode()
