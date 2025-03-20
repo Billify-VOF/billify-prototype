@@ -36,3 +36,19 @@ class ProcessingError(InvoiceError):
     This could be due to issues like data extraction failures,
     validation problems, or other processing-related errors.
     """
+
+
+class NotificationError(Exception):
+    """Base exception class for all notification-related errors.
+
+    All other notification exceptions inherit from this class, allowing
+    for catch-all handling of notification-specific errors when needed.
+    """
+
+
+class InvalidNotificationError(NotificationError):
+    """Raised when a notification fails business rule validation.
+
+    This could be due to issues like empty messages, invalid notification types,
+    or other validation failures related to notifications.
+    """
