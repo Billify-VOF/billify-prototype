@@ -264,10 +264,11 @@ class PontoView(APIView):
                 encrypted_access_token = PontoProvider.encrypt_token(token_data.get("access_token"))
                 encrypted_refresh_token = PontoProvider.encrypt_token(token_data.get("refresh_token", decrypted_refresh_token))
                 # Update the stored access token and refresh token in the database
-                ponto_token.access_token = encrypted_access_token
-                ponto_token.refresh_token = encrypted_refresh_token
-                ponto_token.expires_in = token_data.get("expires_in")
-                ponto_token.save()
+                self.pontoTokenService.add_or_update(user=user, data={
+                    'access_token': encrypted_access_token,
+                    'refresh_token': encrypted_refresh_token,
+                    'expires_in': token_data.get('expires_in')
+                })
 
                 return Response({
                     "access_token": token_data.get("access_token"),
