@@ -31,7 +31,7 @@ class PontoProvider():
 
   # Encryption function
   @staticmethod
-  def encrypt_token(self, token: str) -> str:
+  def encrypt_token(token: str) -> str:
       """Encrypt a token using Fernet symmetric encryption.
       
       Args:
@@ -64,7 +64,7 @@ class PontoProvider():
 
   # Decryption function
   @staticmethod
-  def decrypt_token(self, encrypted_token: str) -> str:
+  def decrypt_token(encrypted_token: str) -> str:
       """Decrypt an encrypted token using Fernet symmetric encryption.
       
       Args:
@@ -104,7 +104,7 @@ class PontoProvider():
           raise TypeError(f"Type error during decryption: {str(te)}") from te
 
   @staticmethod
-  def generate_client_credentials(self, client_id: str, client_secret: str) -> str:
+  def generate_client_credentials(client_id: str, client_secret: str) -> str:
       """Convert client ID and secret to a Base64-encoded string.
       
       Args:
@@ -120,7 +120,7 @@ class PontoProvider():
       return encoded_credentials
 
   @staticmethod
-  def generate_random_session_id(self) -> str:
+  def generate_random_session_id() -> str:
       """Generate a random session ID.
       
       Returns:
@@ -130,7 +130,7 @@ class PontoProvider():
       return f"session_{random_string}"
 
   @staticmethod
-  def load_private_key(self, private_key_path: str, password: str):
+  def load_private_key(private_key_path: str, password: str):
       """Load and decrypt a private key from a file.
       
       Args:
@@ -160,7 +160,7 @@ class PontoProvider():
           raise IOError(f"Failed to read private key file: {str(e)}") from e
 
   @staticmethod
-  def create_signature(self, request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
+  def create_signature(request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
       """Creates the signature string.
       
       Args:
