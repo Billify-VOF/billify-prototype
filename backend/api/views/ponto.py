@@ -295,7 +295,7 @@ class PontoView(APIView):
             Response: The transaction history data.
         """
         try:
-            user = request.user.id
+            user = request.user
             try:
                 token = self.pontoTokenService.get_access_token(user)
             except ValueError as e:
