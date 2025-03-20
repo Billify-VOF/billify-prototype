@@ -185,14 +185,10 @@ class PontoProvider:
   def create_ssl_context():
     """Create and configure an SSL context."""
     context = ssl.create_default_context()
+    context.check_hostname = True
     context.load_cert_chain(
         certfile=PONTO_CERTIFICATE_PATH,
         keyfile=PONTO_PRIVATE_KEY_PATH,
         password=PONTO_PRIVATE_KEY_PASSWORD
     )
-    # Only disable hostname verification in development
-    if ENVIRONMENT == 'development':
-        context.check_hostname = False
-    else:
-        context.check_hostname = True
     return context
