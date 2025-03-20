@@ -3,6 +3,11 @@ import os
 import sys
 from pathlib import Path
 import environ
+import logging
+import base64
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Initialize environ
 env = environ.Env(
@@ -49,7 +54,6 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
-    'token_manager',
 ]
 
 MIDDLEWARE = [
@@ -223,3 +227,58 @@ LOGGING = {
         },
     },
 }
+
+LOG_LEVEL = env('LOG_LEVEL')
+
+# Get log level from environment variable with a default of INFO
+try:
+    logger.setLevel(getattr(logging, LOG_LEVEL))
+except AttributeError:
+    logger.warning(f"Invalid log level '{LOG_LEVEL}', defaulting to INFO")
+    logger.setLevel(logging.INFO)
+
+
+# Ponto-Related Environment Variables
+required_env_vars = [
+    'PONTO_CLIENT_ID', 'PONTO_CLIENT_SECRET', 'PONTO_AUTH_URL', 
+    'PONTO_TOKEN_URL', 'PONTO_REDIRECT_URI', 'PONTO_PRIVATE_KEY_PASSWORD',
+    'PONTO_SIGNATURE_KEY_ID', 'FERNET_KEY'
+]
+
+# Check if any of the required environment variables are missing
+missing_vars = [var for var in required_env_vars if not env(var)]
+
+# If there are any missing variables, raise an error with the list of missing vars
+if missing_vars:
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+PONTO_CLIENT_ID = env('PONTO_CLIENT_ID')
+PONTO_CLIENT_SECRET = env('PONTO_CLIENT_SECRET')
+PONTO_AUTH_URL = env('PONTO_AUTH_URL')
+PONTO_TOKEN_URL = env('PONTO_TOKEN_URL')
+PONTO_REDIRECT_URI = env('PONTO_REDIRECT_URI')
+PONTO_CONNECT_BASE_URL = env('PONTO_CONNECT_BASE_URL')
+PONTO_PRIVATE_KEY_PASSWORD = env('PONTO_PRIVATE_KEY_PASSWORD')
+PONTO_SIGNATURE_KEY_ID = env('PONTO_SIGNATURE_KEY_ID')
+
+FERNET_KEY = env('FERNET_KEY')
+
+# Validate and retrieve the FERNET_KEY
+if FERNET_KEY is None:
+    raise ValueError("FERNET_KEY not found in environment variables")
+
+# Verify the FERNET_KEY format (should be a 44-character base64 encoded string)
+if len(FERNET_KEY) != 44:
+    raise ValueError("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
+
+try:
+    # Check if the key is base64 encoded
+    base64.urlsafe_b64decode(FERNET_KEY)
+    FERNET_KEY = FERNET_KEY.encode()
+except Exception as e:
+    logger.error(f"Invalid FERNET_KEY format: {e}")
+    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}") from e
+
+# Paths for certificates and keys
+PONTO_CERTIFICATE_PATH = env('PONTO_CERTIFICATE_PATH')
+PONTO_PRIVATE_KEY_PATH = env('PONTO_PRIVATE_KEY_PATH')
