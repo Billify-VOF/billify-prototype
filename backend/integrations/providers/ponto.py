@@ -1,9 +1,10 @@
 import logging
 import secrets
 import base64
-import string
 
 import ssl
+import certifi
+import urllib3
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes, serialization
@@ -11,7 +12,9 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 
 from config.settings.base import FERNET_KEY, PONTO_CERTIFICATE_PATH, \
-                          PONTO_PRIVATE_KEY_PATH, PONTO_PRIVATE_KEY_PASSWORD
+                          PONTO_PRIVATE_KEY_PATH, PONTO_PRIVATE_KEY_PASSWORD, \
+                          IBANITY_API_HOST
+
 # Initialize logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) 
@@ -120,25 +123,23 @@ class PontoProvider:
       return encoded_credentials
 
   @staticmethod
-  def generate_random_session_id() -> str:
+  def generate_random_session_id(prefix="session_", length=50) -> str:
       """Generate a random session ID.
       
       Returns:
-          str: A randomly generated session ID.
+          str: A secure random alphanumeric string that has length characters.
       """
-      random_string = secrets.token_urlsafe(50)  # Generate a secure random 50-character alphanumeric string
-      return f"session_{random_string}"
+      random_string = secrets.token_urlsafe(length)
+      return f"{prefix}{random_string}"
 
   @staticmethod
-  def create_signature(request_target: str, digest: str, created: str, private_key_path: str, private_key_password: str) -> str:
+  def create_signature(request_target: str, digest: str, created: str) -> str:
       """Creates the signature string.
       
       Args:
           request_target (str): The request target.
           digest (str): The digest value.
           created (str): The created timestamp.
-          private_key_path (str): Path to the private key file.
-          private_key_password (str): Password for the private key.
           
       Returns:
           str: The generated signature.
@@ -147,14 +148,17 @@ class PontoProvider:
           IOError: If the private key file cannot be read.
           ValueError: If the private key is invalid or the signature cannot be created.
       """
-      signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: api.ibanity.com"""
+      if not request_target or not digest:
+       raise ValueError("Required parameters cannot be empty")
+
+      signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: {IBANITY_API_HOST}"""
       
       try:
           # Load the private key with the password
-          with open(private_key_path, "rb") as key_file:
+          with open(PONTO_PRIVATE_KEY_PATH, "rb") as key_file:
               private_key = serialization.load_pem_private_key(
                   key_file.read(),
-                  password=private_key_password.encode(),
+                  password=PONTO_PRIVATE_KEY_PASSWORD.encode(),
                   backend=default_backend()
               )
 
@@ -177,16 +181,35 @@ class PontoProvider:
           raise ValueError(f"Invalid private key or password: {e}") from e
       except Exception as e:
           logger.error(f"Failed to create signature: {e}")
-          raise ValueError(f"Failed to create signature: {e}") from e
+          raise
         
   @staticmethod
-  def create_ssl_context():
+  def create_http_instance():
     """Create and configure an SSL context."""
-    context = ssl.create_default_context()
-    context.check_hostname = True
-    context.load_cert_chain(
-        certfile=PONTO_CERTIFICATE_PATH,
-        keyfile=PONTO_PRIVATE_KEY_PATH,
-        password=PONTO_PRIVATE_KEY_PASSWORD
-    )
-    return context
+    try:
+        context = ssl.create_default_context()
+        context.check_hostname = True
+        context.load_cert_chain(
+            certfile=PONTO_CERTIFICATE_PATH,
+            keyfile=PONTO_PRIVATE_KEY_PATH,
+            password=PONTO_PRIVATE_KEY_PASSWORD
+        )
+
+        # Create a PoolManager with the SSL context
+        http = urllib3.PoolManager(
+            num_pools=50,
+            cert_reqs=ssl.CERT_REQUIRED,  
+            ca_certs=certifi.where(),
+            ssl_context=context
+        )
+    except FileNotFoundError as e:
+        logger.error(f"Certificate or key file not found: {e}")
+        raise RuntimeError("Failed to load SSL certificate or key.") from e
+    except ssl.SSLError as e:
+        logger.error(f"SSL error occurred: {e}")
+        raise RuntimeError("SSL configuration failed.") from e
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        raise RuntimeError("An unexpected error occurred while creating HTTP instance.") from e
+    
+    return http
