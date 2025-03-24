@@ -74,21 +74,14 @@ class PontoView(APIView):
         # Create the signature
         headers = {"Authorization": f"Bearer {token}"}
         
-        # Create an SSL context with the private key password
-        context = PontoProvider.create_ssl_context()
-
-        # Create a PoolManager with the SSL context
-        http = urllib3.PoolManager(
-            num_pools=50,
-            cert_reqs=ssl.CERT_REQUIRED,  
-            ca_certs=certifi.where(),
-            ssl_context=context
-        )
+        # Create an http instance with SSL context
+        http = PontoProvider.create_http_instance()
 
         try:
+            PONTO_PAGE_LIMIT = 3
             response = http.request(
                 'GET',
-                f"{PONTO_CONNECT_BASE_URL}accounts?page[limit]=3",
+                f"{PONTO_CONNECT_BASE_URL}/accounts?page[limit]={PONTO_PAGE_LIMIT}",
                 headers=headers
             )
             accounts_data = json.loads(response.data.decode('utf-8'))
@@ -158,14 +151,7 @@ class PontoView(APIView):
             
             encoded_data = urlencode(data).encode('utf-8')
             # Create a PoolManager with the SSL context
-            context = PontoProvider.create_ssl_context()
-            
-            http = urllib3.PoolManager(
-                num_pools=50,
-                cert_reqs=ssl.CERT_REQUIRED,
-                ca_certs=certifi.where(),
-                ssl_context=context
-            )
+            http = PontoProvider.create_http_instance()
             
             response = http.request(
                 'POST',
@@ -199,12 +185,19 @@ class PontoView(APIView):
                 except json.JSONDecodeError:
                     logger.exception("Failed to decode JSON response from Ponto server")
                     return Response({"error": "Invalid JSON response from server"}, status=500)
+                except Exception as e:
+                    return Response({
+                        "error": "token_exchange_failed",
+                        "error_description": "Failed to exchange authorization code for token",
+                        "http_status": response.status,
+                        "details": str(e)
+                    })
             else:
                 logger.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
                 return Response({
                     "error": "Failed to get access token",
                     "details": response.data.decode('utf-8')
-                }, status=500)
+                }, status=response.status)
 
         except Exception as e:
             logger.exception(f"Unexpected error in ponto_login: {str(e)}")
@@ -241,15 +234,8 @@ class PontoView(APIView):
             }
             encoded_data = urlencode(data).encode('utf-8')
 
-            # Set up SSL context for cert and key
-            context = PontoProvider.create_ssl_context()
-
-            http = urllib3.PoolManager(
-                num_pools=50,
-                cert_reqs=ssl.CERT_REQUIRED,
-                ca_certs=certifi.where(),
-                ssl_context=context
-            )
+            # Set up http instance with SSL context
+            http = PontoProvider.create_http_instance()
 
             response = http.request(
                 'POST',
@@ -309,21 +295,13 @@ class PontoView(APIView):
             if not ibanityAccount:
                 return Response({"error": "No Ibanity account found for this user"}, status=404)
             account_id = ibanityAccount.account_id
-            api_url = f"{PONTO_CONNECT_BASE_URL}accounts/{account_id}/transactions"
+            api_url = f"{PONTO_CONNECT_BASE_URL}/accounts/{account_id}/transactions"
 
             # Create the request headers
             headers = {"Authorization": f"Bearer {token}"}
             
             # Create an SSL context with the private key password
-            context = PontoProvider.create_ssl_context()
-
-            # Create a PoolManager with the SSL context
-            http = urllib3.PoolManager(
-                num_pools=50,
-                cert_reqs=ssl.CERT_REQUIRED,  
-                ca_certs=certifi.where(),
-                ssl_context=context
-            )
+            http = PontoProvider.create_http_instance()
 
             # Make the GET request using the PoolManager
             try:

@@ -30,7 +30,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
-ENVIRONMENT = env('ENVIRONMENT')
+ENVIRONMENT = env('ENVIRONMENT', default='development')
 
 # Define allowed hosts from environment variables
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
@@ -230,7 +230,7 @@ LOGGING = {
     },
 }
 
-LOG_LEVEL = env('LOG_LEVEL')
+LOG_LEVEL = env('LOG_LEVEL', default='INFO')
 
 # Get log level from environment variable with a default of INFO
 try:
@@ -260,6 +260,7 @@ PONTO_AUTH_URL = env('PONTO_AUTH_URL')
 PONTO_TOKEN_URL = env('PONTO_TOKEN_URL')
 PONTO_REDIRECT_URI = env('PONTO_REDIRECT_URI')
 PONTO_CONNECT_BASE_URL = env('PONTO_CONNECT_BASE_URL')
+IBANITY_API_HOST=env('IBANITY_API_HOST')
 PONTO_PRIVATE_KEY_PASSWORD = env('PONTO_PRIVATE_KEY_PASSWORD')
 PONTO_SIGNATURE_KEY_ID = env('PONTO_SIGNATURE_KEY_ID')
 

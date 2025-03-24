@@ -1,5 +1,3 @@
-"""Domain model for managing Ponto-Connect"""
-
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -7,14 +5,8 @@ User = get_user_model()
 
 # Create your models here.
 class IbanityAccount(models.Model):
-    """IbanityAccount Model which mainly represents the account info used in Ponto-Connect
+    """IbanityAccount Model which mainly represents the account info used in Ponto-Connect"""
 
-    Args:
-        models (Account Id): Ponto Connect Account ID
-
-    Returns:
-        String: Account ID - Account Description
-    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account_id = models.CharField(max_length=255, unique=True)
     description = models.CharField(max_length=255, blank=True)
@@ -32,14 +24,8 @@ class IbanityAccount(models.Model):
 
 
 class PontoToken(models.Model):
-    """Stores Ponto access token used in Ponto Connect for API access
+    """Stores Ponto access token used in Ponto Connect for API access"""
 
-    Args:
-        models (user): Unique user for accessing Ponto Connect
-
-    Returns:
-        String: Access token for unique user
-    """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     access_token = models.CharField(max_length=255, null=True, blank=True,unique=True)
     refresh_token = models.CharField(max_length=255, null=True, blank=True,unique=True)
