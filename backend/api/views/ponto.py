@@ -1,10 +1,8 @@
 """Token management views for Ponto integration."""
 import json
 import logging
-import ssl
 
 # Third-party imports
-import certifi
 import urllib3
 from urllib.parse import urlencode
 
