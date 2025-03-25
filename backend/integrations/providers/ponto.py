@@ -1,7 +1,6 @@
 import logging
 import secrets
 import base64
-
 import ssl
 import certifi
 import urllib3
@@ -17,24 +16,17 @@ from config.settings.base import FERNET_KEY, PONTO_CERTIFICATE_PATH, \
 
 # Initialize logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) 
 
-# Create a console handler and set the logging level
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-
-# Create a formatter and attach it to the handler
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-
-# Add the handler to the logger
-logger.addHandler(console_handler)
-
+def is_empty(text: str) -> bool:
+    """Check if a string is None, empty, or contains only whitespace."""
+    if text is None:
+        return True
+    has_no_content = not text.strip()
+    return has_no_content
 
 class PontoProvider:
   """Provide utils functions like encrypt, decrypt for integration with Ponto"""
-
-  # Encryption function
+  
   @staticmethod
   def encrypt_token(token: str) -> str:
       """Encrypt a token using Fernet symmetric encryption.
@@ -51,22 +43,20 @@ class PontoProvider:
           TypeError: If there's a type mismatch in the inputs.
       """
       try:
-          if not token or not token.strip():
+          if is_empty(token):
               raise ValueError("Invalid token: Token cannot be empty or whitespace.")
           fernet = Fernet(FERNET_KEY)
-          encrypted_token = fernet.encrypt(token.encode())  # Convert the token to bytes before encryption
+          encrypted_token = fernet.encrypt(token.encode())
           logger.debug("Token successfully encrypted.")
-          return encrypted_token.decode()  # Return the encrypted token as a string
+          return encrypted_token.decode()
       
       except ValueError as ve:
           logger.error(f"Invalid input provided for encryption: {str(ve)}")
           raise ValueError(f"Invalid input for encryption: {str(ve)}") from ve
-      
       except Exception as e:
-          logger.error(f"Error while encrypting token: {str(e)}")
-          raise Exception(f"Error while encrypting token: {str(e)}") from e
+          logger.error(f"An unexpected error occurred: {e}")
+          raise RuntimeError("An unexpected error occurred while encrypting token.") from e
 
-  # Decryption function
   @staticmethod
   def decrypt_token(encrypted_token: str) -> str:
       """Decrypt an encrypted token using Fernet symmetric encryption.
@@ -83,10 +73,10 @@ class PontoProvider:
           TypeError: If there's a type mismatch in the inputs.
       """
       try:
-          if not encrypted_token or not encrypted_token.strip():
+          if is_empty(encrypted_token):
               raise ValueError("Invalid token: Token cannot be empty or whitespace.")
           fernet = Fernet(FERNET_KEY)
-          decrypted_token = fernet.decrypt(encrypted_token.encode())  # Convert the encrypted token back to bytes
+          decrypted_token = fernet.decrypt(encrypted_token.encode())
           logger.info("Token successfully decrypted.")
           return decrypted_token.decode()
       
@@ -105,32 +95,65 @@ class PontoProvider:
       except TypeError as te:
           logger.error(f"Type error during decryption: {str(te)}")
           raise TypeError(f"Type error during decryption: {str(te)}") from te
+      except Exception as e:
+          logger.error(f"An unexpected error occurred: {e}")
+          raise RuntimeError("An unexpected error occurred while decrypting token.") from e
 
   @staticmethod
   def generate_client_credentials(client_id: str, client_secret: str) -> str:
-      """Convert client ID and secret to a Base64-encoded string.
-      
+      """Convert client ID and secret to a Base64-encoded string in format 'client_id:client_secret'. 
+  
+      Concatenate client_id and client_secret with a colon. 
+  
+      Used for HTTP Basic Authentication in API requests.
+  
       Args:
           client_id (str): The client ID.
           client_secret (str): The client secret.
           
       Returns:
           str: Base64-encoded client credentials.
+          
+      Raises:
+          ValueError: If inputs are empty or encoding fails.
       """
-      # Concatenate client_id and client_secret with a colon
-      client_credentials = f"{client_id}:{client_secret}"
-      encoded_credentials = base64.b64encode(client_credentials.encode('utf-8')).decode('utf-8')
-      return encoded_credentials
+      if is_empty(client_id) or is_empty(client_secret):
+        raise ValueError("Client ID and secret cannot be empty or whitespace.")
+      try:
+        client_credentials = f"{client_id}:{client_secret}"
+        credentials_bytes = client_credentials.encode('utf-8')
+        base64_bytes = base64.b64encode(credentials_bytes)
+        encoded_credentials = base64_bytes.decode('utf-8')
+        return encoded_credentials
+      except (UnicodeError, TypeError) as e:
+        logger.error(f"Error encoding credentials: {str(e)}")
+        raise ValueError(f"Failed to encode credentials: {str(e)}") from e
 
   @staticmethod
   def generate_random_session_id(prefix="session_", length=50) -> str:
       """Generate a random session ID.
       
+      Args:
+          prefix (str): The prefix to use for the session ID. Default is "session_".
+          length (int): The length of the random string to generate. Default is 50.
+      
       Returns:
           str: A secure random alphanumeric string that has length characters.
+      
+      Raises:
+          ValueError: If length is less than 1.
       """
-      random_string = secrets.token_urlsafe(length)
-      return f"{prefix}{random_string}"
+      try:
+          if length < 1:
+              raise ValueError("Length must be at least 1.")
+              
+          random_string = secrets.token_urlsafe(length)
+          logger.info(f"Generated session id: {prefix}{random_string}")
+          return f"{prefix}{random_string}"
+      
+      except Exception as e:
+          logging.error(f"Error generating session ID: {e}")
+          return ""
 
   @staticmethod
   def create_signature(request_target: str, digest: str, created: str) -> str:
@@ -185,7 +208,30 @@ class PontoProvider:
         
   @staticmethod
   def create_http_instance():
-    """Create and configure an SSL context."""
+    """Create and configure an HTTPS connection instance using SSL.
+
+    This method sets up an SSL context for secure communications with
+    the specified certificate and private key files. It also creates
+    a PoolManager instance with the configured SSL context to manage
+    HTTP connection pooling efficiently.
+
+    Returns:
+        urllib3.PoolManager: A configured PoolManager instance for making
+        HTTPS requests.
+
+    Raises:
+        RuntimeError: If there is any issue with loading the SSL certificate
+        or key files, or if there is a failure in configuring the SSL
+        context.
+        FileNotFoundError: If the specified certificate or private key files
+        cannot be found.
+        ssl.SSLError: If there is a problem with the SSL configuration,
+        such as invalid certificates.
+
+    Example:
+        http_instance = PontoProvider.create_http_instance()
+        response = http_instance.request('GET', 'https://example.com')
+    """
     try:
         context = ssl.create_default_context()
         context.check_hostname = True

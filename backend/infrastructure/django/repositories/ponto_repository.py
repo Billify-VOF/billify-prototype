@@ -85,14 +85,12 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             # ibanityAccount_id parameter. Domain model stores it as self.id
             'ibanityAccount_id': db_ibanityAccount.id  # type: ignore
         }
-        logger.debug("Created IbanityAccount args: %s", ibanityAccount_args)
 
         return DomainIbanityAccount(**ibanityAccount_args)
 
     def _to_django(
         self,
         domain_ibanityAccount: DomainIbanityAccount,
-        user
     ) -> DjangoIbanityAccount:
         """Convert domain model to Django model.
 

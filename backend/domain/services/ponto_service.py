@@ -1,4 +1,4 @@
-"""Domain service for ponto business logic.
+"""Domain service for Ponto business logic.
 
 This service contains pure domain logic related to Ponto,
 independent of infrastructure concerns like storage or data transformation.
@@ -28,6 +28,14 @@ class IbanityAccountService:
     """
 
     def __init__(self, ibanityAccountRepository: IbanityAccountRepository):
+        """Initialize the service with required dependencies.
+        
+        Note: Prefer using the factory method 'create' instead of direct initialization.
+        
+        Args:
+            ibanityAccountRepository (IbanityAccountRepository): Repository for 
+                accessing and persisting Ibanity account data.
+        """
         self.ibanityAccountRepository = ibanityAccountRepository
 
     def update(
@@ -301,6 +309,7 @@ class PontoTokenService:
             pontoTokenRepository: Repository for Ponto token operations.
         """
         self.pontoTokenRepository = pontoTokenRepository
+        self.tokenEncryptionService = tokenEncryptionService
 
     def update(
         self,
