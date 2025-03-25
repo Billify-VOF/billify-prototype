@@ -1,16 +1,12 @@
 """Django ORM implementation of the Ponto-related repository interfaces."""
 
-from datetime import date, timedelta
-from typing import Optional, List, Dict
-from itertools import chain
+from typing import Optional
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
 from domain.repositories.interfaces.ponto_repository import IbanityAccountRepository, PontoTokenRepository
 from domain.models.ponto import IbanityAccount as DomainIbanityAccount, PontoToken as DomainPontoToken
 from domain.exceptions import InvalidIbanityAccountError, InvalidPontoTokenError
 from infrastructure.django.models.ponto import IbanityAccount as DjangoIbanityAccount, PontoToken as DjangoPontoToken
 from logging import getLogger
-from django.db import models
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -48,7 +44,6 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             domain_ibanityAccount = self._to_domain(db_ibanityAccount)
             return domain_ibanityAccount  # Ready for business logic
         """
-        logger.debug("Converting DB IbanityAccount to domain model: %s", db_ibanityAccount)
         # All Django models have an id field by default
         ibanityAccount_args = {
             'user': db_ibanityAccount.user,
@@ -63,18 +58,14 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             'subtype': db_ibanityAccount.subtype,
             'holder_name': db_ibanityAccount.holder_name,
             'resource_id': db_ibanityAccount.resource_id,
-            # Map Django's auto-generated id to domain model's
-            # ibanityAccount_id parameter. Domain model stores it as self.id
             'ibanityAccount_id': db_ibanityAccount.id
         }
-        logger.debug("Created IbanityAccount args: %s", ibanityAccount_args)
 
         return DomainIbanityAccount(**ibanityAccount_args)
 
     def _to_django(
         self,
         domain_ibanityAccount: DomainIbanityAccount,
-        user
     ) -> DjangoIbanityAccount:
         """Convert domain model to Django model.
 
