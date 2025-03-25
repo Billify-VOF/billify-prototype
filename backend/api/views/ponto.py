@@ -320,6 +320,11 @@ class PontoView(APIView):
         """
         try:
             user = request.user
+
+            # Ensure user is authenticated
+            if not user.is_authenticated:
+                return Response({"error": "User not authenticated"}, status=401)
+
             before = request.GET.get('before')
             after = request.GET.get('after')
             limit = request.GET.get('limit')
