@@ -57,15 +57,14 @@ class PontoView(APIView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Inject dependencies
-        self.ibanityAccountRepository = DjangoIbanityAccountRepository()
-        self.ibanityAccountService = IbanityAccountService(
-            ibanityAccountRepository=self.ibanityAccountRepository
+        self.ibanity_account_repository = DjangoIbanityAccountRepository()
+        self.ibanity_account_service = IbanityAccountService(
+            ibanity_account_repository=self.ibanity_account_repository
         )
-        self.pontoTokenRepository = DjangoPontoTokenRepository()
-        self.pontoTokenEncryptionService = PontoTokenEncryptionService()
-        self.pontoTokenService = PontoTokenService(
-                                    pontoTokenRepository=self.pontoTokenRepository,
-                                    tokenEncryptionService=self.pontoTokenEncryptionService)
+        self.ponto_token_repository = DjangoPontoTokenRepository()
+        self.ponto_token_encryption_service = PontoTokenEncryptionService()
+        self.ponto_token_service = PontoTokenService(
+                                    ponto_token_repository=self.ponto_token_repository)
 
     def fetch_account_details(self, request):
         """Fetches account details for the authenticated user from the Ponto Connect API.
@@ -90,7 +89,7 @@ class PontoView(APIView):
             return Response({"error": "Authentication required"}, status=401)
             
         user = request.user
-        token = self.pontoTokenService.get_access_token(user)
+        token = self.ponto_token_service.get_token_for_user(user)
         
         if not token:
             return Response({"error": "No access token found for user"}, status=404)
@@ -114,12 +113,12 @@ class PontoView(APIView):
             if not accounts_data.get('data'):
                 return Response({"error": "No accounts found"}, status=404)
 
-            accountData = self.ibanityAccountService.add_or_update(user, accounts_data)
+            account_data = self.ibanity_account_service.add_or_update(user, accounts_data)
             
-            if isinstance(accountData, dict) and "error" in accountData:
-                return Response(accountData, status=500)
+            if isinstance(account_data, dict) and "error" in account_data:
+                return Response(account_data, status=500)
                 
-            return Response(accountData)
+            return Response(account_data)
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON response for user {user}: {str(e)}")
             return Response({"error": f"Invalid JSON response: {e}"}, status=500)
@@ -196,7 +195,7 @@ class PontoView(APIView):
                     # Encrypt the tokens before saving to the database
                     encrypted_access_token = PontoProvider.encrypt_token(access_token)
                     encrypted_refresh_token = PontoProvider.encrypt_token(refresh_token)
-                    self.pontoTokenService.add_or_update(user=user, data={
+                    self.ponto_token_service.add_or_update(user=user, data={
                         'access_token': encrypted_access_token,
                         'refresh_token': encrypted_refresh_token,
                         'expires_in': expires_in,
@@ -238,7 +237,7 @@ class PontoView(APIView):
             
         try:
             # Retrieve the user's PontoToken instance
-            ponto_token = self.pontoTokenService.get(user=user)
+            ponto_token = self.ponto_token_service.get_token_for_user(user=user)
             if not ponto_token.refresh_token:
                 return Response({"error": "Refresh token not found"}, status=400)
             # Decrypt the stored refresh token
@@ -273,7 +272,7 @@ class PontoView(APIView):
                 encrypted_access_token = PontoProvider.encrypt_token(token_data.get("access_token"))
                 encrypted_refresh_token = PontoProvider.encrypt_token(token_data.get("refresh_token", decrypted_refresh_token))
                 # Update the stored access token and refresh token in the database
-                self.pontoTokenService.add_or_update(user=user, data={
+                self.ponto_token_service.add_or_update(user=user, data={
                     'access_token': encrypted_access_token,
                     'refresh_token': encrypted_refresh_token,
                     'expires_in': token_data.get('expires_in')
@@ -296,7 +295,7 @@ class PontoView(APIView):
 
     def _get_user_access_token(self, user):
         try:
-            return self.pontoTokenService.get_access_token(user)
+            return self.ponto_token_service.get_token_for_user(user)
         except ValueError as e:
             return Response({"error": f"Invalid token: {str(e)}"}, status=400)
         except Exception as e:
@@ -304,7 +303,7 @@ class PontoView(APIView):
             return Response({"error": "Failed to retrieve access token"}, status=500)
         
     def _get_user_account_id(self, user):
-        ibanityAccount = self.ibanityAccountService.get(user=user)
+        ibanityAccount = self.ibanity_account_service.get(user=user)
         if not ibanityAccount:
             return Response({"error": "No Ibanity account found for this user"}, status=404)
 

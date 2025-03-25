@@ -16,7 +16,7 @@ Example:
     # Concrete implementation must implement all abstract methods
     class DjangoIbanityAccountRepository(IbanityAccountRepository):
         def save(
-            self, ibanityAccount: IbanityAccount, user
+            self, ibanity_account: IbanityAccount, user
         ) -> IbanityAccount:
             # Implementation specific to PostgreSQL
             pass
@@ -46,7 +46,7 @@ class IbanityAccountRepository(ABC):
     Example:
         class DjangoIbanityAccountRepository(IbanityAccountRepository):
             def save(
-                self, ibanityAccount: IbanityAccount, user
+                self, ibanity_account: IbanityAccount, user
             ) -> IbanityAccount:
                 # Implementation specific to PostgreSQL
                 pass
@@ -54,7 +54,7 @@ class IbanityAccountRepository(ABC):
 
     @abstractmethod
     def save(
-        self, ibanityAccount: IbanityAccount, user
+        self, ibanity_account: IbanityAccount
     ) -> IbanityAccount:
         """Save an ibanity account to the database.
 
@@ -63,7 +63,7 @@ class IbanityAccountRepository(ABC):
         details while maintaining the domain model's integrity.
 
         Args:
-            ibanityAccount (IbanityAccount): The domain Ibanity account model
+            ibanity_account (IbanityAccount): The domain Ibanity account model
                 to persist
             user (User): User instance who uploaded/created the Ibanity account
 
@@ -92,11 +92,11 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def get_by_id(self, ibanityAccount_id: int) -> Optional[IbanityAccount]:
+    def get_by_id(self, ibanity_account_id: int) -> Optional[IbanityAccount]:
         """Retrieve an IbanityAccount by id.
 
         Args:
-            ibanityAccount_id (int): IbanityAccount Model Id
+            ibanity_account_id (int): IbanityAccount Model Id
 
         Returns:
             Optional[IbanityAccount]: The domain IbanityAccount model if found,
@@ -137,7 +137,7 @@ class IbanityAccountRepository(ABC):
 
     @abstractmethod
     def update(
-        self, ibanityAccount: IbanityAccount, user
+        self, ibanity_account: IbanityAccount, user
     ) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
@@ -145,7 +145,7 @@ class IbanityAccountRepository(ABC):
         while maintaining any metadata (e.g., created_at timestamp).
 
         Args:
-            ibanityAccount (IbanityAccount): The domain IbanityAccount with
+            ibanity_account (IbanityAccount): The domain IbanityAccount with
                 updated data
             user (User): User instance performing the update
 
@@ -226,13 +226,13 @@ class PontoTokenRepository(ABC):
 
     Example:
         class DjangoPontoTokenRepository(PontoTokenRepository):
-            def save(self, pontoToken: PontoToken, user) -> PontoToken:
+            def save(self, ponto_token: PontoToken, user) -> PontoToken:
                 # Implementation specific to PostgreSQL
                 pass
     """
 
     @abstractmethod
-    def save(self, pontoToken: PontoToken, user) -> PontoToken:
+    def save(self, ponto_token: PontoToken, user) -> PontoToken:
         """Save an Ponto token to the database.
 
         This method must either create a new Ponto token or update
@@ -240,7 +240,7 @@ class PontoTokenRepository(ABC):
         details while maintaining the domain model's integrity.
 
         Args:
-            pontoToken (PontoToken): The domain PontoToken model to persist
+            ponto_token (PontoToken): The domain PontoToken model to persist
             user (User): ID of the user who uploaded/created the
                 Ibanity account
 
@@ -254,11 +254,11 @@ class PontoTokenRepository(ABC):
         """
 
     @abstractmethod
-    def get_by_id(self, pontoToken_id: int) -> Optional[PontoToken]:
+    def get_by_id(self, ponto_token_id: int) -> Optional[PontoToken]:
         """Retrieve an PontoToken by id.
 
         Args:
-            pontoToken_id (int): The PontoToken Model Id
+            ponto_token_id (int): The PontoToken Model Id
 
         Returns:
             Optional[PontoToken]: The domain PontoToken model if found,

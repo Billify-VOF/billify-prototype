@@ -27,20 +27,20 @@ class IbanityAccountService:
     operations.
     """
 
-    def __init__(self, ibanityAccountRepository: IbanityAccountRepository):
+    def __init__(self, ibanity_account_repository: IbanityAccountRepository):
         """Initialize the service with required dependencies.
         
         Note: Prefer using the factory method 'create' instead of direct initialization.
         
         Args:
-            ibanityAccountRepository (IbanityAccountRepository): Repository for 
+            ibanity_account_repository (IbanityAccountRepository): Repository for 
                 accessing and persisting Ibanity account data.
         """
-        self.ibanityAccountRepository = ibanityAccountRepository
+        self.ibanity_account_repository = ibanity_account_repository
 
     def update(
         self,
-        ibanityAccount: IbanityAccount,
+        ibanity_account: IbanityAccount,
         extracted_data: Dict[str, Any]
     ) -> IbanityAccount:
         """Update an Ibanity account with data extracted from a document.
@@ -99,7 +99,7 @@ class IbanityAccountService:
 
         try:
             # Delegate to the domain model's update method
-            ibanityAccount.update(
+            ibanity_account.update(
                 user=extracted_data['user'],
                 account_id=extracted_data['account_id'],
                 description=extracted_data['description'],
@@ -116,7 +116,7 @@ class IbanityAccountService:
                 resource_id=extracted_data['resource_id'],
             )
 
-            return ibanityAccount
+            return ibanity_account
         except KeyError as e:
             raise IbanityAccountDataError(f"Missing required field: {str(e)}")
         except Exception as e:
@@ -216,7 +216,7 @@ class IbanityAccountService:
         """
         try:
             # Process account data through the repository
-            return self.ibanityAccountRepository.process_accounts_data(
+            return self.ibanity_account_repository.process_accounts_data(
                 user=user,
                 accounts_data=accounts_data
             )
@@ -260,7 +260,7 @@ class IbanityAccountService:
                 account data
         """
         try:
-            return self.ibanityAccountRepository.get_by_user(user=user)
+            return self.ibanity_account_repository.get_by_user(user=user)
         except IbanityAccountNotFoundError:
             # Log and re-raise domain exception directly
             logger.error(f"Account not found for user {user}")
@@ -284,12 +284,12 @@ class PontoTokenService:
 
     @classmethod
     def create(
-        cls, pontoTokenRepository: PontoTokenRepository
+        cls, ponto_token_repository: PontoTokenRepository
     ) -> 'PontoTokenService':
         """Create a properly configured PontoTokenService instance.
 
         Args:
-            pontoTokenRepository: Repository for Ponto token operations.
+            ponto_token_repository: Repository for Ponto token operations.
 
         Returns:
             A validated PontoTokenService instance
@@ -297,23 +297,22 @@ class PontoTokenService:
         Raises:
             ValueError: If dependencies are missing or invalid
         """
-        if pontoTokenRepository is None:
-            raise ValueError("pontoTokenRepository cannot be None")
+        if ponto_token_repository is None:
+            raise ValueError("ponto_token_repository cannot be None")
 
-        return cls(pontoTokenRepository)
+        return cls(ponto_token_repository)
 
-    def __init__(self, pontoTokenRepository: PontoTokenRepository):
+    def __init__(self, ponto_token_repository: PontoTokenRepository):
         """Initialize the service with required dependencies.
 
         Args:
-            pontoTokenRepository: Repository for Ponto token operations.
+            ponto_token_repository: Repository for Ponto token operations.
         """
-        self.pontoTokenRepository = pontoTokenRepository
-        self.tokenEncryptionService = tokenEncryptionService
+        self.ponto_token_repository = ponto_token_repository
 
     def update(
         self,
-        pontoToken: PontoToken,
+        ponto_token: PontoToken,
         extracted_data: Dict[str, Any]
     ) -> PontoToken:
         """Update a Ponto token with data extracted from a document.
@@ -352,14 +351,14 @@ class PontoTokenService:
 
         try:
             # Delegate to the domain model's update method
-            pontoToken.update(
+            ponto_token.update(
                 user=extracted_data['user'],
                 access_token=extracted_data['access_token'],
                 refresh_token=extracted_data['refresh_token'],
                 expires_in=extracted_data['expires_in'],
             )
 
-            return pontoToken
+            return ponto_token
         except KeyError as e:
             raise PontoTokenCreationError(f"Missing required field: {str(e)}")
         except Exception as e:
@@ -433,7 +432,7 @@ class PontoTokenService:
         """
         try:
             # Use repository for decryption (proper layer separation)
-            return self.pontoTokenRepository.get_decrypted_access_token(
+            return self.ponto_token_repository.get_decrypted_access_token(
                 user=user
             )
         except PontoToken.DoesNotExist:  # type: ignore
@@ -487,7 +486,7 @@ class PontoTokenService:
         try:
             # 2. Check if token exists with domain-specific rules
             try:
-                existing_token = self.pontoTokenRepository.get_by_user(
+                existing_token = self.ponto_token_repository.get_by_user(
                     user=user
                 )
 
@@ -504,7 +503,7 @@ class PontoTokenService:
                         refresh_token=data['refresh_token'],
                         expires_in=data['expires_in']
                     )
-                    return self.pontoTokenRepository.save(existing_token, user)
+                    return self.ponto_token_repository.save(existing_token, user)
 
                 return existing_token
 
@@ -516,7 +515,7 @@ class PontoTokenService:
                     refresh_token=data['refresh_token'],
                     expires_in=data['expires_in']
                 )
-                return self.pontoTokenRepository.save(new_token, user)
+                return self.ponto_token_repository.save(new_token, user)
 
         except PontoTokenNotFoundError:
             # Handle specific domain exception
@@ -548,8 +547,8 @@ class PontoTokenService:
                 the token.
         """
         try:
-            pontoToken = self.pontoTokenRepository.get_by_user(user=user)
-            return pontoToken
+            ponto_token = self.ponto_token_repository.get_by_user(user=user)
+            return ponto_token
         except PontoToken.DoesNotExist:  # type: ignore
             logger.error(f"Access token not found for user {user}")
             raise PontoTokenNotFoundError(f"No token found for user {user}")
