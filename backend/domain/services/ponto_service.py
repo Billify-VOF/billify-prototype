@@ -1,6 +1,6 @@
-"""Domain service for invoice business logic.
+"""Domain service for Ponto business logic.
 
-This service contains pure domain logic related to invoices,
+This service contains pure domain logic related to Ponto,
 independent of infrastructure concerns like storage or data transformation.
 """
 
@@ -9,8 +9,8 @@ import logging
 from typing import Dict, Any
 from domain.models.ponto import IbanityAccount, PontoToken
 from domain.repositories.interfaces.ponto_repository import IbanityAccountRepository, PontoTokenRepository
+from domain.services.token_encryption_service import TokenEncryptionService
 
-from integrations.providers.ponto import PontoProvider
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -18,8 +18,35 @@ logger.setLevel(logging.ERROR)
 
 class IbanityAccountService:
     """Domain service that implements business logic for Ibanity account operations."""
+    
+    @classmethod
+    def create(cls, ibanityAccountRepository: IbanityAccountRepository) -> 'IbanityAccountService':
+        """Create a properly configured IbanityAccountService instance.
+        
+        Args:
+            ibanityAccountRepository (IbanityAccountRepository): Repository for 
+                accessing and persisting Ibanity account data.
+                
+        Returns:
+            IbanityAccountService: A validated service instance
+            
+        Raises:
+            ValueError: If dependencies are missing or invalid
+        """
+        if ibanityAccountRepository is None: # or create a custom validation method here 
+            raise ValueError("ibanityAccountRepository cannot be None") 
+            
+        return cls(ibanityAccountRepository)
 
     def __init__(self, ibanityAccountRepository: IbanityAccountRepository):
+        """Initialize the service with required dependencies.
+        
+        Note: Prefer using the factory method 'create' instead of direct initialization.
+        
+        Args:
+            ibanityAccountRepository (IbanityAccountRepository): Repository for 
+                accessing and persisting Ibanity account data.
+        """
         self.ibanityAccountRepository = ibanityAccountRepository
 
     def update(
@@ -212,8 +239,26 @@ class IbanityAccountService:
 class PontoTokenService:
     """Domain service that implements business logic for Ponto token operations."""
 
-    def __init__(self, pontoTokenRepository: PontoTokenRepository):
+    def __init__(self,
+                 pontoTokenRepository: PontoTokenRepository,
+                 tokenEncryptionService: TokenEncryptionService):
+        """
+        Initializes the PontoTokenService with the required repositories and services.
+
+        This constructor sets up instances of the Ponto token repository and the
+        token encryption service needed to perform token operations.
+
+        Args:
+            pontoTokenRepository (PontoTokenRepository):
+                An instance of a repository used for managing Ponto token data.
+                It is responsible for CRUD operations related to tokens in the storage.
+            
+            tokenEncryptionService (TokenEncryptionService):
+                An instance of a service responsible for encrypting and decrypting
+                tokens. This service ensures that token handling is secure.
+        """
         self.pontoTokenRepository = pontoTokenRepository
+        self.tokenEncryptionService = tokenEncryptionService
 
     def update(
         self,
@@ -298,7 +343,7 @@ class PontoTokenService:
         """
         try:
             pontoToken = self.pontoTokenRepository.get_by_user(user=user)
-            access_token = PontoProvider.decrypt_token(pontoToken.access_token)
+            access_token = self.tokenEncryptionService.decrypt(pontoToken.access_token)
             return access_token
         except PontoToken.DoesNotExist as e:
             logger.error(f"Access token not found for user {user}")

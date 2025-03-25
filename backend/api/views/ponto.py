@@ -14,12 +14,13 @@ from rest_framework.response import Response
 
 # Local imports
 from infrastructure.django.repositories.ponto_repository import DjangoIbanityAccountRepository, DjangoPontoTokenRepository
+from infrastructure.django.services.ponto_token_encryption_service import PontoTokenEncryptionService
 from domain.services.ponto_service import IbanityAccountService, PontoTokenService
 from integrations.providers.ponto import PontoProvider
 from typing import Dict, Any
 
 from config.settings.base import LOG_LEVEL, PONTO_CLIENT_ID, PONTO_CLIENT_SECRET, \
-    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL
+    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, PONTO_ACCOUNTS_ENDPOINT
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -31,6 +32,28 @@ except AttributeError:
     logger.setLevel(logging.INFO)
 
 class PontoView(APIView):
+    """
+    A view for handling Ponto API interactions.
+
+    This class is responsible for managing the communication
+    with the Ponto service, utilizing various services and
+    repositories to perform account and token operations.
+    It inherits from Django's APIView, which provides
+    the necessary structure for building RESTful APIs.
+
+    Dependencies:
+        - DjangoIbanityAccountRepository: 
+            Repository for managing Ibanity account data.
+        - IbanityAccountService: 
+            Service for business logic related to Ibanity accounts.
+        - DjangoPontoTokenRepository: 
+            Repository for managing Ponto token data.
+        - PontoTokenEncryptionService: 
+            Service for encrypting and decrypting Ponto tokens.
+        - PontoTokenService: 
+            Service for handling token operations, combining the 
+            repository and encryption functionality.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Inject dependencies
@@ -39,7 +62,10 @@ class PontoView(APIView):
             ibanityAccountRepository=self.ibanityAccountRepository
         )
         self.pontoTokenRepository = DjangoPontoTokenRepository()
-        self.pontoTokenService = PontoTokenService(pontoTokenRepository=self.pontoTokenRepository)
+        self.pontoTokenEncryptionService = PontoTokenEncryptionService()
+        self.pontoTokenService = PontoTokenService(
+                                    pontoTokenRepository=self.pontoTokenRepository,
+                                    tokenEncryptionService=self.pontoTokenEncryptionService)
 
     def fetch_account_details(self, request):
         """Fetches account details for the authenticated user from the Ponto Connect API.
@@ -79,7 +105,7 @@ class PontoView(APIView):
             PONTO_PAGE_LIMIT = 3
             response = http.request(
                 'GET',
-                f"{PONTO_CONNECT_BASE_URL}/accounts?page[limit]={PONTO_PAGE_LIMIT}",
+                f"{PONTO_CONNECT_BASE_URL}{PONTO_ACCOUNTS_ENDPOINT}?page[limit]={PONTO_PAGE_LIMIT}",
                 headers=headers
             )
             accounts_data = json.loads(response.data.decode('utf-8'))
@@ -193,8 +219,7 @@ class PontoView(APIView):
             else:
                 logger.error(f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}")
                 return Response({
-                    "error": "Failed to get access token",
-                    "details": response.data.decode('utf-8')
+                    "error": "Failed to get access token"
                 }, status=response.status)
 
         except Exception as e:
@@ -269,7 +294,22 @@ class PontoView(APIView):
             logger.error(f"User {user} - Error occurred: {str(e)}")
             return Response({"error": str(e)}, status=500)
 
-    # Get transaction History
+    def _get_user_access_token(self, user):
+        try:
+            return self.pontoTokenService.get_access_token(user)
+        except ValueError as e:
+            return Response({"error": f"Invalid token: {str(e)}"}, status=400)
+        except Exception as e:
+            logger.error(f"Error retrieving access token: {str(e)}")
+            return Response({"error": "Failed to retrieve access token"}, status=500)
+        
+    def _get_user_account_id(self, user):
+        ibanityAccount = self.ibanityAccountService.get(user=user)
+        if not ibanityAccount:
+            return Response({"error": "No Ibanity account found for this user"}, status=404)
+
+        return ibanityAccount.account_id
+
     def get_transaction_history(self, request: HttpRequest):
         """Get transaction history for a user's account.
         
@@ -281,19 +321,24 @@ class PontoView(APIView):
         """
         try:
             user = request.user
-            try:
-                token = self.pontoTokenService.get_access_token(user)
-            except ValueError as e:
-                return Response({"error": f"Invalid token: {str(e)}"}, status=400)
-            except Exception as e:
-                logger.error(f"Error retrieving access token: {str(e)}")
-                return Response({"error": "Failed to retrieve access token"}, status=500)
+            before = request.GET.get('before')
+            after = request.GET.get('after')
+            limit = request.GET.get('limit')
+            if before and after:
+                return Response({"error": "Invalid Request"}, status=400)
+            if not limit:
+                return Response({"error": "Invalid Request"}, status=400)
+            
+            token = self._get_user_access_token(user=user)
 
-            ibanityAccount = self.ibanityAccountService.get(user=user)
-            if not ibanityAccount:
-                return Response({"error": "No Ibanity account found for this user"}, status=404)
-            account_id = ibanityAccount.account_id
-            api_url = f"{PONTO_CONNECT_BASE_URL}/accounts/{account_id}/transactions"
+            account_id = self._get_user_account_id(user=user)
+
+            api_url = f"{PONTO_CONNECT_BASE_URL}{PONTO_ACCOUNTS_ENDPOINT}/{account_id}/transactions"
+            if before:
+                api_url = f"{api_url}?page[before]={before}"
+            elif after:
+                api_url = f"{api_url}?page[after]={after}"
+            api_url = f"{api_url}&page[limit]={limit}"
 
             # Create the request headers
             headers = {"Authorization": f"Bearer {token}"}
@@ -302,22 +347,21 @@ class PontoView(APIView):
             http = PontoProvider.create_http_instance()
 
             # Make the GET request using the PoolManager
-            try:
-                response = http.request(
-                    'GET',
-                    api_url,
-                    headers=headers
+            response = http.request(
+                'GET',
+                api_url,
+                headers=headers
+            )
+            if response.status != 200:
+                return Response(
+                    {"error": f"API request failed with status {response.status}", "details": response.data.decode('utf-8')}, 
+                    status=response.status
                 )
-                if response.status != 200:
-                    return Response(
-                        {"error": f"API request failed with status {response.status}", "details": response.data.decode('utf-8')}, 
-                        status=response.status
-                    )
-                transactions_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
-                return Response(transactions_data)
-            except Exception as e:
-                logger.error(f"Unexpected error occurred: {e}")
-                return Response({"error": f"Request failed: {e}"}, status=500)
+            transactions_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
+            return Response(transactions_data)
+        except json.JSONDecodeError as json_error:  
+            logger.error(f"JSON decoding error: {json_error}")  
+            return Response({"error": "Failed to decode the response data as JSON."}, status=500)  
         except Exception as e:
             logger.error(f"Unhandled exception in get_transaction_history: {str(e)}")
             return Response({"error": f"Request failed: {str(e)}"}, status=500)
