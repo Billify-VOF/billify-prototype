@@ -260,6 +260,7 @@ PONTO_AUTH_URL = env('PONTO_AUTH_URL')
 PONTO_TOKEN_URL = env('PONTO_TOKEN_URL')
 PONTO_REDIRECT_URI = env('PONTO_REDIRECT_URI')
 PONTO_CONNECT_BASE_URL = env('PONTO_CONNECT_BASE_URL')
+PONTO_ACCOUNTS_ENDPOINT = '/accounts'
 IBANITY_API_HOST=env('IBANITY_API_HOST')
 PONTO_PRIVATE_KEY_PASSWORD = env('PONTO_PRIVATE_KEY_PASSWORD')
 PONTO_SIGNATURE_KEY_ID = env('PONTO_SIGNATURE_KEY_ID')
@@ -285,3 +286,24 @@ except Exception as e:
 # Paths for certificates and keys
 PONTO_CERTIFICATE_PATH = env('PONTO_CERTIFICATE_PATH')
 PONTO_PRIVATE_KEY_PATH = env('PONTO_PRIVATE_KEY_PATH')
+
+# List of valid ISO 4217 currency codes
+VALID_ISO_CURRENCY_CODES = {
+    "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG",
+    "AZN", "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND",
+    "BRL", "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHF",
+    "CLP", "CNY", "COP", "CRC", "CUP", "CVE", "CZK", "DKK", "DOP",
+    "DZD", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP", "GEL",
+    "GGP", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL",
+    "HRK", "HTG", "HUF", "IDR", "ILS", "IMP", "INR", "IQD", "IRR",
+    "ISK", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KPW", "KRW",
+    "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LYD",
+    "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRU", "MUR",
+    "MVR", "MWK", "MXN", "MYR", "MZN", "NAD", "NGN", "NZD", "OMR",
+    "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON",
+    "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD",
+    "SHP", "SLL", "SOS", "SRD", "SSP", "THB", "TJS", "TMT", "TND",
+    "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "UYU",
+    "UZS", "VES", "VND", "VUV", "WST", "XAF", "XAG", "XAU", "XCD",
+    "XDR", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL"
+}

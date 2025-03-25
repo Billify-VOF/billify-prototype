@@ -1,6 +1,6 @@
 """Ponto-related repository interfaces for data access operations.
 
-This module defines the abstract interface for invoice data access operations
+This module defines the abstract interface for Ponto-Connect operations
 using Python's ABC (Abstract Base Class). The interface serves as a contract
 that all concrete repository implementations must follow.
 
@@ -21,15 +21,16 @@ Example:
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
-from datetime import date
+from typing import Optional
+
+from django.contrib.auth.models import User
 from domain.models.ponto import IbanityAccount, PontoToken
 
 
 class IbanityAccountRepository(ABC):
     """Interface defining Ibanity account data access operations.
 
-    This abstract base class serves as a contract for invoice persistence
+    This abstract base class serves as a contract for IbanityAccount persistence
     operations. Any concrete implementation (e.g., Django ORM, SQLAlchemy,
     etc.) must implement all methods marked with @abstractmethod.
 
@@ -48,7 +49,7 @@ class IbanityAccountRepository(ABC):
     """
 
     @abstractmethod
-    def save(self, ibanityAccount: IbanityAccount, user) -> IbanityAccount:
+    def save(self, ibanityAccount: IbanityAccount, user: User) -> IbanityAccount:
         """Save an ibanity account to the database.
 
         This method must either create a new Ibanity account or update an existing one
@@ -69,7 +70,7 @@ class IbanityAccountRepository(ABC):
         """
         
     @abstractmethod
-    def get_or_create(self, user, account_id, data) -> IbanityAccount:
+    def get_or_create(self, user: User, account_id: str, data: dict) -> IbanityAccount, bool:
         """Get or create by user or account_id and saves with the provided data
 
         Args:
@@ -89,6 +90,7 @@ class IbanityAccountRepository(ABC):
 
         Returns:
             IbanityAccount: Return IbanityAccount Model data
+            bool: Return true if the model created, otherwise false
         """
         
     @abstractmethod
@@ -157,7 +159,7 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def update_by_account_id(self, account_id: str, data) -> IbanityAccount:
+    def update_by_account_id(self, account_id: str, data: dict) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
         This method should update all fields of an existing IbanityAccount while
@@ -190,7 +192,7 @@ class IbanityAccountRepository(ABC):
 class PontoTokenRepository(ABC):
     """Interface defining Ponto token data access operations.
 
-    This abstract base class serves as a contract for invoice persistence
+    This abstract base class serves as a contract for PontoToken persistence
     operations. Any concrete implementation (e.g., Django ORM, SQLAlchemy,
     etc.) must implement all methods marked with @abstractmethod.
 
@@ -246,22 +248,28 @@ class PontoTokenRepository(ABC):
         
 
     @abstractmethod
-    def get_or_create_by_user(self, user, data) -> Optional[PontoToken]:
+    def get_or_create_by_user(self, user: User, data: dict) -> PontoToken, bool:
         """Retrieve an PontoToken by user id.
 
         Args:
             user (User): The user instance
+            data (dict): A dictionary containing the following keys:
+                - access_token (str): The access token.
+                - refresh_token (str): The refresh token.
+                - expires_in (int): The expiration time in seconds.
 
         Returns:
-            Optional[PontoToken]: The domain PontoToken model if found,
-                             None otherwise
+            PontoToken: The domain PontoToken model if found,
+                             otherwise the created one
+            bool: Returns true if the model is created,
+                        false otherwise
 
         Raises:
             RepositoryError: If there's a persistence-related error
         """
 
     @abstractmethod
-    def update_by_user(self, user, data) -> PontoToken:
+    def update_by_user(self, user: User, data: dict) -> PontoToken:
         """Update an existing PontoToken.
 
         This method should update all fields of an existing PontoToken while

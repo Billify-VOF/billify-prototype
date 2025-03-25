@@ -1,10 +1,14 @@
-"""Domain model representing an invoice and its business rules."""
+"""Domain model representing the PontoConnect and its business rules."""
 
 from decimal import Decimal
 from logging import getLogger
-from datetime import datetime
+from datetime import datetime, timezone
 
-from domain.exceptions import InvalidIbanityAccountError
+from domain.exceptions import InvalidIbanityAccountError, InvalidPontoTokenError, \
+                            NegativeBalanceError, ExpiredAuthorizationError, \
+                            InvalidCurrencyError, PontoTokenExpirationError
+
+from config.settings.base import VALID_ISO_CURRENCY_CODES
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -54,15 +58,17 @@ class IbanityAccount:
             user (User): Database user instance
             account_id (str): Ibanity Ponto Connect account id
             description (str): Ibanity Ponto Connect account description
-            product (str): 
-            reference (str): 
-            currency (str): Current Ponto account currency
-            authorization_expiration_expected_at (datetime): Ponto Connect authorization expiration time
+            product (str): Name of the account product
+            reference (str): Financial institution's internal reference for this account
+            currency (str): Currency of the account, in ISO4217 format
+            authorization_expiration_expected_at (datetime):
+                When the authorization towards the account is expected to end.
+                Formatted according to ISO8601 spec
             current_balance (Decimal): Current balance of the user Ponto account
-            available_balance (Decimal): Available balance of the user Ponto account
-            subtype (str): 
-            holder_name (str): Ponto account holder name
-            resource_id (str): 
+            available_balance (Decimal): Amount of account funds that can be accessed immediately
+            subtype (str): Type of account. Can be `checking`, `card` or `savings`
+            holder_name (str): Name of the holder of the account
+            resource_id (str): Identifier of the resource
 
         Returns:
             IbanityAccount: A validated Ibanity account instance
@@ -122,11 +128,24 @@ class IbanityAccount:
 
     def validate(self) -> None:
         """Apply business rules to validate IbanityAccount data."""
-        if self.current_balance < 0:
-            raise InvalidIbanityAccountError("IbanityAccount current balance can't be negative")
+        if not self.holder_name or not self.holder_name.strip():
+            raise InvalidIbanityAccountError("Missing holder name")
+        
+        if self.currency not in VALID_ISO_CURRENCY_CODES:
+            raise InvalidCurrencyError(f"Invalid currency code '{self.currency}'. Expected valid ISO 4217 codes.")
         
         if self.available_balance < 0:
-            raise InvalidIbanityAccountError("IbanityAccount available balance can't be negative")
+            raise NegativeBalanceError("IbanityAccount available balance can't be negative")
+        
+        expire_at = self.authorization_expiration_expected_at
+        dt = datetime.fromisoformat(expire_at.replace('Z', '+00:00'))
+        now = datetime.now(timezone.utc)
+        if dt <= now:
+            raise ExpiredAuthorizationError(
+                f"Expiration time must be in the future. "
+                f"Expiration: {dt.isoformat()}, "
+                f"Current UTC: {now.isoformat()}"
+            )
 
     def update(
         self,
@@ -216,7 +235,7 @@ class IbanityAccount:
         if resource_id is not None:
             self.resource_id = resource_id
 
-        # Validate the updated invoice
+        # Validate the updated IbanityAccount
         self.validate()
 
 
@@ -289,6 +308,12 @@ class PontoToken:
 
     def validate(self) -> None:
         """Apply business rules to validate PontoToken data."""
+        if not self.access_token:
+            raise InvalidPontoTokenError("Missing access token")
+        if not self.refresh_token:
+            raise InvalidPontoTokenError("Missing refresh token")
+        if not self.expires_in or self.expires_in == 0:
+            raise PontoTokenExpirationError("Expire time can't be null or zero")
 
     def update(
         self,
@@ -340,5 +365,5 @@ class PontoToken:
         if expires_in is not None:
             self.expires_in = expires_in
 
-        # Validate the updated invoice
+        # Validate the updated PontoToken
         self.validate()
