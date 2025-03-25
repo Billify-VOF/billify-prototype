@@ -1,6 +1,6 @@
 """Ponto-related repository interfaces for data access operations.
 
-This module defines the abstract interface for invoice data access operations
+This module defines the abstract interface for Ponto-Connect operations
 using Python's ABC (Abstract Base Class). The interface serves as a contract
 that all concrete repository implementations must follow.
 
@@ -24,13 +24,15 @@ Example:
 
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, Tuple
+
+from django.contrib.auth.models import User
 from domain.models.ponto import IbanityAccount, PontoToken
 
 
 class IbanityAccountRepository(ABC):
     """Interface defining Ibanity account data access operations.
 
-    This abstract base class serves as a contract for invoice persistence
+    This abstract base class serves as a contract for IbanityAccount persistence
     operations. Any concrete implementation (e.g., Django ORM, SQLAlchemy,
     etc.) must implement all methods marked with @abstractmethod.
 
@@ -211,7 +213,7 @@ class IbanityAccountRepository(ABC):
 class PontoTokenRepository(ABC):
     """Interface defining Ponto token data access operations.
 
-    This abstract base class serves as a contract for invoice persistence
+    This abstract base class serves as a contract for PontoToken persistence
     operations. Any concrete implementation (e.g., Django ORM, SQLAlchemy,
     etc.) must implement all methods marked with @abstractmethod.
 

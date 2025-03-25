@@ -53,6 +53,41 @@ class InvalidIbanityAccountError(IbanityAccountError):
     invalid data formats, or other business rule violations.
     """
 
+class NegativeBalanceError(IbanityAccountError):
+    """Raised when an account has a negative balance when not allowed.
+
+    Example:
+        try:
+            account.validate()
+        except NegativeBalanceError as e:
+            logger.error(f"Balance validation failed: {e}")
+            # Handle negative balance error (e.g., Re-fetch the account data)
+    """
+
+
+class ExpiredAuthorizationError(IbanityAccountError):
+    """Raised when the account's authorization has expired.
+
+    Example:
+        try:
+            account.validate()
+        except ExpiredAuthorizationError as e:
+            logger.error(f"Authorization expired: {e}")
+            # Handle authorization error (e.g., Re-authentication)
+    """
+
+
+class InvalidCurrencyError(IbanityAccountError):
+    """Raised when the account has an unsupported currency.
+
+    Example:
+        try:
+            account.validate()
+        except InvalidCurrencyError as e:
+            logger.error(f"Currency not supported: {e}")
+            # Handle currency error (e.g., show warning alert for currency error)
+    """
+
 
 class IbanityAccountNotFoundError(IbanityAccountError):
     """Raised when an Ibanity account is not found for a user."""
@@ -88,3 +123,31 @@ class PontoTokenDecryptionError(PontoTokenError):
 
 class PontoTokenCreationError(PontoTokenError):
     """Raised when there is an error creating or updating a Ponto token."""
+
+    Example:
+        try:
+            token.validate()
+        except InvalidPontoTokenError as e:
+            logger.error(f"Token validation failed: {e}")
+            # Handle token error (e.g., redirect to re-authentication)
+    """
+
+
+class PontoTokenExpirationError(PontoTokenError):
+    """
+    Exception raised when a Ponto API token has expired.
+
+    This error indicates that an operation could not be completed because
+    the provided token is no longer valid due to expiration.
+
+    Usage:
+        Raise this exception when the token is checked and found to
+        be expired during an operation that requires a valid token.
+
+    Example:
+        try:
+            token.validate()
+        except PontoTokenExpirationError as e:
+            logger.error(f"Token expired: {e}")
+            # Handle token error (e.g., redirect to re-authentication)
+    """  
