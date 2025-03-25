@@ -1,8 +1,8 @@
-"""Custom exceptions for the invoice processing domain.
+"""Custom exceptions for the domain.
 
 These exceptions represent different types of failures that can occur
-during invoice processing, helping us handle errors appropriately
-at different layers of the application.
+during invoice processing or Ponto interaction, helping us handle
+errors appropriately at different layers of the application.
 """
 
 
@@ -89,6 +89,14 @@ class InvalidCurrencyError(IbanityAccountError):
     """
 
 
+class IbanityAccountNotFoundError(IbanityAccountError):
+    """Raised when an Ibanity account is not found for a user."""
+
+
+class IbanityAccountDataError(IbanityAccountError):
+    """Raised when there are issues with Ibanity account data structure."""
+
+
 class PontoTokenError(Exception):
     """Base exception class for all Ponto token-related errors.
 
@@ -98,10 +106,23 @@ class PontoTokenError(Exception):
 
 
 class InvalidPontoTokenError(PontoTokenError):
-    """Raised when an Ponto token fails business rule validation.
+    """Raised when a Ponto token fails business rule validation.
 
     This could be due to issues like missing required fields,
     invalid data formats, or other business rule violations.
+    """
+
+
+class PontoTokenNotFoundError(PontoTokenError):
+    """Raised when a Ponto token is not found for a user."""
+
+
+class PontoTokenDecryptionError(PontoTokenError):
+    """Raised when there is an error decrypting a Ponto token."""
+
+
+class PontoTokenCreationError(PontoTokenError):
+    """Raised when there is an error creating or updating a Ponto token."""
 
     Example:
         try:

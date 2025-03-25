@@ -15,13 +15,15 @@ Key concepts:
 Example:
     # Concrete implementation must implement all abstract methods
     class DjangoIbanityAccountRepository(IbanityAccountRepository):
-        def save(self, ibanityAccount: IbanityAccount, user) -> IbanityAccount:
+        def save(
+            self, ibanityAccount: IbanityAccount, user
+        ) -> IbanityAccount:
             # Implementation specific to PostgreSQL
             pass
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 
 from django.contrib.auth.models import User
 from domain.models.ponto import IbanityAccount, PontoToken
@@ -43,56 +45,52 @@ class IbanityAccountRepository(ABC):
 
     Example:
         class DjangoIbanityAccountRepository(IbanityAccountRepository):
-            def save(self, ibanityAccount: IbanityAccount, user) -> IbanityAccount:
+            def save(
+                self, ibanityAccount: IbanityAccount, user
+            ) -> IbanityAccount:
                 # Implementation specific to PostgreSQL
                 pass
     """
 
     @abstractmethod
-    def save(self, ibanityAccount: IbanityAccount, user: User) -> IbanityAccount:
+    def save(
+        self, ibanityAccount: IbanityAccount, user
+    ) -> IbanityAccount:
         """Save an ibanity account to the database.
 
-        This method must either create a new Ibanity account or update an existing one
-        based on the user id. It should handle the persistence details
-        while maintaining the domain model's integrity.
+        This method must either create a new Ibanity account or update
+        an existing one based on the user id. It should handle the persistence
+        details while maintaining the domain model's integrity.
 
         Args:
-            ibanityAccount (IbanityAccount): The domain Ibanity account model to persist
+            ibanityAccount (IbanityAccount): The domain Ibanity account model
+                to persist
             user (User): User instance who uploaded/created the Ibanity account
 
         Returns:
-            IbanityAccount: The persisted domain IbanityAccount model, potentially with
-                    updated metadata (e.g., ID, timestamps)
+            IbanityAccount: The persisted domain IbanityAccount model,
+                potentially with updated metadata (e.g., ID, timestamps)
 
         Raises:
             InvalidIbanityAccountError: If the IbanityAccount data is invalid
             RepositoryError: If there's a persistence-related error
         """
-        
+
     @abstractmethod
-    def get_or_create(self, user: User, account_id: str, data: dict) -> IbanityAccount, bool:
-        """Get or create by user or account_id and saves with the provided data
+    def get_or_create(
+        self, user, account_id: str, data: Dict[str, Any]
+    ) -> Tuple[IbanityAccount, bool]:
+        """Get an existing account or create a new one.
 
         Args:
-            user (User): Ibanity account owner
-            account_id (str): Ibanity account ID
-            data (dict): New data or replace data
-                - 'description': Description of IbanityAccount
-                - 'product': Product
-                - 'reference': Reference
-                - 'currency': Currency
-                - 'authorization_expiration_expected_at': Authorization expiration time
-                - 'current_balance': Current balance
-                - 'available_balance': Available balance
-                - 'subtype': Subtype
-                - 'holder_name': Holder name
-                - 'resource_id': Resource ID
+            user: The user who owns the account
+            account_id: The Ponto account ID
+            data: The account data
 
         Returns:
-            IbanityAccount: Return IbanityAccount Model data
-            bool: Return true if the model created, otherwise false
+            Tuple[IbanityAccount, bool]: The account and whether it was created
         """
-        
+
     @abstractmethod
     def get_by_id(self, ibanityAccount_id: int) -> Optional[IbanityAccount]:
         """Retrieve an IbanityAccount by id.
@@ -109,18 +107,17 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def get_by_user(self, user) -> Optional[IbanityAccount]:
-        """Retrieve an IbanityAccount by user id.
+    def get_by_user(self, user) -> IbanityAccount:
+        """Get an account by user.
 
         Args:
-            user (User): The user instance
+            user: The user who owns the account
 
         Returns:
-            Optional[IbanityAccount]: The domain IbanityAccount model if found,
-                             None otherwise
+            IbanityAccount: The account data
 
         Raises:
-            RepositoryError: If there's a persistence-related error
+            IbanityAccountNotFoundError: If no account exists for the user
         """
 
     @abstractmethod
@@ -139,31 +136,36 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def update(self, ibanityAccount: IbanityAccount, user) -> IbanityAccount:
+    def update(
+        self, ibanityAccount: IbanityAccount, user
+    ) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
-        This method should update all fields of an existing IbanityAccount while
-        maintaining any metadata (e.g., created_at timestamp).
+        This method should update all fields of an existing IbanityAccount
+        while maintaining any metadata (e.g., created_at timestamp).
 
         Args:
-            ibanityAccount (IbanityAccount): The domain IbanityAccount with updated data
+            ibanityAccount (IbanityAccount): The domain IbanityAccount with
+                updated data
             user (User): User instance performing the update
 
         Returns:
             IbanityAccount: The updated domain IbanityAccount model
 
         Raises:
-            InvalidIbanityAccountError: If the IbanityAccount doesn't exist or data is
-                               invalid
+            InvalidIbanityAccountError: If the IbanityAccount doesn't exist
+                or data is invalid
             RepositoryError: If there's a persistence-related error
         """
 
     @abstractmethod
-    def update_by_account_id(self, account_id: str, data: dict) -> IbanityAccount:
+    def update_by_account_id(
+        self, account_id: str, data: Dict[str, Any]
+    ) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
-        This method should update all fields of an existing IbanityAccount while
-        maintaining any metadata (e.g., created_at timestamp).
+        This method should update all fields of an existing IbanityAccount
+        while maintaining any metadata (e.g., created_at timestamp).
 
         Args:
             account_id (str): The IbanityAccount account_id
@@ -172,7 +174,8 @@ class IbanityAccountRepository(ABC):
                 - 'product': Product
                 - 'reference': Reference
                 - 'currency': Currency
-                - 'authorization_expiration_expected_at': Authorization expiration time
+                - 'authorization_expiration_expected_at': Authorization
+                  expiration time
                 - 'current_balance': Current balance
                 - 'available_balance': Available balance
                 - 'subtype': Subtype
@@ -183,9 +186,27 @@ class IbanityAccountRepository(ABC):
             IbanityAccount: The updated domain IbanityAccount model
 
         Raises:
-            InvalidIbanityAccountError: If the IbanityAccount doesn't exist or data is
-                               invalid
+            InvalidIbanityAccountError: If the IbanityAccount doesn't exist
+                or data is invalid
             RepositoryError: If there's a persistence-related error
+        """
+
+    @abstractmethod
+    def process_accounts_data(
+        self, user, accounts_data: Dict[str, Any]
+    ) -> IbanityAccount:
+        """Process raw accounts data from Ponto API and save or update
+        in repository.
+
+        Args:
+            user: The user who owns the account
+            accounts_data: Raw account data from Ponto API
+
+        Returns:
+            IbanityAccount: The created or updated account
+
+        Raises:
+            IbanityAccountDataError: If the account data is invalid
         """
 
 
@@ -214,13 +235,14 @@ class PontoTokenRepository(ABC):
     def save(self, pontoToken: PontoToken, user) -> PontoToken:
         """Save an Ponto token to the database.
 
-        This method must either create a new Ponto token or update an existing one
-        based on the user id. It should handle the persistence details
-        while maintaining the domain model's integrity.
+        This method must either create a new Ponto token or update
+        an existing one based on the user id. It should handle the persistence
+        details while maintaining the domain model's integrity.
 
         Args:
             pontoToken (PontoToken): The domain PontoToken model to persist
-            user (User): ID of the user who uploaded/created the Ibanity account
+            user (User): ID of the user who uploaded/created the
+                Ibanity account
 
         Returns:
             PontoToken: The persisted domain PontoToken model, potentially with
@@ -230,8 +252,8 @@ class PontoTokenRepository(ABC):
             InvalidPontoTokenError: If the PontoToken data is invalid
             RepositoryError: If there's a persistence-related error
         """
-    
-    @abstractmethod    
+
+    @abstractmethod
     def get_by_id(self, pontoToken_id: int) -> Optional[PontoToken]:
         """Retrieve an PontoToken by id.
 
@@ -245,48 +267,58 @@ class PontoTokenRepository(ABC):
         Raises:
             RepositoryError: If there's a persistence-related error
         """
-        
 
     @abstractmethod
-    def get_or_create_by_user(self, user: User, data: dict) -> PontoToken, bool:
-        """Retrieve an PontoToken by user id.
+    def get_or_create_by_user(
+        self, user, data: Dict[str, Any]
+    ) -> Tuple[PontoToken, bool]:
+        """Get an existing token or create a new one.
 
         Args:
-            user (User): The user instance
-            data (dict): A dictionary containing the following keys:
-                - access_token (str): The access token.
-                - refresh_token (str): The refresh token.
-                - expires_in (int): The expiration time in seconds.
+            user: The user who owns the token
+            data: The token data
 
         Returns:
-            PontoToken: The domain PontoToken model if found,
-                             otherwise the created one
-            bool: Returns true if the model is created,
-                        false otherwise
-
-        Raises:
-            RepositoryError: If there's a persistence-related error
+            Tuple[PontoToken, bool]: The token and whether it was created
         """
 
     @abstractmethod
-    def update_by_user(self, user: User, data: dict) -> PontoToken:
-        """Update an existing PontoToken.
-
-        This method should update all fields of an existing PontoToken while
-        maintaining any metadata (e.g., created_at timestamp).
+    def get_by_user(self, user) -> PontoToken:
+        """Get a token by user.
 
         Args:
-            user (User): ID of the user performing the update
-            data (dict): A dictionary containing the following keys:
-                - access_token (str): The access token.
-                - refresh_token (str): The refresh token.
-                - expires_in (int): The expiration time in seconds.
+            user: The user who owns the token
 
         Returns:
-            PontoToken: The updated domain PontoToken model
+            PontoToken: The token data
 
         Raises:
-            InvalidPontoTokenError: If the PontoToken doesn't exist or data is
-                               invalid
-            RepositoryError: If there's a persistence-related error
+            PontoTokenNotFoundError: If no token exists for the user
+        """
+
+    @abstractmethod
+    def update_by_user(self, user, data: Dict[str, Any]) -> PontoToken:
+        """Update a token by user.
+
+        Args:
+            user: The user who owns the token
+            data: The updated token data
+
+        Returns:
+            PontoToken: The updated token
+        """
+
+    @abstractmethod
+    def get_decrypted_access_token(self, user) -> str:
+        """Get decrypted access token for a user.
+
+        Args:
+            user: The user to get the decrypted access token for
+
+        Returns:
+            str: The decrypted access token
+
+        Raises:
+            PontoTokenNotFoundError: If no token exists for the user
+            PontoTokenDecryptionError: If there's an error decrypting the token
         """
