@@ -222,9 +222,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
         logger.debug(f"Type of user: {user}")
         try:
             # Order by created_at descending and get the first one
-            db_ibanity_account = DjangoIbanityAccount.objects.get(
+            db_ibanity_account = DjangoIbanityAccount.objects.filter(
                 user=user
-            )
+            ).first()
 
             if db_ibanity_account:
                 logger.debug(
@@ -347,7 +347,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 f"IbanityAccount with account ID {account_id} not found"
             ) from exc
         except Exception as e:
-            raise InvalidPontoTokenError(
+            raise InvalidIbanityAccountError(
                 f"Error while updating IbanityAccount: {str(e)}"
             ) from e
 
@@ -587,7 +587,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
     def get_by_id(self, pontoToken_id: int) -> Optional[DomainPontoToken]:
         """Retrieve an PontoToken by its ID."""
         try:
-            db_ponto_token = DjangoPontoToken.objects.get(id=pontoToken_id)
+            db_ponto_token = DjangoPontoToken.objects.filter(id=pontoToken_id).first()
             return self._to_domain(db_ponto_token)
         except ObjectDoesNotExist:
             return None
@@ -631,9 +631,9 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             InvalidPontoTokenError: If PontoToken doesn't exist
         """
         try:
-            db_ponto_token = DjangoPontoToken.objects.get(
+            db_ponto_token = DjangoPontoToken.objects.filter(
                 user=user
-            )
+            ).first()
 
             # Use model's update method for encapsulation
             db_ponto_token.access_token = data['access_token']
@@ -664,6 +664,8 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
 
         try:
             ponto_token = self.get_by_user(user=user)
+            if ponto_token is None:
+                raise PontoTokenNotFoundError(f"No token found for user {user}")
             return PontoProvider.decrypt_token(ponto_token.access_token)
         except ObjectDoesNotExist:
             raise PontoTokenNotFoundError(f"No token found for user {user}")
