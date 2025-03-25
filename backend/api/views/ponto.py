@@ -17,10 +17,16 @@ from infrastructure.django.repositories.ponto_repository import DjangoIbanityAcc
 from infrastructure.django.services.ponto_token_encryption_service import PontoTokenEncryptionService
 from domain.services.ponto_service import IbanityAccountService, PontoTokenService
 from integrations.providers.ponto import PontoProvider
+from domain.exceptions \
+    import  InvalidIbanityAccountError, \
+            IbanityAccountNotFoundError, \
+            PontoTokenNotFoundError, \
+            InvalidPontoTokenError
 from typing import Dict, Any
 
 from config.settings.base import LOG_LEVEL, PONTO_CLIENT_ID, PONTO_CLIENT_SECRET, \
-    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, PONTO_ACCOUNTS_ENDPOINT
+    PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, PONTO_ACCOUNTS_ENDPOINT, \
+    PONTO_PAGE_LIMIT
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -101,7 +107,6 @@ class PontoView(APIView):
         http = PontoProvider.create_http_instance()
 
         try:
-            PONTO_PAGE_LIMIT = 3
             response = http.request(
                 'GET',
                 f"{PONTO_CONNECT_BASE_URL}{PONTO_ACCOUNTS_ENDPOINT}?page[limit]={PONTO_PAGE_LIMIT}",
@@ -223,7 +228,9 @@ class PontoView(APIView):
 
         except Exception as e:
             logger.exception(f"Unexpected error in ponto_login: {str(e)}")
-            return Response({'message': str(e)})
+            return Response({
+                "error": "An unexpected error occurred during authentication"
+            }, status=500)
 
     def refresh_access_token(self, request: HttpRequest):
         """
@@ -297,17 +304,18 @@ class PontoView(APIView):
         try:
             return self.ponto_token_service.get_token_for_user(user)
         except ValueError as e:
-            return Response({"error": f"Invalid token: {str(e)}"}, status=400)
+            raise InvalidPontoTokenError(f"Invalid token for user {user}: {str(e)}") from e
         except Exception as e:
-            logger.error(f"Error retrieving access token: {str(e)}")
-            return Response({"error": "Failed to retrieve access token"}, status=500)
+            raise PontoTokenNotFoundError(f"Token for user {user} not found")
         
     def _get_user_account_id(self, user):
-        ibanityAccount = self.ibanity_account_service.get(user=user)
-        if not ibanityAccount:
-            return Response({"error": "No Ibanity account found for this user"}, status=404)
-
-        return ibanityAccount.account_id
+        try:
+            ibanityAccount = self.ibanity_account_service.get(user=user)
+            return ibanityAccount.account_id
+        except ValueError as e:
+            raise InvalidIbanityAccountError(f"Invalid Ibanity account for user {user}: {str(e)}") from e
+        except Exception as e:
+            raise IbanityAccountNotFoundError({"error": "No Ibanity account found for this user"}, status=404)
 
     def get_transaction_history(self, request: HttpRequest):
         """Get transaction history for a user's account.
@@ -325,24 +333,30 @@ class PontoView(APIView):
             if not user.is_authenticated:
                 return Response({"error": "User not authenticated"}, status=401)
 
-            before = request.GET.get('before')
-            after = request.GET.get('after')
-            limit = request.GET.get('limit')
+            before = request.POST.get('before')
+            after = request.POST.get('after')
+            limit = request.POST.get('limit')
             if before and after:
-                return Response({"error": "Invalid Request"}, status=400)
+                return Response({"error": "Cannot specify both 'before' and 'after' parameters simultaneously"}, status=400)
             if not limit:
-                return Response({"error": "Invalid Request"}, status=400)
+                return Response({"error": "The 'limit' parameter is required"}, status=400)
+            if not (limit in [1, 5, 10, 15, 20, 25]):
+                return Response({"error": "The 'limit' parameter is invalid"}, status=400)
             
             token = self._get_user_access_token(user=user)
 
             account_id = self._get_user_account_id(user=user)
 
-            api_url = f"{PONTO_CONNECT_BASE_URL}{PONTO_ACCOUNTS_ENDPOINT}/{account_id}/transactions"
+            base_url = f"{PONTO_CONNECT_BASE_URL}{PONTO_ACCOUNTS_ENDPOINT}/{account_id}/transactions"
+            params = {}
             if before:
-                api_url = f"{api_url}?page[before]={before}"
+                params['page[before]'] = before
             elif after:
-                api_url = f"{api_url}?page[after]={after}"
-            api_url = f"{api_url}&page[limit]={limit}"
+                params['page[after]'] = after
+            params['page[limit]'] = limit
+            
+            query_string = urlencode(params)
+            api_url = f"{base_url}?{query_string}"
 
             # Create the request headers
             headers = {"Authorization": f"Bearer {token}"}
@@ -363,6 +377,18 @@ class PontoView(APIView):
                 )
             transactions_data: Dict[str, Any] = json.loads(response.data.decode('utf-8'))
             return Response(transactions_data)
+        except InvalidPontoTokenError as e:
+            logger.error(f"Invalid token for user {user}: {str(e)}")
+            return Response({"error": f"Request failed: {str(e)}"}, status=500)
+        except PontoTokenNotFoundError as e:
+            logger.error(f"Token for user {user} not found")
+            return Response({"error": f"Request failed: {str(e)}"}, status=500)
+        except InvalidIbanityAccountError as e:
+            logger.error(f"Invalid Ibanity account for user {user}: {str(e)}")
+            return Response({"error": f"Request failed: {str(e)}"}, status=500)
+        except IbanityAccountNotFoundError as e:
+            logger.error({"error": "No Ibanity account found for this user"})
+            return Response({"error": f"Request failed: {str(e)}"}, status=500)
         except json.JSONDecodeError as json_error:  
             logger.error(f"JSON decoding error: {json_error}")  
             return Response({"error": "Failed to decode the response data as JSON."}, status=500)  
