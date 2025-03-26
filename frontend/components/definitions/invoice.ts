@@ -50,8 +50,16 @@ export const URGENCY_LEVELS: Urgency[] = [
     display_name: "High",
     color_code: URGENCY_COLORS.high,
   },
-  { level: UrgencyLevel.MEDIUM, display_name: "Medium", color_code: URGENCY_COLORS.medium },
-  { level: UrgencyLevel.LOW, display_name: "Low", color_code: URGENCY_COLORS.low },
+  {
+    level: UrgencyLevel.MEDIUM,
+    display_name: "Medium",
+    color_code: URGENCY_COLORS.medium,
+  },
+  {
+    level: UrgencyLevel.LOW,
+    display_name: "Low",
+    color_code: URGENCY_COLORS.low,
+  },
 ];
 
 export const DEFAULT_URGENCY: Urgency = {
@@ -81,7 +89,7 @@ export const INVOICES_DATA: Invoice[] = [
   {
     invoice_id: 1,
     invoice_number: "INV-001",
-    amount: "1000.00",
+    amount: 1000.0,
     date: "2025-03-10",
     supplier_name: "Supplier A",
     status: "pending",
@@ -90,7 +98,7 @@ export const INVOICES_DATA: Invoice[] = [
   {
     invoice_id: 2,
     invoice_number: "INV-002",
-    amount: "500.00",
+    amount: 500.0,
     date: "2025-03-15",
     supplier_name: "Supplier B",
     status: "paid",
@@ -99,7 +107,7 @@ export const INVOICES_DATA: Invoice[] = [
   {
     invoice_id: 3,
     invoice_number: "INV-003",
-    amount: "750.00",
+    amount: 750.0,
     date: "2025-03-20",
     supplier_name: "Supplier C",
     status: "overdue",
