@@ -1,3 +1,12 @@
+/**
+ * Enum representing the urgency levels for invoices
+ * OVERDUE: Past due date requiring immediate action
+ * CRITICAL: Requires attention within 24 hours
+ * HIGH: Important, handle within a week
+ * MEDIUM: Moderate importance, handle within two weeks
+ * LOW: Low priority, can be handled when convenient
+ */
+
 export enum UrgencyLevel {
   OVERDUE = "OVERDUE",
   CRITICAL = "CRITICAL",
@@ -16,20 +25,33 @@ export interface Urgency {
   is_manual?: boolean;
 }
 
+export const URGENCY_COLORS = {
+  overdue: "#8B0000",
+  critical: "#FF0000",
+  high: "#FFA500",
+  medium: "#FFD700",
+  low: "#008000",
+  default: "#D3D3D3",
+};
+
 export const URGENCY_LEVELS: Urgency[] = [
   {
     level: UrgencyLevel.OVERDUE,
     display_name: "Overdue",
-    color_code: "#8B0000",
+    color_code: URGENCY_COLORS.overdue,
   },
   {
     level: UrgencyLevel.CRITICAL,
     display_name: "Critical",
-    color_code: "#FF0000",
+    color_code: URGENCY_COLORS.critical,
   },
-  { level: UrgencyLevel.HIGH, display_name: "High", color_code: "#FFA500" },
-  { level: UrgencyLevel.MEDIUM, display_name: "Medium", color_code: "#FFD700" },
-  { level: UrgencyLevel.LOW, display_name: "Low", color_code: "#008000" },
+  {
+    level: UrgencyLevel.HIGH,
+    display_name: "High",
+    color_code: URGENCY_COLORS.high,
+  },
+  { level: UrgencyLevel.MEDIUM, display_name: "Medium", color_code: URGENCY_COLORS.medium },
+  { level: UrgencyLevel.LOW, display_name: "Low", color_code: URGENCY_COLORS.low },
 ];
 
 export const DEFAULT_URGENCY: Urgency = {
@@ -48,7 +70,7 @@ export const STATUS_COLORS: Record<InvoiceStatus, string> = {
 export interface Invoice {
   invoice_id: number;
   invoice_number: string;
-  amount: string;
+  amount: number;
   date: string;
   supplier_name: string;
   status: InvoiceStatus;

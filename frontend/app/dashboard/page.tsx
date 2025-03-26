@@ -317,7 +317,7 @@ const BillifyDashboard = () => {
                           </div>
                           <button
                             className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 mt-4"
-                            disabled={uploadStatus === "uploading"}
+                            disabled={uploadStatus === "uploading" || !invoiceData}
                             type="button"
                             aria-label="Confirm Upload"
                             onClick={confirmUpload}
