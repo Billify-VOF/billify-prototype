@@ -122,7 +122,7 @@ class PontoTokenDecryptionError(PontoTokenError):
 
 
 class PontoTokenCreationError(PontoTokenError):
-    """Raised when there is an error creating or updating a Ponto token."""
+    """Raised when there is an error creating or updating a Ponto token.
 
     Example:
         try:
