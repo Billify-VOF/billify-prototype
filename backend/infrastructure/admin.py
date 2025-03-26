@@ -1,9 +1,12 @@
 from django.contrib import admin
+from django.contrib.admin.exceptions import NotRegistered
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth import get_user_model
+from infrastructure.django.models.account import Account
+import logging
 
-# Get the account model dynamically
-Account = get_user_model()
+# Configure logger
+logger = logging.getLogger(__name__)
+
 
 @admin.register(Account)
 class AccountAdmin(UserAdmin):
@@ -13,9 +16,12 @@ class AccountAdmin(UserAdmin):
     list_display = ('username', 'email', 'is_staff', 'is_active')
     search_fields = ('username', 'email')
 
+
 # Check if the default User model is registered before trying to unregister it
 try:
     from django.contrib.auth.models import User
     admin.site.unregister(User)
-except admin.sites.NotRegistered:
-    pass  # Do nothing if User model is not registered
+except NotRegistered:
+    logger.debug("Default User model was not registered in admin")
+except Exception as e:
+    logger.warning(f"Unexpected error when unregistering User model: {str(e)}")
