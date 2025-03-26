@@ -17,7 +17,7 @@ interface UrgencySelectorProps {
 
 export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: UrgencySelectorProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<Urgency>();
+  const [selected, setSelected] = useState<Urgency>(urgency);
   const tooltipId = useId();
 
   return (

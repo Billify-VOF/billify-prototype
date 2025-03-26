@@ -348,7 +348,7 @@ const BillifyDashboard = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <span
-                          className={`px-3 py-1 rounded-full ${STATUS_COLORS[invoice.status as InvoiceStatus]}`}
+                          className={`px-3 py-1 rounded-full ${STATUS_COLORS[invoice.status]}`}
                         >
                           €{invoice.amount}
                         </span>

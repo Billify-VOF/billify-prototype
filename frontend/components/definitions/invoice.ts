@@ -45,7 +45,17 @@ export const STATUS_COLORS: Record<InvoiceStatus, string> = {
   paid: "bg-green-100 text-green-800",
 };
 
-export const INVOICES_DATA = [
+export interface Invoice {
+  invoice_id: number;
+  invoice_number: string;
+  amount: string;
+  date: string;
+  supplier_name: string;
+  status: InvoiceStatus;
+  urgency: Urgency;
+}
+
+export const INVOICES_DATA: Invoice[] = [
   {
     invoice_id: 1,
     invoice_number: "INV-001",
