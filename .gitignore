@@ -144,6 +144,12 @@ Desktop.ini
 Thumbs.db
 ehthumbs.db
 
+# Sensitive credentials files
+backend/config/credentials/*.pem
+backend/config/credentials/*.pem.*
+backend/config/credentials/*.key
+backend/config/credentials/*.key.*
+
 # Python Tools
 .mypy_cache/
 .dmypy.json
