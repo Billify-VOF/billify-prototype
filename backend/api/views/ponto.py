@@ -333,9 +333,9 @@ class PontoView(APIView):
             if not user.is_authenticated:
                 return Response({"error": "User not authenticated"}, status=401)
 
-            before = request.POST.get('before')
-            after = request.POST.get('after')
-            limit = request.POST.get('limit')
+            before = request.GET.get('before')
+            after = request.GET.get('after')
+            limit = request.GET.get('limit')
             if before and after:
                 return Response({"error": "Cannot specify both 'before' and 'after' parameters simultaneously"}, status=400)
             if not limit:
