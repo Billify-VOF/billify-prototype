@@ -1,6 +1,11 @@
 from django.contrib import admin
+from django.contrib.admin.exceptions import NotRegistered
 from django.contrib.auth.admin import UserAdmin
 from infrastructure.django.models.account import Account
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 @admin.register(Account)
@@ -16,5 +21,7 @@ class AccountAdmin(UserAdmin):
 try:
     from django.contrib.auth.models import User
     admin.site.unregister(User)
-except Exception:
-    pass  # Do nothing if User model is not registered
+except NotRegistered:
+    logger.debug("Default User model was not registered in admin")
+except Exception as e:
+    logger.warning(f"Unexpected error when unregistering User model: {str(e)}")
