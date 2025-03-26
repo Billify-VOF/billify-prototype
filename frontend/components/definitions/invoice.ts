@@ -33,7 +33,7 @@ export const URGENCY_LEVELS: Urgency[] = [
 ];
 
 export const DEFAULT_URGENCY: Urgency = {
-  level: "NA",
+  level: UrgencyLevel.LOW,
   display_name: "Not Available",
   color_code: "#D3D3D3",
   is_manual: false,
