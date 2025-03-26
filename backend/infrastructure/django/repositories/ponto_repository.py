@@ -1,7 +1,7 @@
 """Django ORM implementation of the Ponto-related repository interfaces."""
 
 from typing import Optional, Dict, Any, Tuple
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from domain.repositories.interfaces.ponto_repository import (
     IbanityAccountRepository,
     PontoTokenRepository
@@ -342,10 +342,10 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             ibanity_account.save()
             return self._to_domain(ibanity_account)
         except ObjectDoesNotExist as exc:
-            raise InvalidIbanityAccountError(
+            raise IbanityAccountNotFoundError(
                 f"IbanityAccount with account ID {account_id} not found"
             ) from exc
-        except Exception as e:
+        except MultipleObjectsReturned as e:
             raise InvalidIbanityAccountError(
                 f"Error while updating IbanityAccount: {str(e)}"
             ) from e
