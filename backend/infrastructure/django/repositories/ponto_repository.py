@@ -14,6 +14,7 @@ from domain.exceptions import (
     InvalidIbanityAccountError,
     InvalidPontoTokenError,
     IbanityAccountDataError,
+    IbanityAccountNotFoundError,
     PontoTokenNotFoundError,
     PontoTokenDecryptionError
 )
@@ -183,7 +184,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             )
             return self._to_domain(db_ibanity_account)
         except ObjectDoesNotExist:
-            return None
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the ID {ibanity_account_id}")
 
     def get_by_account_id(
         self, account_id: str
@@ -213,7 +214,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            return None
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the account ID {account_id}")
 
     def get_by_user(self, user) -> Optional[DomainIbanityAccount]:
         """Retrieve an IbanityAccount by its user.
@@ -238,7 +239,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            return None
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the user {user}")
 
     def update(
         self, domain_ibanity_account: DomainIbanityAccount, user
@@ -668,6 +669,4 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         except ObjectDoesNotExist:
             raise PontoTokenNotFoundError(f"No token found for user {user}")
         except Exception as e:
-            raise PontoTokenDecryptionError(
-                f"Error decrypting token: {str(e)}"
-            )
+            raise PontoTokenDecryptionError(f"Error decrypting token: {str(e)}") from e
