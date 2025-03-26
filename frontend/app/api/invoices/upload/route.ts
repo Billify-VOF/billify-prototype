@@ -1,55 +1,48 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-    try {
-        console.log('API route hit - starting file upload process')
-        
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
+  try {
+    console.log("API route hit - starting file upload process");
 
-        const backendFormData = new FormData();
-        backendFormData.append('file', file);
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
 
-        const backendResponse = await fetch('http://localhost:8000/api/invoices/upload/', {
-            method: 'POST',
-            body: backendFormData,
-            credentials: 'include'
-        });
+    const backendFormData = new FormData();
+    backendFormData.append("file", file);
 
-        const contentType = backendResponse.headers.get('Content-Type');
-        if (contentType && contentType.includes('application/json')) {
-            const data = await backendResponse.json();
-            console.log('Backend response:', data);
+    const backendResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/upload/`,
+      {
+        method: "POST",
+        body: backendFormData,
+      }
+    );
 
-            if (!backendResponse.ok) {
-                throw new Error(data.detail || 'An unexpected error occurred while processing your invoice.');
-            }
+    const data = await backendResponse.json();
 
-            // Format the response to match the expected structure
-            return NextResponse.json({
-                status: 'success',
-                message: data.message,
-                invoice: data.invoice,
-                invoice_data: {
-                    invoice_number: data.invoice_data.invoice_number,
-                    amount: data.invoice_data.amount,
-                    date: data.invoice_data.date || 'N/A',
-                    supplier_name: data.invoice_data.supplier_name
-                }
-            });
-        } else {
-            throw new Error('Unexpected response format');
-        }
+    // Format the response to match the expected structure
+    return NextResponse.json({
+      status: "success",
+      message: data.message,
+      invoice: data.invoice,
+      invoice_data: {
+        invoice_number: data.invoice_data.invoice_number,
+        amount: data.invoice_data.amount,
+        date: data.invoice_data.date || "N/A",
+        supplier_name: data.invoice_data.supplier_name,
+        urgency: data.invoice_data.urgency,
+      },
+    });
+  } catch (error) {
+    console.error("Upload error details:", error);
 
-    } catch (error) {
-        console.error('Upload error details:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
-        });
-        return NextResponse.json({ 
-            status: 'error',
-            error: 'Failed to process file',
-            detail: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        status: "error",
+        error: "Failed to process file",
+        detail: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
 }
