@@ -2,12 +2,12 @@
 
 import React, { useRef, useState } from 'react';
 import Switch from 'react-switch'; // Import react-switch
-import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from './types';
+import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from '../defintions/invoice';
 import { lightenColor } from '@/app/lib/utils';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown } from 'lucide-react';
 import { Tooltip } from 'react-tooltip';
-import { getDueDateMessage } from './utils';
+import { getDueDateMessage } from '../../lib/invoice';
 import { useId } from 'react';
 
 interface UrgencySelectorProps {
