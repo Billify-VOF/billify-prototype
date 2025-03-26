@@ -1,6 +1,6 @@
 """Django ORM implementation of the Ponto-related repository interfaces."""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from django.core.exceptions import ObjectDoesNotExist
 from domain.repositories.interfaces.ponto_repository import (
     IbanityAccountRepository,
@@ -144,7 +144,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
         db_ibanity_account.save()
         return self._to_domain(db_ibanity_account)
 
-    def get_or_create(self, user, account_id, data) -> DomainIbanityAccount:
+    def get_or_create(self, user, account_id, data) -> Tuple[DomainIbanityAccount, bool]:
         """Get or create by user or account_id and saves with the provided data
 
         Args:
@@ -163,7 +163,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 - 'resource_id': Resource ID
 
         Returns:
-            IbanityAccount: Return IbanityAccount Model data
+            Tuple[DomainIbanityAccount, bool]: (Account domain model, created flag)
         """
         ibanity_account, created = DjangoIbanityAccount.objects.get_or_create(
             user=user,
@@ -260,23 +260,21 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 user=user
             )
 
-            # Use model's update method for encapsulation
-            db_ibanity_account.update(
-                user=domain_ibanity_account.user,
-                account_id=domain_ibanity_account.account_id,
-                description=domain_ibanity_account.description,
-                product=domain_ibanity_account.product,
-                reference=domain_ibanity_account.reference,
-                currency=domain_ibanity_account.currency,
-                authorization_expiration_expected_at=(
-                    domain_ibanity_account.authorization_expiration_expected_at
-                ),
-                current_balance=domain_ibanity_account.current_balance,
-                available_balance=domain_ibanity_account.available_balance,
-                subtype=domain_ibanity_account.subtype,
-                holder_name=domain_ibanity_account.holder_name,
-                resource_id=domain_ibanity_account.resource_id,
+            db_ibanity_account.user = domain_ibanity_account.user
+            db_ibanity_account.account_id = domain_ibanity_account.account_id
+            db_ibanity_account.description = domain_ibanity_account.description
+            db_ibanity_account.product = domain_ibanity_account.product
+            db_ibanity_account.reference = domain_ibanity_account.reference
+            db_ibanity_account.currency = domain_ibanity_account.currency
+            db_ibanity_account.authorization_expiration_expected_at = (
+                domain_ibanity_account.authorization_expiration_expected_at
             )
+            db_ibanity_account.current_balance = domain_ibanity_account.current_balance
+            db_ibanity_account.available_balance = domain_ibanity_account.available_balance
+            db_ibanity_account.subtype = domain_ibanity_account.subtype
+            db_ibanity_account.holder_name = domain_ibanity_account.holder_name
+            db_ibanity_account.resource_id = domain_ibanity_account.resource_id
+
             # Save the changes to the database
             db_ibanity_account.save()
             return self._to_domain(db_ibanity_account)
@@ -592,7 +590,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         except ObjectDoesNotExist:
             return None
 
-    def get_or_create_by_user(self, user, data) -> Optional[DomainPontoToken]:
+    def get_or_create_by_user(self, user, data) -> Tuple[DomainPontoToken, bool]:
         """Retrieve an PontoToken by its user.
         """
         logger.debug(f"Searching for PontoToken of User: {user}")
@@ -601,7 +599,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             # Order by created_at descending and get the first one
             db_ponto_token, created = DjangoPontoToken.objects.get_or_create(
                 user=user, defaults=data
-            ).order_by('-created_at').first()
+            )
 
             if db_ponto_token:
                 logger.debug(f"Found PontoToken in DB: {db_ponto_token}")
