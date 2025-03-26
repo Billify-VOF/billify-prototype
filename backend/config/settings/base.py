@@ -50,8 +50,6 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     # Local apps
-    'apps.invoices',
-    'apps.cashflow',
     # 'api' is not included here as it's not a Django app -> it actually could
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
