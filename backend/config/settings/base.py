@@ -3,6 +3,11 @@ import os
 import sys
 from pathlib import Path
 import environ
+import logging
+import base64
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Initialize environ
 env = environ.Env(
@@ -24,6 +29,8 @@ SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
+
+ENVIRONMENT = env('ENVIRONMENT', default='development')
 
 # Define allowed hosts from environment variables
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
@@ -49,7 +56,6 @@ INSTALLED_APPS = [
     # be a Django app, but it's not a real app, it's just a collection of views
     # and endpoints.
     'infrastructure',
-    'token_manager',
 ]
 
 MIDDLEWARE = [
@@ -222,4 +228,84 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+LOG_LEVEL = env('LOG_LEVEL', default='INFO')
+
+# Get log level from environment variable with a default of INFO
+try:
+    logger.setLevel(getattr(logging, LOG_LEVEL))
+except AttributeError:
+    logger.warning(f"Invalid log level '{LOG_LEVEL}', defaulting to INFO")
+    logger.setLevel(logging.INFO)
+
+
+# Ponto-Related Environment Variables
+required_env_vars = [
+    'PONTO_CLIENT_ID', 'PONTO_CLIENT_SECRET', 'PONTO_AUTH_URL', 
+    'PONTO_TOKEN_URL', 'PONTO_REDIRECT_URI', 'PONTO_PRIVATE_KEY_PASSWORD',
+    'PONTO_SIGNATURE_KEY_ID', 'FERNET_KEY'
+]
+
+# Check if any of the required environment variables are missing
+missing_vars = [var for var in required_env_vars if not env(var)]
+
+# If there are any missing variables, raise an error with the list of missing vars
+if missing_vars:
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+PONTO_CLIENT_ID = env('PONTO_CLIENT_ID')
+PONTO_CLIENT_SECRET = env('PONTO_CLIENT_SECRET')
+PONTO_AUTH_URL = env('PONTO_AUTH_URL')
+PONTO_TOKEN_URL = env('PONTO_TOKEN_URL')
+PONTO_REDIRECT_URI = env('PONTO_REDIRECT_URI')
+PONTO_CONNECT_BASE_URL = env('PONTO_CONNECT_BASE_URL')
+PONTO_ACCOUNTS_ENDPOINT = '/accounts'
+IBANITY_API_HOST=env('IBANITY_API_HOST')
+PONTO_PRIVATE_KEY_PASSWORD = env('PONTO_PRIVATE_KEY_PASSWORD')
+PONTO_SIGNATURE_KEY_ID = env('PONTO_SIGNATURE_KEY_ID')
+PONTO_PAGE_LIMIT = 3
+PONTO_PAGE_LIMIT_LIST = [1, 3, 5, 10, 15, 20, 25]
+
+FERNET_KEY = env('FERNET_KEY')
+
+# Validate and retrieve the FERNET_KEY
+if FERNET_KEY is None:
+    raise ValueError("FERNET_KEY not found in environment variables")
+
+# Verify the FERNET_KEY format (should be a 44-character base64 encoded string)
+if len(FERNET_KEY) != 44:
+    raise ValueError("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
+
+try:
+    # Check if the key is base64 encoded
+    base64.urlsafe_b64decode(FERNET_KEY)
+    FERNET_KEY = FERNET_KEY.encode()
+except Exception as e:
+    logger.error(f"Invalid FERNET_KEY format: {e}")
+    raise ValueError(f"FERNET_KEY is not in valid base64 format: {e}") from e
+
+# Paths for certificates and keys
+PONTO_CERTIFICATE_PATH = env('PONTO_CERTIFICATE_PATH')
+PONTO_PRIVATE_KEY_PATH = env('PONTO_PRIVATE_KEY_PATH')
+
+# List of valid ISO 4217 currency codes
+VALID_ISO_CURRENCY_CODES = {
+    "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG",
+    "AZN", "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND",
+    "BRL", "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHF",
+    "CLP", "CNY", "COP", "CRC", "CUP", "CVE", "CZK", "DKK", "DOP",
+    "DZD", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP", "GEL",
+    "GGP", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL",
+    "HRK", "HTG", "HUF", "IDR", "ILS", "IMP", "INR", "IQD", "IRR",
+    "ISK", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KPW", "KRW",
+    "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LYD",
+    "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRU", "MUR",
+    "MVR", "MWK", "MXN", "MYR", "MZN", "NAD", "NGN", "NZD", "OMR",
+    "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON",
+    "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD",
+    "SHP", "SLL", "SOS", "SRD", "SSP", "THB", "TJS", "TMT", "TND",
+    "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "UYU",
+    "UZS", "VES", "VND", "VUV", "WST", "XAF", "XAG", "XAU", "XCD",
+    "XDR", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL"
 }
