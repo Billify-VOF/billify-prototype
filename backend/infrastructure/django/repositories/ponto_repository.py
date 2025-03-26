@@ -607,11 +607,11 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
                 return self._to_domain(db_ponto_token), created
             else:
                 logger.debug("No PontoToken found of that user")
-                return None, None
+                return None, False
 
         except Exception as e:
             logger.error(f"Error retrieving PontoToken: {str(e)}")
-            return None
+            raise InvalidPontoTokenError("Invalid PontoToken error")
 
     def update_by_user(self, user, data) -> DomainPontoToken:
         """Update an existing PontoToken.
@@ -633,6 +633,9 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             db_ponto_token = DjangoPontoToken.objects.filter(
                 user=user
             ).first()
+            
+            if db_ponto_token is None:
+                raise PontoTokenNotFoundError(f"PontoToken with user {user} not found")
 
             # Use model's update method for encapsulation
             db_ponto_token.access_token = data['access_token']
@@ -643,7 +646,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             return self._to_domain(db_ponto_token)
         except ObjectDoesNotExist as exc:
             raise InvalidPontoTokenError(
-                f"PontoToken {DomainPontoToken.user} not found"
+                f"PontoToken with user {user} not found"
             ) from exc
 
     def get_decrypted_access_token(self, user) -> str:
