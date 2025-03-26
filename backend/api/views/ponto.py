@@ -26,7 +26,7 @@ from typing import Dict, Any
 
 from config.settings.base import LOG_LEVEL, PONTO_CLIENT_ID, PONTO_CLIENT_SECRET, \
     PONTO_AUTH_URL, PONTO_REDIRECT_URI, PONTO_CONNECT_BASE_URL, PONTO_ACCOUNTS_ENDPOINT, \
-    PONTO_PAGE_LIMIT
+    PONTO_PAGE_LIMIT, PONTO_PAGE_LIMIT_LIST
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -305,7 +305,7 @@ class PontoView(APIView):
             return self.ponto_token_service.get_token_for_user(user)
         except ValueError as e:
             raise InvalidPontoTokenError(f"Invalid token for user {user}: {str(e)}") from e
-        except Exception as e:
+        except Exception:
             raise PontoTokenNotFoundError(f"Token for user {user} not found")
         
     def _get_user_account_id(self, user):
@@ -340,7 +340,7 @@ class PontoView(APIView):
                 return Response({"error": "Cannot specify both 'before' and 'after' parameters simultaneously"}, status=400)
             if not limit:
                 return Response({"error": "The 'limit' parameter is required"}, status=400)
-            if not (limit in [1, 5, 10, 15, 20, 25]):
+            if limit not in PONTO_PAGE_LIMIT_LIST:
                 return Response({"error": "The 'limit' parameter is invalid"}, status=400)
             
             token = self._get_user_access_token(user=user)
