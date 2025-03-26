@@ -53,6 +53,7 @@ class InvalidIbanityAccountError(IbanityAccountError):
     invalid data formats, or other business rule violations.
     """
 
+
 class NegativeBalanceError(IbanityAccountError):
     """Raised when an account has a negative balance when not allowed.
 
@@ -85,7 +86,8 @@ class InvalidCurrencyError(IbanityAccountError):
             account.validate()
         except InvalidCurrencyError as e:
             logger.error(f"Currency not supported: {e}")
-            # Handle currency error (e.g., show warning alert for currency error)
+            # Handle currency error (e.g., show warning alert for
+            # currency error)
     """
 
 
@@ -122,7 +124,7 @@ class PontoTokenDecryptionError(PontoTokenError):
 
 
 class PontoTokenCreationError(PontoTokenError):
-    """Raised when there is an error creating or updating a Ponto token."""
+    """Raised when there is an error creating or updating a Ponto token.
 
     Example:
         try:
@@ -150,4 +152,4 @@ class PontoTokenExpirationError(PontoTokenError):
         except PontoTokenExpirationError as e:
             logger.error(f"Token expired: {e}")
             # Handle token error (e.g., redirect to re-authentication)
-    """  
+    """
