@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import Switch from 'react-switch'; // Import react-switch
-import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from '../defintions/invoice';
+import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from '../definitions/invoice';
 import { lightenColor } from '@/app/lib/utils';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown } from 'lucide-react';

@@ -16,7 +16,7 @@ import {
   STATUS_COLORS,
   InvoiceStatus,
   UploadStatus,
-} from "@/components/defintions/invoice";
+} from "@/components/definitions/invoice";
 
 const BillifyDashboard = () => {
   // Add state for file upload

@@ -1,4 +1,4 @@
-import { UrgencyLevel, URGENCY_LEVELS, Urgency } from '../../components/defintions/invoice';
+import { UrgencyLevel, URGENCY_LEVELS, Urgency } from '../../components/definitions/invoice';
 
 export const getDueDateMessage = (level?: string): string => {
   if (!level) {

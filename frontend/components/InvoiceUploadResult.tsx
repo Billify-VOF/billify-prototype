@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { UrgencySelector } from './invoice/UrgencySelector';
-import { DEFAULT_URGENCY, Urgency } from './defintions/invoice';
+import { DEFAULT_URGENCY, Urgency } from './definitions/invoice';
 import { getDueDateMessage, calculateUrgencyFromDays } from '../lib/invoice';
 
 export interface InvoiceData {

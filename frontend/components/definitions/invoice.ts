@@ -10,7 +10,7 @@ export type UploadStatus = "idle" | "uploading" | "success" | "error";
 export type InvoiceStatus = "overdue" | "pending" | "paid";
 
 export interface Urgency {
-  level: string;
+  level: UrgencyLevel;
   display_name: string;
   color_code: string;
   is_manual?: boolean;
