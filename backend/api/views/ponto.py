@@ -17,7 +17,9 @@ from infrastructure.django.repositories.ponto_repository import (
     DjangoIbanityAccountRepository,
     DjangoPontoTokenRepository,
 )
-from infrastructure.django.services.ponto_token_encryption_service import PontoTokenEncryptionService
+from infrastructure.django.services.ponto_token_encryption_service import (
+    PontoTokenEncryptionService,
+)
 from domain.services.ponto_service import IbanityAccountService, PontoTokenService
 from integrations.providers.ponto import PontoProvider
 from domain.exceptions import (
@@ -194,7 +196,11 @@ class PontoView(APIView):
             http = PontoProvider.create_http_instance()
 
             response = http.request(
-                "POST", PONTO_CONNECT_BASE_URL, headers=headers, body=encoded_data, preload_content=True
+                "POST",
+                PONTO_CONNECT_BASE_URL,
+                headers=headers,
+                body=encoded_data,
+                preload_content=True,
             )
 
             # Process the response
@@ -243,7 +249,10 @@ class PontoView(APIView):
 
         except Exception as e:
             logger.exception(f"Unexpected error in ponto_login: {str(e)}")
-            return Response({"error": "An unexpected error occurred during authentication"}, status=500)
+            return Response(
+                {"error": "An unexpected error occurred during authentication"},
+                status=500,
+            )
 
     def refresh_access_token(self, request: HttpRequest):
         """
@@ -280,7 +289,11 @@ class PontoView(APIView):
             http = PontoProvider.create_http_instance()
 
             response = http.request(
-                "POST", PONTO_CONNECT_BASE_URL, headers=headers, body=encoded_data, preload_content=True
+                "POST",
+                PONTO_CONNECT_BASE_URL,
+                headers=headers,
+                body=encoded_data,
+                preload_content=True,
             )
 
             if response.status == 200:
@@ -310,7 +323,10 @@ class PontoView(APIView):
             else:
                 logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
                 return Response(
-                    {"error": "Failed to refresh access token", "details": response.data.decode("utf-8")},
+                    {
+                        "error": "Failed to refresh access token",
+                        "details": response.data.decode("utf-8"),
+                    },
                     status=response.status,
                 )
         except Exception as e:
@@ -331,7 +347,7 @@ class PontoView(APIView):
             return ibanityAccount.account_id
         except ValueError as e:
             raise InvalidIbanityAccountError(f"Invalid Ibanity account for user {user}: {str(e)}") from e
-        except Exception as e:
+        except Exception:
             raise IbanityAccountNotFoundError({"error": "No Ibanity account found for this user"}, status=404)
 
     def get_transaction_history(self, request: HttpRequest):
