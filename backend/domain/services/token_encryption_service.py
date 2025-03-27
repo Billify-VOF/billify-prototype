@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class TokenEncryptionService(ABC):
     """
     Abstract base class for token encryption services.
@@ -33,11 +34,12 @@ class TokenEncryptionService(ABC):
     Raises:
         ValueError: If the input token is invalid during encryption or decryption.
     """
+
     @abstractmethod
     def encrypt(self, token: str) -> str:
         """Encrypt a token and return its encrypted form."""
         pass
-        
+
     @abstractmethod
     def decrypt(self, encrypted_token: str) -> str:
         """Decrypt an encrypted token and return the original token."""

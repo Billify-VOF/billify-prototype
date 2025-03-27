@@ -1,6 +1,8 @@
 from typing import Tuple, Dict, Any
 from rest_framework.authtoken.models import Token
-from domain.services.authentication_service import AuthenticationService as DomainAuthService
+from domain.services.authentication_service import (
+    AuthenticationService as DomainAuthService,
+)
 
 
 class AuthenticationService:

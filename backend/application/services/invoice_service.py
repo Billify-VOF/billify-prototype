@@ -13,7 +13,7 @@ from domain.repositories.interfaces.storage_repository import StorageRepository
 from domain.services.invoice_service import InvoiceService
 from integrations.transformers.pdf.transformer import (
     PDFTransformer,
-    PDFTransformationError
+    PDFTransformationError,
 )
 from logging import getLogger
 
@@ -36,7 +36,7 @@ class InvoiceProcessingService:
         self,
         invoice_service: InvoiceService,
         invoice_repository: InvoiceRepository,
-        storage_repository: StorageRepository
+        storage_repository: StorageRepository,
     ):
         """Initialize service with required components.
 
@@ -72,7 +72,7 @@ class InvoiceProcessingService:
         """
         try:
             # Generate unique identifier for file
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             identifier = f"invoice_{user_id}_{timestamp}"
 
             # Store file using storage repository
@@ -86,25 +86,17 @@ class InvoiceProcessingService:
             logger.info("PDF transformation successful: %s", invoice_data)
 
             # Check for existing invoice
-            existing_invoice = self.invoice_repository.get_by_number(
-                invoice_data['invoice_number']
-            )
+            existing_invoice = self.invoice_repository.get_by_number(invoice_data["invoice_number"])
 
             if existing_invoice:
                 # Generate old file identifier using invoice number
                 old_id = f"invoice_{user_id}_{existing_invoice.invoice_number}"
 
                 # Use domain service to update the invoice with extracted data
-                updated_invoice = self.invoice_service.update(
-                    existing_invoice,
-                    invoice_data
-                )
+                updated_invoice = self.invoice_service.update(existing_invoice, invoice_data)
 
                 # Save updated invoice
-                saved_invoice = self.invoice_repository.save(
-                    updated_invoice,
-                    user_id
-                )
+                saved_invoice = self.invoice_repository.save(updated_invoice, user_id)
 
                 # Clean up old file using storage repository
                 try:
@@ -116,21 +108,19 @@ class InvoiceProcessingService:
                 urgency_info = self.invoice_service.get_urgency_info(updated_invoice)
 
                 return {
-                    'invoice_id': saved_invoice.id,
-                    'invoice_number': saved_invoice.invoice_number,
-                    'status': saved_invoice.status,
-                    'file_path': file_path,
-                    'updated': True,
-                    'amount': updated_invoice.amount,
-                    'due_date': updated_invoice.due_date,
-                    'supplier_name': invoice_data.get('supplier_name', ''),
-                    'urgency': urgency_info
+                    "invoice_id": saved_invoice.id,
+                    "invoice_number": saved_invoice.invoice_number,
+                    "status": saved_invoice.status,
+                    "file_path": file_path,
+                    "updated": True,
+                    "amount": updated_invoice.amount,
+                    "due_date": updated_invoice.due_date,
+                    "supplier_name": invoice_data.get("supplier_name", ""),
+                    "urgency": urgency_info,
                 }
 
             # Create new invoice using domain service
-            new_invoice = self.invoice_service.create(
-                invoice_data
-            )
+            new_invoice = self.invoice_service.create(invoice_data)
 
             # Persist the invoice
             saved_invoice = self.invoice_repository.save(new_invoice, user_id)
@@ -139,15 +129,15 @@ class InvoiceProcessingService:
             urgency_info = self.invoice_service.get_urgency_info(new_invoice)
 
             return {
-                'invoice_id': saved_invoice.id,
-                'invoice_number': saved_invoice.invoice_number,
-                'status': saved_invoice.status,
-                'file_path': file_path,
-                'updated': False,
-                'amount': new_invoice.amount,
-                'due_date': new_invoice.due_date,
-                'supplier_name': invoice_data.get('supplier_name', ''),
-                'urgency': urgency_info
+                "invoice_id": saved_invoice.id,
+                "invoice_number": saved_invoice.invoice_number,
+                "status": saved_invoice.status,
+                "file_path": file_path,
+                "updated": False,
+                "amount": new_invoice.amount,
+                "due_date": new_invoice.due_date,
+                "supplier_name": invoice_data.get("supplier_name", ""),
+                "urgency": urgency_info,
             }
 
         except PDFTransformationError as e:

@@ -59,6 +59,7 @@ class UrgencyLevel(Enum):
         level.color_code == "#8B0000"    # UI color
         level.day_range == (None, -1)    # Calculation range
     """
+
     OVERDUE = (1, "#8B0000", (None, -1))
     CRITICAL = (2, "#FF0000", (0, 7))
     HIGH = (3, "#FFA500", (8, 14))
@@ -147,7 +148,7 @@ class UrgencyLevel(Enum):
         return [(urgency.db_value, urgency.display_name) for urgency in cls]
 
     @classmethod
-    def calculate_from_days(cls, days: int) -> 'UrgencyLevel':
+    def calculate_from_days(cls, days: int) -> "UrgencyLevel":
         """Calculates the appropriate urgency level based on days until due.
 
         Maps the number of days until due (or overdue if negative) to an
@@ -190,7 +191,7 @@ class UrgencyLevel(Enum):
         raise ValueError(f"Invalid days value: {days}")
 
     @classmethod
-    def from_db_value(cls, db_value: int) -> 'UrgencyLevel':
+    def from_db_value(cls, db_value: int) -> "UrgencyLevel":
         for level in UrgencyLevel:
             if db_value == level.db_value:
                 return level
@@ -214,9 +215,10 @@ class InvoiceStatus(Enum):
         status.value == "pending"          # Database value
         status.display_name == "Pending Payment"  # UI display value
     """
-    PENDING = 'pending'
-    PAID = 'paid'
-    OVERDUE = 'overdue'
+
+    PENDING = "pending"
+    PAID = "paid"
+    OVERDUE = "overdue"
 
     value: str  # This indicates each enum member has a string value
 
@@ -251,14 +253,11 @@ class InvoiceStatus(Enum):
             str: The human-readable display name for this status
         """
         status_display_names = {
-            'pending': 'Pending Payment',
-            'paid': 'Payment Received',
-            'overdue': 'Payment Overdue'
+            "pending": "Pending Payment",
+            "paid": "Payment Received",
+            "overdue": "Payment Overdue",
         }
-        return status_display_names.get(
-            self.value,
-            f"Unknown Status: {self.value}"
-        )
+        return status_display_names.get(self.value, f"Unknown Status: {self.value}")
 
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
@@ -283,7 +282,7 @@ class InvoiceStatus(Enum):
         return [(status.value, status.display_name) for status in cls]
 
     @classmethod
-    def from_db_value(cls, db_value: str) -> 'InvoiceStatus':
+    def from_db_value(cls, db_value: str) -> "InvoiceStatus":
         for status in InvoiceStatus:
             if db_value == status.value:
                 return status

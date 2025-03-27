@@ -178,26 +178,24 @@ class InvoiceRepository(ABC):
 
         Args:
             urgency_level: The urgency level to filter by
-            
+
         Returns:
             List of domain invoice models with the specified urgency level
         """
-        
+
     @abstractmethod
     def list_by_urgency_order(
-        self, 
-        status: Optional[str] = None,
-        limit: Optional[int] = None
+        self, status: Optional[str] = None, limit: Optional[int] = None
     ) -> List[Invoice]:
         """Retrieve invoices ordered by urgency level (highest to lowest).
-        
+
         This method creates a prioritized list for cash flow planning,
         with most urgent invoices first.
-        
+
         Args:
             status: Optional status filter (e.g., only pending invoices)
             limit: Optional maximum number of results to return
-            
+
         Returns:
             List of domain invoice models ordered by urgency
         """

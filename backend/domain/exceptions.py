@@ -53,6 +53,7 @@ class InvalidIbanityAccountError(IbanityAccountError):
     invalid data formats, or other business rule violations.
     """
 
+
 class NegativeBalanceError(IbanityAccountError):
     """Raised when an account has a negative balance when not allowed.
 
@@ -150,4 +151,4 @@ class PontoTokenExpirationError(PontoTokenError):
         except PontoTokenExpirationError as e:
             logger.error(f"Token expired: {e}")
             # Handle token error (e.g., redirect to re-authentication)
-    """  
+    """

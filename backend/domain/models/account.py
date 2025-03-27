@@ -2,7 +2,16 @@
 class Account:
     """Domain entity representing a user account in the system."""
 
-    def __init__(self, id, username, email, password=None, is_active=True, first_name="", last_name=""):
+    def __init__(
+        self,
+        id,
+        username,
+        email,
+        password=None,
+        is_active=True,
+        first_name="",
+        last_name="",
+    ):
         self.id = id
         self.username = username
         self.email = email
