@@ -58,7 +58,7 @@ class InvoiceProcessingService:
         self.storage_repository = storage_repository
         self.pdf_transformer = PDFTransformer()
 
-    def process_invoice(self, file: BinaryIO, user_id: int) -> dict:
+    def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
 
         This application service method:
