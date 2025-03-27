@@ -4,8 +4,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 
 from application.services.authentication_service import AuthenticationService
-from domain.services.authentication_service import AuthenticationService as DomainAuthService
-from infrastructure.django.repositories.account_repository import DjangoAccountRepository
+from domain.services.authentication_service import (
+    AuthenticationService as DomainAuthService,
+)
+from infrastructure.django.repositories.account_repository import (
+    DjangoAccountRepository,
+)
 
 # Dependency Injection
 account_repository = DjangoAccountRepository()
@@ -22,12 +26,16 @@ class LoginView(APIView):
 
         if not identifier or not password:
             return Response(
-                {"error": "Email/Username and password are required."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Email/Username and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         success, response_data = auth_service.login(identifier, password)
 
-        return Response(response_data, status=status.HTTP_200_OK if success else status.HTTP_401_UNAUTHORIZED)
+        return Response(
+            response_data,
+            status=status.HTTP_200_OK if success else status.HTTP_401_UNAUTHORIZED,
+        )
 
 
 class LogoutView(APIView):
