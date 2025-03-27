@@ -33,17 +33,12 @@ class FileStorageService:
                 MEDIA_ROOT/invoices
         """
         # Use Django's MEDIA_ROOT setting if no base_dir provided
-        self.base_dir = base_dir or Path(settings.MEDIA_ROOT) / 'invoices'
+        self.base_dir = base_dir or Path(settings.MEDIA_ROOT) / "invoices"
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        logger.debug(
-            "Initialized FileStorageService with base_dir: %s",
-            self.base_dir
-        )
+        logger.debug("Initialized FileStorageService with base_dir: %s", self.base_dir)
 
     def generate_storage_path(
-        self,
-        identifier: str,
-        original_filename: Optional[str] = None
+        self, identifier: str, original_filename: Optional[str] = None
     ) -> Tuple[str, Path]:
         """Generate appropriate storage path based on identifier.
 
@@ -57,7 +52,7 @@ class FileStorageService:
             tuple[str, Path]: (relative_path, full_path)
         """
         # Create year/month directory structure
-        year_month = datetime.now().strftime('%Y/%m')
+        year_month = datetime.now().strftime("%Y/%m")
         relative_dir = year_month
 
         # Handle file extension
@@ -65,7 +60,7 @@ class FileStorageService:
             original_name = Path(original_filename)
             suffix = original_name.suffix
         else:
-            suffix = '.pdf'  # Default extension
+            suffix = ".pdf"  # Default extension
 
         # Create filename and paths
         filename = f"{identifier}{suffix}"
@@ -78,11 +73,7 @@ class FileStorageService:
         logger.debug("Generated storage path: %s", relative_path)
         return relative_path, full_path
 
-    def write_file(
-        self,
-        file: Union[BinaryIO, UploadedFile],
-        filepath: Path
-    ) -> None:
+    def write_file(self, file: Union[BinaryIO, UploadedFile], filepath: Path) -> None:
         """Write file contents to the specified path.
 
         Args:
@@ -97,8 +88,8 @@ class FileStorageService:
             filepath.parent.mkdir(parents=True, exist_ok=True)
 
             # Save the file using chunks for memory efficiency
-            with filepath.open('wb+') as destination:
-                if hasattr(file, 'chunks'):
+            with filepath.open("wb+") as destination:
+                if hasattr(file, "chunks"):
                     # Django UploadedFile
                     for chunk in file.chunks():
                         destination.write(chunk)
@@ -129,13 +120,13 @@ class FileStorageService:
         try:
             # Ensure target directory exists
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Move the file using shutil.move which is more efficient
             # than a copy+delete operation
             shutil.move(str(source_path), str(target_path))
-            
+
             logger.info("File moved successfully from %s to %s", source_path, target_path)
-            
+
         except Exception as e:
             logger.error("Failed to move file: %s", str(e))
             raise StorageError(f"Failed to move file: {str(e)}") from e
@@ -186,11 +177,7 @@ class FileStorage(StorageRepository):
         self.storage_service = FileStorageService()
         logger.debug("FileStorage repository initialized")
 
-    def save_file(
-        self,
-        file: Union[BinaryIO, UploadedFile],
-        identifier: str
-    ) -> str:
+    def save_file(self, file: Union[BinaryIO, UploadedFile], identifier: str) -> str:
         """
         Save an invoice file to the storage system.
 
@@ -209,14 +196,10 @@ class FileStorage(StorageRepository):
         """
         try:
             # Get file name if available (for extension)
-            file_name = getattr(file, 'name', None)
+            file_name = getattr(file, "name", None)
 
             # Use service to generate paths (service responsibility)
-            relative_path, full_path = (
-                self.storage_service.generate_storage_path(
-                    identifier, file_name
-                )
-            )
+            relative_path, full_path = self.storage_service.generate_storage_path(identifier, file_name)
 
             # Delegate file writing to service (infrastructure concern)
             self.storage_service.write_file(file, full_path)
@@ -226,24 +209,22 @@ class FileStorage(StorageRepository):
 
         except Exception as e:
             logger.error("Repository failed to save file: %s", str(e))
-            raise StorageError(
-                f"Failed to save file: {str(e)}"
-            ) from e
-    
+            raise StorageError(f"Failed to save file: {str(e)}") from e
+
     def move_file(self, source_identifier: str, target_identifier: str) -> str:
         """
         Move a file from one location to another within the storage system.
-        
+
         This repository method handles moving files between locations,
         delegating the actual file I/O operations to the storage service.
-        
+
         Args:
             source_identifier: The relative path of the source file
             target_identifier: The identifier to use for the target location
-        
+
         Returns:
             str: New relative path for the moved file
-        
+
         Raises:
             StorageError: If file cannot be moved
         """
@@ -251,31 +232,29 @@ class FileStorage(StorageRepository):
             # Check if storage service is initialized
             if self.storage_service is None:
                 raise StorageError("Storage service not initialized")
-            
+
             # Get source full path from relative path
             source_full_path = self.storage_service.get_full_path(source_identifier)
-            
+
             # Generate target path with the new identifier
             # Extract extension from the source file
             source_path = Path(source_identifier)
             file_name = source_path.name
-            
+
             # Generate new storage path for the target
             target_relative_path, target_full_path = self.storage_service.generate_storage_path(
                 target_identifier, file_name
             )
-            
+
             # Delegate file moving to service (infrastructure concern)
             self.storage_service.move_file(source_full_path, target_full_path)
-            
+
             # Return new relative path for database storage
             return target_relative_path
-            
+
         except Exception as e:
             logger.error("Repository failed to move file: %s", str(e))
-            raise StorageError(
-                f"Failed to move file: {str(e)}"
-            ) from e
+            raise StorageError(f"Failed to move file: {str(e)}") from e
 
     def get_file_path(self, relative_path: str) -> Path:
         """
@@ -315,6 +294,4 @@ class FileStorage(StorageRepository):
 
         except Exception as e:
             logger.error("Repository failed to delete file: %s", str(e))
-            raise StorageError(
-                f"Failed to delete file: {str(e)}"
-            ) from e
+            raise StorageError(f"Failed to delete file: {str(e)}") from e

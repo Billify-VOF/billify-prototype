@@ -21,7 +21,9 @@ class LoginView(APIView):
         password = request.data.get("password")
 
         if not identifier or not password:
-            return Response({"error": "Email/Username and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Email/Username and password are required."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         success, response_data = auth_service.login(identifier, password)
 
@@ -33,5 +35,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         success = auth_service.logout(request.user.id)
-        return Response({"message": "Successfully logged out." if success else "Logout failed."},
-                        status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Successfully logged out." if success else "Logout failed."},
+            status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST,
+        )

@@ -6,6 +6,7 @@ from infrastructure.storage.file_system import FileStorageService
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+
 class TestInvoiceProcessing(TestCase):
     """Test cases for InvoiceProcessingService"""
 
@@ -15,9 +16,7 @@ class TestInvoiceProcessing(TestCase):
         self.invoice_repository = DjangoInvoiceRepository()
         self.storage_repository = FileStorageService()
         self.processing_service = InvoiceProcessingService(
-            self.invoice_service,
-            self.invoice_repository,
-            self.storage_repository
+            self.invoice_service, self.invoice_repository, self.storage_repository
         )
         self.sample_pdf = Path("backend/infrastructure/django/repositories/sample.pdf")
 
@@ -32,7 +31,7 @@ class TestInvoiceProcessing(TestCase):
             "file_size": 102400,
             "file_type": "PDF",
             "buyer_name": "John Doe",
-            "seller_name": "XYZ Corp"
+            "seller_name": "XYZ Corp",
         }
 
         file_mock = MagicMock()
@@ -45,7 +44,9 @@ class TestInvoiceProcessing(TestCase):
 
     def test_process_invoice_failure(self):
         """Test processing failure due to OCR error"""
-        with patch.object(self.processing_service.pdf_transformer, 'transform', side_effect=Exception("OCR error")):
+        with patch.object(
+            self.processing_service.pdf_transformer, "transform", side_effect=Exception("OCR error")
+        ):
             file_mock = MagicMock()
             with self.assertRaises(Exception) as context:
                 self.processing_service.process_invoice(file_mock, user_id=1)

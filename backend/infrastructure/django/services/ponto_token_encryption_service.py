@@ -1,6 +1,7 @@
 from domain.services.token_encryption_service import TokenEncryptionService
 from integrations.providers.ponto import PontoProvider
 
+
 class PontoTokenEncryptionService(TokenEncryptionService):
     """
     Service for encrypting and decrypting tokens using the PontoProvider.
@@ -12,24 +13,25 @@ class PontoTokenEncryptionService(TokenEncryptionService):
     the capabilities offered by the Ponto integration.
 
     Methods:
-        encrypt(token: str) -> str: 
+        encrypt(token: str) -> str:
             Encrypts the given plain token and returns the encrypted version.
-            
-        decrypt(encrypted_token: str) -> str  
+
+        decrypt(encrypted_token: str) -> str
             Decrypts the provided encrypted token and returns the original plain token.
 
     Example:
         service = PontoTokenEncryptionService()
-        
+
         # Encrypting a token
         original_token = "my_secret_token"
         encrypted = service.encrypt(original_token)
         print(f"Encrypted Token: {encrypted}")  # Outputs the encrypted token
-        
+
         # Decrypting a token
         decrypted = service.decrypt(encrypted)
         print(f"Decrypted Token: {decrypted}")  # Outputs the original token
     """
+
     def encrypt(self, token: str) -> str:
         """
         Encrypts the given token using the PontoProvider's encryption method.
@@ -45,7 +47,7 @@ class PontoTokenEncryptionService(TokenEncryptionService):
             str: The encrypted token as a string.
         """
         return PontoProvider.encrypt_token(token)
-        
+
     def decrypt(self, encrypted_token: str) -> str:
         """
         Decrypts the given encrypted token using the PontoProvider's decryption method.

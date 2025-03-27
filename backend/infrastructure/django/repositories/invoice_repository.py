@@ -53,46 +53,40 @@ class DjangoInvoiceRepository(InvoiceRepository):
         logger.debug("Converting DB invoice to domain model: %s", db_invoice)
         # All Django models have an id field by default
         invoice_args = {
-            'amount': db_invoice.amount,
-            'due_date': db_invoice.due_date,
-            'invoice_number': db_invoice.invoice_number,
+            "amount": db_invoice.amount,
+            "due_date": db_invoice.due_date,
+            "invoice_number": db_invoice.invoice_number,
             # Map Django's auto-generated id to domain model's
             # invoice_id parameter. Domain model stores it as self.id
-            'invoice_id': db_invoice.id,  # type: ignore[attr-defined]
-            'status': InvoiceStatus.from_db_value(db_invoice.status),
-            'uploaded_by': db_invoice.uploaded_by_id,
-            'file_path': db_invoice.file_path,
-            'buyer_name': db_invoice.buyer_name,
-            'buyer_address': db_invoice.buyer_address,
-            'buyer_email': db_invoice.buyer_email,
-            'buyer_vat': db_invoice.buyer_vat,
-            'seller_name': db_invoice.seller_name,
-            'seller_vat': db_invoice.seller_vat,
-            'payment_method': db_invoice.payment_method,
-            'currency': db_invoice.currency,
-            'iban': db_invoice.iban,
-            'bic': db_invoice.bic,
-            'payment_processor': db_invoice.payment_processor,
-            'transaction_id': db_invoice.transaction_id,
-            'subtotal': db_invoice.subtotal,
-            'vat_amount': db_invoice.vat_amount,
-            'total_amount': db_invoice.total_amount,
-            
+            "invoice_id": db_invoice.id,  # type: ignore[attr-defined]
+            "status": InvoiceStatus.from_db_value(db_invoice.status),
+            "uploaded_by": db_invoice.uploaded_by_id,
+            "file_path": db_invoice.file_path,
+            "buyer_name": db_invoice.buyer_name,
+            "buyer_address": db_invoice.buyer_address,
+            "buyer_email": db_invoice.buyer_email,
+            "buyer_vat": db_invoice.buyer_vat,
+            "seller_name": db_invoice.seller_name,
+            "seller_vat": db_invoice.seller_vat,
+            "payment_method": db_invoice.payment_method,
+            "currency": db_invoice.currency,
+            "iban": db_invoice.iban,
+            "bic": db_invoice.bic,
+            "payment_processor": db_invoice.payment_processor,
+            "transaction_id": db_invoice.transaction_id,
+            "subtotal": db_invoice.subtotal,
+            "vat_amount": db_invoice.vat_amount,
+            "total_amount": db_invoice.total_amount,
         }
         logger.debug("Created invoice args: %s", invoice_args)
 
         if db_invoice.manual_urgency is not None:
-            invoice_args['_manual_urgency'] = (
-                UrgencyLevel.from_db_value(db_invoice.manual_urgency)
-            )
+            invoice_args["_manual_urgency"] = UrgencyLevel.from_db_value(db_invoice.manual_urgency)
 
         return DomainInvoice(**invoice_args)
 
     def _to_django(
-        self,
-        domain_invoice: DomainInvoice,
-        user_id: int,
-        file_path: Optional[str] = None
+        self, domain_invoice: DomainInvoice, user_id: int, file_path: Optional[str] = None
     ) -> DjangoInvoice:
         """Convert domain model to Django model.
 
@@ -122,16 +116,14 @@ class DjangoInvoiceRepository(InvoiceRepository):
         """
         # Get the db_value from the manual urgency if it exists
         manual_urgency_value = (
-            domain_invoice._manual_urgency.db_value
-            if domain_invoice._manual_urgency is not None
-            else None
+            domain_invoice._manual_urgency.db_value if domain_invoice._manual_urgency is not None else None
         )
 
         return DjangoInvoice(
             invoice_number=domain_invoice.invoice_number,
             amount=domain_invoice.amount,
             due_date=domain_invoice.due_date,
-            file_path=file_path or '',
+            file_path=file_path or "",
             status=domain_invoice.status.value,
             manual_urgency=manual_urgency_value,
             uploaded_by_id=user_id,
@@ -149,7 +141,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             transaction_id=domain_invoice.transaction_id,
             subtotal=domain_invoice.subtotal,
             vat_amount=domain_invoice.vat_amount,
-            total_amount=domain_invoice.total_amount
+            total_amount=domain_invoice.total_amount,
         )
 
     def save(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
@@ -177,9 +169,9 @@ class DjangoInvoiceRepository(InvoiceRepository):
         logger.debug("Type of invoice_number: %s", type(invoice_number))
         try:
             # Order by created_at descending and get the first one
-            db_invoice = DjangoInvoice.objects.filter(
-                invoice_number=invoice_number
-            ).order_by('-created_at').first()
+            db_invoice = (
+                DjangoInvoice.objects.filter(invoice_number=invoice_number).order_by("-created_at").first()
+            )
 
             if db_invoice:
                 logger.debug("Found invoice in DB: %s", db_invoice)
@@ -197,14 +189,10 @@ class DjangoInvoiceRepository(InvoiceRepository):
         db_invoices = DjangoInvoice.objects.filter(status=status)
         return [self._to_domain(invoice) for invoice in db_invoices]
 
-    def list_overdue(
-        self, as_of: Optional[date] = None
-    ) -> List[DomainInvoice]:
+    def list_overdue(self, as_of: Optional[date] = None) -> List[DomainInvoice]:
         """List all overdue invoices."""
         check_date = as_of or date.today()
-        db_invoices = DjangoInvoice.objects.filter(
-            Q(due_date__lt=check_date) & Q(status='pending')
-        )
+        db_invoices = DjangoInvoice.objects.filter(Q(due_date__lt=check_date) & Q(status="pending"))
         return [self._to_domain(invoice) for invoice in db_invoices]
 
     def update_status(self, invoice_id: int, status: str) -> bool:
@@ -231,33 +219,26 @@ class DjangoInvoiceRepository(InvoiceRepository):
             InvalidInvoiceError: If invoice doesn't exist
         """
         try:
-            db_invoice = DjangoInvoice.objects.get(
-                invoice_number=invoice.invoice_number
-            )
-            
+            db_invoice = DjangoInvoice.objects.get(invoice_number=invoice.invoice_number)
+
             # Get the manual urgency value if it exists
             manual_urgency_value = (
-                invoice._manual_urgency.db_value
-                if invoice._manual_urgency is not None
-                else None
+                invoice._manual_urgency.db_value if invoice._manual_urgency is not None else None
             )
-            
+
             # Use model's update method for encapsulation
             db_invoice.update(
                 amount=invoice.amount,
                 due_date=invoice.due_date,
                 status=invoice.status.value,
                 uploaded_by_id=user_id,
-                manual_urgency=manual_urgency_value
-                
+                manual_urgency=manual_urgency_value,
             )
             # Save the changes to the database
             db_invoice.save()
             return self._to_domain(db_invoice)
         except ObjectDoesNotExist as exc:
-            raise InvalidInvoiceError(
-                f"Invoice {invoice.invoice_number} not found"
-            ) from exc
+            raise InvalidInvoiceError(f"Invoice {invoice.invoice_number} not found") from exc
 
 
 def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
@@ -276,9 +257,7 @@ def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
     today = date.today()
 
     # First, find invoices with matching manual urgency
-    db_invoices_with_manual = DjangoInvoice.objects.filter(
-        manual_urgency=urgency_level.db_value
-    )
+    db_invoices_with_manual = DjangoInvoice.objects.filter(manual_urgency=urgency_level.db_value)
 
     # Determine the date range based on urgency level
     min_days, max_days = urgency_level.day_range
@@ -304,48 +283,42 @@ def list_by_urgency(self, urgency_level: UrgencyLevel) -> List[DomainInvoice]:
     # Convert to domain models
     return [self._to_domain(invoice) for invoice in db_invoices]
 
-
     def list_by_urgency_order(
-        self, 
-        status: Optional[str] = None,
-        limit: Optional[int] = None
+        self, status: Optional[str] = None, limit: Optional[int] = None
     ) -> List[DomainInvoice]:
         """Retrieve invoices ordered by urgency level (highest to lowest).
-        
+
         This method creates a prioritized list for cash flow planning,
         with most urgent invoices first.
-        
+
         The ordering is:
         1. First by manual urgency (if set)
         2. Then by calculated urgency based on due date
-        
+
         Args:
             status: Optional status filter (e.g., only pending invoices)
             limit: Optional maximum number of results to return
-            
+
         Returns:
             List of domain invoice models ordered by urgency
         """
         # Start with base query
         query = DjangoInvoice.objects.all()
-        
+
         # Apply status filter if provided
         if status:
             query = query.filter(status=status)
-        
+
         # For proper sorting:
         # 1. Invoices with manual_urgency are ordered by that value
         # 2. Invoices without manual_urgency are ordered by due_date
-        
+
         # Order by manual_urgency (null last), then by due_date
-        db_invoices = query.order_by(
-            models.F('manual_urgency').asc(nulls_last=True),
-            'due_date'
-        )
-        
+        db_invoices = query.order_by(models.F("manual_urgency").asc(nulls_last=True), "due_date")
+
         # Apply limit if provided
         if limit:
             db_invoices = db_invoices[:limit]
-            
+
         # Convert to domain models
         return [self._to_domain(invoice) for invoice in db_invoices]

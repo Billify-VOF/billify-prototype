@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from integrations.transformers.pdf.transformer import PDFTransformer, PDFTransformationError
 
+
 class TestPDFTransformer(unittest.TestCase):
     """Test cases for PDFTransformer"""
 

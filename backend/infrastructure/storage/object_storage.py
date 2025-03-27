@@ -32,35 +32,26 @@ class ObjectStorage(StorageRepository):
         try:
             self.session = boto3.session.Session()
             self.client = self.session.client(
-                's3',
+                "s3",
                 region_name=settings.AWS_S3_REGION_NAME,
                 endpoint_url=settings.AWS_S3_ENDPOINT_URL,
                 aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             )
             self.bucket = settings.AWS_STORAGE_BUCKET_NAME
         except Exception as e:
             msg = f"Failed to initialize cloud storage: {str(e)}"
             raise StorageError(msg) from e
 
-    def save_file(
-        self,
-        file: Union[BinaryIO, UploadedFile],
-        identifier: str
-    ) -> str:
+    def save_file(self, file: Union[BinaryIO, UploadedFile], identifier: str) -> str:
         try:
-            year_month = datetime.now().strftime('%Y/%m')
+            year_month = datetime.now().strftime("%Y/%m")
             # Get filename safely with fallback
-            file_name = getattr(file, 'name', None)
-            ext = Path(file_name or '').suffix or '.pdf'
+            file_name = getattr(file, "name", None)
+            ext = Path(file_name or "").suffix or ".pdf"
             storage_path = f"invoices/{year_month}/{identifier}{ext}"
 
-            self.client.upload_fileobj(
-                file,
-                self.bucket,
-                storage_path,
-                ExtraArgs={'ACL': 'private'}
-            )
+            self.client.upload_fileobj(file, self.bucket, storage_path, ExtraArgs={"ACL": "private"})
 
             return storage_path
         except Exception as e:
@@ -82,12 +73,7 @@ class ObjectStorage(StorageRepository):
         """
         try:
             url = self.client.generate_presigned_url(
-                'get_object',
-                Params={
-                    'Bucket': self.bucket,
-                    'Key': storage_path
-                },
-                ExpiresIn=expires_in
+                "get_object", Params={"Bucket": self.bucket, "Key": storage_path}, ExpiresIn=expires_in
             )
             return url
         except ClientError as e:
@@ -124,9 +110,6 @@ class ObjectStorage(StorageRepository):
             StorageError: If file cannot be deleted
         """
         try:
-            self.client.delete_object(
-                Bucket=self.bucket,
-                Key=identifier
-            )
+            self.client.delete_object(Bucket=self.bucket, Key=identifier)
         except Exception as e:
             raise StorageError(f"Failed to delete file: {str(e)}") from e

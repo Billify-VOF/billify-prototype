@@ -6,6 +6,7 @@ from decimal import Decimal
 from datetime import date
 from django.contrib.auth import get_user_model
 
+
 class TestInvoiceRepository(TestCase):
     """Test cases for DjangoInvoiceRepository"""
 
@@ -38,7 +39,7 @@ class TestInvoiceRepository(TestCase):
             amount=Decimal("50.75"),
             due_date=date.today(),
             uploaded_by=self.test_user,
-            file_path="backend/infrastructure/django/repositories/sample.pdf"
+            file_path="backend/infrastructure/django/repositories/sample.pdf",
         )
 
         fetched_invoice = self.repository.get_by_number("INV-67890")

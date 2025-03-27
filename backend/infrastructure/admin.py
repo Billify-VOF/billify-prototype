@@ -13,13 +13,15 @@ class AccountAdmin(UserAdmin):
     """
     Register CustomUser model in the Django admin.
     """
-    list_display = ('username', 'email', 'is_staff', 'is_active')
-    search_fields = ('username', 'email')
+
+    list_display = ("username", "email", "is_staff", "is_active")
+    search_fields = ("username", "email")
 
 
 # Check if the default User model is registered before trying to unregister it
 try:
     from django.contrib.auth.models import User
+
     admin.site.unregister(User)
 except NotRegistered:
     logger.debug("Default User model was not registered in admin")

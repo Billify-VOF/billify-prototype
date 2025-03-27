@@ -33,50 +33,40 @@ def api_root(*_):
         JsonResponse: API information and available endpoints
     """
     api_info = {
-        'name': 'Billify API',
-        'version': '1.0.0',
-        'status': 'operational',
-        'timestamp': datetime.now().isoformat(),
-
-        'endpoints': {
-            'invoices': {
-                'url': '/api/invoices/',
-                'methods': ['GET', 'POST'],
-                'description': 'Invoice management and processing'
+        "name": "Billify API",
+        "version": "1.0.0",
+        "status": "operational",
+        "timestamp": datetime.now().isoformat(),
+        "endpoints": {
+            "invoices": {
+                "url": "/api/invoices/",
+                "methods": ["GET", "POST"],
+                "description": "Invoice management and processing",
             },
-            'cash_flow': {
-                'url': '/api/cash-flow/',
-                'methods': ['GET'],
-                'description': 'Cash flow analytics and projections'
+            "cash_flow": {
+                "url": "/api/cash-flow/",
+                "methods": ["GET"],
+                "description": "Cash flow analytics and projections",
             },
-            'accounts': {
-                'url': '/api/accounts/',
-                'methods': ['GET', 'POST'],
-                'description': 'User account management'
+            "accounts": {
+                "url": "/api/accounts/",
+                "methods": ["GET", "POST"],
+                "description": "User account management",
             },
-            'admin': {
-                'url': '/admin/',
-                'description': 'Administrative interface (staff only)'
-            }
+            "admin": {"url": "/admin/", "description": "Administrative interface (staff only)"},
         },
-
-        'documentation': {
-            'repository': 'https://github.com/Billify-VOF/billify-prototype',
-            'api_docs': '/api/docs/'
+        "documentation": {
+            "repository": "https://github.com/Billify-VOF/billify-prototype",
+            "api_docs": "/api/docs/",
         },
-
-        'environment': 'development'
+        "environment": "development",
     }
 
-    return JsonResponse(
-        api_info,
-        json_dumps_params={'indent': 2},
-        status=200
-    )
+    return JsonResponse(api_info, json_dumps_params={"indent": 2}, status=200)
 
 
 urlpatterns = [
-    path("", api_root, name='api-root'),
+    path("", api_root, name="api-root"),
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
 ]

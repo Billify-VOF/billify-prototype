@@ -54,18 +54,15 @@ class Invoice(models.Model):
             "3) Initial automated extraction before user verification "
             "4) Manual edits during the invoice review process. "
             "Therefore, invoice numbers are not constrained to be unique."
-        )
+        ),
     )
     amount: models.DecimalField = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Total invoice amount. "
-                  "Maximum 99,999,999.99. "
-                  "Negative amounts not allowed."
+        help_text="Total invoice amount. " "Maximum 99,999,999.99. " "Negative amounts not allowed.",
     )
     due_date: models.DateField = models.DateField(
-        help_text="Date when payment is due. "
-                  "Used for overdue calculations and urgency levels."
+        help_text="Date when payment is due. " "Used for overdue calculations and urgency levels."
     )
 
     # Metadata
@@ -74,9 +71,9 @@ class Invoice(models.Model):
     status: models.CharField = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='pending',
+        default="pending",
         help_text="Current payment status of the invoice. "
-                  "Automatically updated based on payment and due date."
+        "Automatically updated based on payment and due date.",
     )
 
     URGENCY_LEVELS = UrgencyLevel.choices()
@@ -84,8 +81,7 @@ class Invoice(models.Model):
         choices=URGENCY_LEVELS,
         null=True,
         blank=True,
-        help_text="Manual override for invoice urgency. "
-                  "If not set, urgency is calculated from due date."
+        help_text="Manual override for invoice urgency. " "If not set, urgency is calculated from due date.",
     )
 
     # Timestamps
@@ -96,14 +92,12 @@ class Invoice(models.Model):
     uploaded_by: models.ForeignKey = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        help_text="User who uploaded the invoice PDF. "
-                  "Protected from deletion."
+        help_text="User who uploaded the invoice PDF. " "Protected from deletion.",
     )
     uploaded_by_id: int
 
     file_path: models.CharField = models.CharField(
-        max_length=255,
-        help_text="Relative path to the stored invoice PDF file in the system."
+        max_length=255, help_text="Relative path to the stored invoice PDF file in the system."
     )
 
     # Meta Data
@@ -125,9 +119,12 @@ class Invoice(models.Model):
     invoice_date = models.DateField(null=True, blank=True)
 
     file_size = models.BigIntegerField(null=True, blank=True, help_text="Size of the uploaded file in bytes.")
-    file_type = models.CharField(max_length=100, null=True, blank=True, help_text="MIME type of the uploaded file.")
-    original_file_name = models.CharField(max_length=255, null=True, blank=True, help_text="Original name of the uploaded file.")
-
+    file_type = models.CharField(
+        max_length=100, null=True, blank=True, help_text="MIME type of the uploaded file."
+    )
+    original_file_name = models.CharField(
+        max_length=255, null=True, blank=True, help_text="Original name of the uploaded file."
+    )
 
     class Meta:
         """Model configuration for database behavior and indexing.
@@ -137,44 +134,44 @@ class Invoice(models.Model):
             - status: For filtering and status-based queries
             - due_date: For overdue calculations and date-based filtering
         """
-        app_label = 'infrastructure'
-        ordering = ['-created_at']
-        verbose_name = 'Invoice'
-        verbose_name_plural = 'Invoices'
+
+        app_label = "infrastructure"
+        ordering = ["-created_at"]
+        verbose_name = "Invoice"
+        verbose_name_plural = "Invoices"
         indexes = [
-            models.Index(fields=['invoice_number']),
-            models.Index(fields=['status']),
-            models.Index(fields=['due_date']),
+            models.Index(fields=["invoice_number"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["due_date"]),
         ]
 
     @classmethod
     def create(
         cls,
-    invoice_number: str,
-    amount: Decimal,
-    due_date: date,
-    uploaded_by: int,  # Change from uploaded_by_id
-    file_path: str,
-    buyer_name: Optional[str] = None,
-    buyer_address: Optional[str] = None,
-    buyer_vat: Optional[str] = None,
-    buyer_email: Optional[str] = None,
-    seller_name: Optional[str] = None,
-    seller_vat: Optional[str] = None,
-    payment_method: Optional[str] = None,
-    currency: Optional[str] = None,
-    iban: Optional[str] = None,
-    bic: Optional[str] = None,
-    payment_processor: Optional[str] = None,
-    transaction_id: Optional[str] = None,
-    subtotal: Optional[Decimal] = None,
-    vat_amount: Optional[Decimal] = None,
-    total_amount: Optional[Decimal] = None,
-    file_size: Optional[int] = None,
-    file_type: Optional[str] = None,
-    original_file_name: Optional[str] = None 
-
-    ) -> 'Invoice':
+        invoice_number: str,
+        amount: Decimal,
+        due_date: date,
+        uploaded_by: int,  # Change from uploaded_by_id
+        file_path: str,
+        buyer_name: Optional[str] = None,
+        buyer_address: Optional[str] = None,
+        buyer_vat: Optional[str] = None,
+        buyer_email: Optional[str] = None,
+        seller_name: Optional[str] = None,
+        seller_vat: Optional[str] = None,
+        payment_method: Optional[str] = None,
+        currency: Optional[str] = None,
+        iban: Optional[str] = None,
+        bic: Optional[str] = None,
+        payment_processor: Optional[str] = None,
+        transaction_id: Optional[str] = None,
+        subtotal: Optional[Decimal] = None,
+        vat_amount: Optional[Decimal] = None,
+        total_amount: Optional[Decimal] = None,
+        file_size: Optional[int] = None,
+        file_type: Optional[str] = None,
+        original_file_name: Optional[str] = None,
+    ) -> "Invoice":
         """Create a new Invoice instance with validation."""
         instance = cls(
             invoice_number=invoice_number,
@@ -199,7 +196,7 @@ class Invoice(models.Model):
             total_amount=total_amount if total_amount is not None else None,
             file_size=file_size if file_size is not None else None,
             file_type=file_type if file_type is not None else None,
-            original_file_name=original_file_name if original_file_name is not None else None
+            original_file_name=original_file_name if original_file_name is not None else None,
         )
         instance.full_clean()
         return instance
@@ -248,12 +245,9 @@ class Invoice(models.Model):
         if self.manual_urgency is not None:
             valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
-                raise ValidationError({
-                    'manual_urgency': (
-                        'Invalid urgency level. '
-                        f'Must be one of: {valid_levels}'
-                    )
-                })
+                raise ValidationError(
+                    {"manual_urgency": ("Invalid urgency level. " f"Must be one of: {valid_levels}")}
+                )
 
     def update(
         self,
@@ -289,7 +283,9 @@ class Invoice(models.Model):
         Raises:
             ValidationError: If updated fields don't meet validation requirements.
         """
-        fields_to_update = {key: value for key, value in locals().items() if key != "self" and value is not None}
+        fields_to_update = {
+            key: value for key, value in locals().items() if key != "self" and value is not None
+        }
 
         for field, value in fields_to_update.items():
             setattr(self, field, value)

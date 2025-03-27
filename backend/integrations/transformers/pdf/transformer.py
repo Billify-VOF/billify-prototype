@@ -103,12 +103,10 @@ class PDFTransformer:
                 "file_path": file_metadata.get("file_name", "UNKNOWN"),
                 "file_size": file_metadata.get("file_size"),
                 "file_type": file_metadata.get("file_type"),
-
                 # Default values for required fields
                 "invoice_number": raw_data.get("invoice_number", "UNKNOWN"),
                 "amount": Decimal(raw_data.get("amount", "0.00")),
                 "due_date": raw_data.get("due_date", date.today()),
-
                 # Buyer & Seller Information
                 "buyer_name": raw_data.get("buyer_name", ""),
                 "buyer_address": raw_data.get("buyer_address", ""),
@@ -116,7 +114,6 @@ class PDFTransformer:
                 "buyer_vat": raw_data.get("buyer_vat", ""),
                 "seller_name": raw_data.get("seller_name", ""),
                 "seller_vat": raw_data.get("seller_vat", ""),
-                
                 # Payment & Transaction Details
                 "payment_method": raw_data.get("payment_method", ""),
                 "currency": raw_data.get("currency", ""),
@@ -124,7 +121,6 @@ class PDFTransformer:
                 "bic": raw_data.get("bic", ""),
                 "payment_processor": raw_data.get("payment_processor", ""),
                 "transaction_id": raw_data.get("transaction_id", ""),
-                
                 # Amounts
                 "subtotal": Decimal(raw_data.get("subtotal", "0.00")),
                 "vat_amount": Decimal(raw_data.get("vat_amount", "0.00")),
