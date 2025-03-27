@@ -14,7 +14,10 @@ from domain.exceptions import ProcessingError, StorageError
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
 from domain.repositories.interfaces.storage_repository import StorageRepository
 from domain.services.invoice_service import InvoiceService
-from integrations.transformers.pdf.transformer import PDFTransformer, PDFTransformationError
+from integrations.transformers.pdf.transformer import (
+    PDFTransformer,
+    PDFTransformationError,
+)
 from logging import getLogger
 from typing import BinaryIO, Dict, Any
 
@@ -86,12 +89,12 @@ class InvoiceProcessingService:
         """
         logger.info("Starting invoice processing for user_id=%s", user_id)
         try:
-            # Generate unique identifier
+            # Generate unique identifier for file
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             identifier = f"invoice_{user_id}_{timestamp}"
             logger.debug("Generated identifier: %s", identifier)
 
-            # Store file and get path
+            # Store file using storage repository
             logger.info("Saving invoice file to storage")
             file_path = self.storage_repository.save_file(file, identifier)
             full_path = self.storage_repository.get_file_path(file_path)
@@ -106,7 +109,7 @@ class InvoiceProcessingService:
                 "File metadata: size=%s bytes, type=%s, name=%s", file_size, file_type, original_file_name
             )
 
-            # Extract invoice metadata
+            # Extract data from PDF
             logger.info("Starting PDF transformation to extract invoice data")
             invoice_data = self.pdf_transformer.transform(Path(full_path))
             if invoice_data.get("invoice_number"):
@@ -185,6 +188,7 @@ class InvoiceProcessingService:
                 self.storage_repository.delete_file(file_path)
                 logger.info("File cleanup successful")
 
+            # Include error type in message for better handling
             raise ProcessingError(f"PDF_TRANSFORMATION_ERROR: {str(e)}") from e
 
         except Exception as e:
@@ -199,4 +203,7 @@ class InvoiceProcessingService:
                 self.storage_repository.delete_file(file_path)
                 logger.info("File cleanup successful")
 
-            raise ProcessingError(f"PROCESSING_ERROR: {str(e)}") from e
+            # Include more context about the error type
+            error_type = type(e).__name__
+            msg = f"Failed to process invoice ({error_type}): {str(e)}"
+            raise ProcessingError(msg) from e
