@@ -61,7 +61,7 @@ class OCRService:
                 text_content.append(text)
 
             # Combine all pages into a single text document
-            return '\n'.join(text_content)
+            return "\n".join(text_content)
 
         except Exception as e:
             # If anything goes wrong, wrap the error in our custom error type

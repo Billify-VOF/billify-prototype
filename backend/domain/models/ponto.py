@@ -4,9 +4,14 @@ from decimal import Decimal
 from logging import getLogger
 from datetime import datetime, timezone
 
-from domain.exceptions import InvalidIbanityAccountError, InvalidPontoTokenError, \
-                            NegativeBalanceError, ExpiredAuthorizationError, \
-                            InvalidCurrencyError, PontoTokenExpirationError
+from domain.exceptions import (
+    InvalidIbanityAccountError,
+    InvalidPontoTokenError,
+    NegativeBalanceError,
+    ExpiredAuthorizationError,
+    InvalidCurrencyError,
+    PontoTokenExpirationError,
+)
 
 from config.settings.base import VALID_ISO_CURRENCY_CODES
 
@@ -23,32 +28,33 @@ class IbanityAccount:
         user (User): Database user instance
         account_id (str): Ibanity Ponto Connect account id
         description (str): Ibanity Ponto Connect account description
-        product (str): 
-        reference (str): 
+        product (str):
+        reference (str):
         currency (str): Current Ponto account currency
         authorization_expiration_expected_at (datetime): Ponto Connect authorization expiration time
         current_balance (Decimal): Current balance of the user Ponto account
         available_balance (Decimal): Available balance of the user Ponto account
-        subtype (str): 
+        subtype (str):
         holder_name (str): Ponto account holder name
-        resource_id (str): 
+        resource_id (str):
     """
 
     @classmethod
-    def create(cls,
-               user,
-               account_id: str,
-               description: str,
-               product: str,
-               reference: str,
-               currency: str,
-               authorization_expiration_expected_at: datetime,
-               current_balance: Decimal,
-               available_balance: Decimal,
-               subtype: str,
-               holder_name: str,
-               resource_id: str
-               ) -> 'IbanityAccount':
+    def create(
+        cls,
+        user,
+        account_id: str,
+        description: str,
+        product: str,
+        reference: str,
+        currency: str,
+        authorization_expiration_expected_at: datetime,
+        current_balance: Decimal,
+        available_balance: Decimal,
+        subtype: str,
+        holder_name: str,
+        resource_id: str,
+    ) -> "IbanityAccount":
         """Create a new valid IbanityAccount.
 
         Factory method that creates and validates a new Ibanity account instance.
@@ -107,7 +113,7 @@ class IbanityAccount:
         available_balance: Decimal,
         subtype: str,
         holder_name: str,
-        resource_id: str
+        resource_id: str,
     ) -> None:
         logger.debug("IbanityAccount __init__ called")
         logger.debug(f"  User: {user} ({type(user)})")
@@ -119,7 +125,9 @@ class IbanityAccount:
         self.product: str = product
         self.reference: str = reference
         self.currency: str = currency
-        self.authorization_expiration_expected_at: datetime = authorization_expiration_expected_at
+        self.authorization_expiration_expected_at: datetime = (
+            authorization_expiration_expected_at
+        )
         self.current_balance: Decimal = current_balance
         self.available_balance: Decimal = available_balance
         self.subtype: str = subtype
@@ -130,15 +138,19 @@ class IbanityAccount:
         """Apply business rules to validate IbanityAccount data."""
         if not self.holder_name or not self.holder_name.strip():
             raise InvalidIbanityAccountError("Missing holder name")
-        
+
         if self.currency not in VALID_ISO_CURRENCY_CODES:
-            raise InvalidCurrencyError(f"Invalid currency code '{self.currency}'. Expected valid ISO 4217 codes.")
-        
+            raise InvalidCurrencyError(
+                f"Invalid currency code '{self.currency}'. Expected valid ISO 4217 codes."
+            )
+
         if self.available_balance < 0:
-            raise NegativeBalanceError("IbanityAccount available balance can't be negative")
-        
+            raise NegativeBalanceError(
+                "IbanityAccount available balance can't be negative"
+            )
+
         expire_at = self.authorization_expiration_expected_at
-        dt = datetime.fromisoformat(expire_at.replace('Z', '+00:00'))
+        dt = datetime.fromisoformat(expire_at.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         if dt <= now:
             raise ExpiredAuthorizationError(
@@ -150,7 +162,7 @@ class IbanityAccount:
     def update(
         self,
         *,
-        user = None,
+        user=None,
         account_id: str = None,
         description: str = None,
         product: str = None,
@@ -161,7 +173,7 @@ class IbanityAccount:
         available_balance: Decimal = None,
         subtype: str = None,
         holder_name: str = None,
-        resource_id: str = None
+        resource_id: str = None,
     ) -> None:
         """Update IbanityAccount fields with validation.
 
@@ -172,15 +184,15 @@ class IbanityAccount:
             user (User): New database user instance
             account_id (str): New Ibanity Ponto Connect account id
             description (str): New Ibanity Ponto Connect account description
-            product (str): 
-            reference (str): 
+            product (str):
+            reference (str):
             currency (str): New current Ponto account currency
             authorization_expiration_expected_at (datetime): New Ponto Connect authorization expiration time
             current_balance (Decimal): New current balance of the user Ponto account
             available_balance (Decimal): New available balance of the user Ponto account
-            subtype (str): 
+            subtype (str):
             holder_name (str): New Ponto account holder name
-            resource_id (str): 
+            resource_id (str):
 
         Raises:
             InvalidIbanityAccountError: If the updated data violates business rules
@@ -204,34 +216,36 @@ class IbanityAccount:
 
         if account_id is not None:
             self.account_id = account_id
-            
+
         if description is not None:
             self.description = description
-            
+
         if product is not None:
             self.product = product
-            
+
         if reference is not None:
             self.reference = reference
-            
+
         if currency is not None:
             self.currency = currency
-            
+
         if authorization_expiration_expected_at is not None:
-            self.authorization_expiration_expected_at = authorization_expiration_expected_at
-            
+            self.authorization_expiration_expected_at = (
+                authorization_expiration_expected_at
+            )
+
         if current_balance is not None:
             self.current_balance = current_balance
-            
+
         if available_balance is not None:
             self.available_balance = available_balance
-            
+
         if subtype is not None:
             self.subtype = subtype
-            
+
         if holder_name is not None:
             self.holder_name = holder_name
-            
+
         if resource_id is not None:
             self.resource_id = resource_id
 
@@ -254,12 +268,13 @@ class PontoToken:
     """
 
     @classmethod
-    def create(cls,
-               user,
-               access_token: str,
-               refresh_token: str,
-               expires_in: int,
-               ) -> 'PontoToken':
+    def create(
+        cls,
+        user,
+        access_token: str,
+        refresh_token: str,
+        expires_in: int,
+    ) -> "PontoToken":
         """Create a new valid PontoToken.
 
         Factory method that creates and validates a new PontoToken instance.
@@ -294,7 +309,7 @@ class PontoToken:
         user,
         access_token: str,
         refresh_token: str,
-        expires_in: int
+        expires_in: int,
     ) -> None:
         logger.debug("PontoToken __init__ called")
         logger.debug(f"  User: {user} ({type(user)})")
@@ -358,10 +373,10 @@ class PontoToken:
 
         if access_token is not None:
             self.access_token = access_token
-            
+
         if refresh_token is not None:
             self.refresh_token = refresh_token
-            
+
         if expires_in is not None:
             self.expires_in = expires_in
 

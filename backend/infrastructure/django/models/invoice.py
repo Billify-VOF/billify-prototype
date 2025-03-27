@@ -54,18 +54,18 @@ class Invoice(models.Model):
             "3) Initial automated extraction before user verification "
             "4) Manual edits during the invoice review process. "
             "Therefore, invoice numbers are not constrained to be unique."
-        )
+        ),
     )
     amount: models.DecimalField = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         help_text="Total invoice amount. "
-                  "Maximum 99,999,999.99. "
-                  "Negative amounts not allowed."
+        "Maximum 99,999,999.99. "
+        "Negative amounts not allowed.",
     )
     due_date: models.DateField = models.DateField(
         help_text="Date when payment is due. "
-                  "Used for overdue calculations and urgency levels."
+        "Used for overdue calculations and urgency levels."
     )
 
     # Metadata
@@ -74,9 +74,9 @@ class Invoice(models.Model):
     status: models.CharField = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='pending',
+        default="pending",
         help_text="Current payment status of the invoice. "
-                  "Automatically updated based on payment and due date."
+        "Automatically updated based on payment and due date.",
     )
 
     URGENCY_LEVELS = UrgencyLevel.choices()
@@ -85,7 +85,7 @@ class Invoice(models.Model):
         null=True,
         blank=True,
         help_text="Manual override for invoice urgency. "
-                  "If not set, urgency is calculated from due date."
+        "If not set, urgency is calculated from due date.",
     )
 
     # Timestamps
@@ -96,14 +96,13 @@ class Invoice(models.Model):
     uploaded_by: models.ForeignKey = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        help_text="User who uploaded the invoice PDF. "
-                  "Protected from deletion."
+        help_text="User who uploaded the invoice PDF. " "Protected from deletion.",
     )
     uploaded_by_id: int
 
     file_path: models.CharField = models.CharField(
         max_length=255,
-        help_text="Relative path to the stored invoice PDF file in the system."
+        help_text="Relative path to the stored invoice PDF file in the system.",
     )
 
     class Meta:
@@ -114,14 +113,15 @@ class Invoice(models.Model):
             - status: For filtering and status-based queries
             - due_date: For overdue calculations and date-based filtering
         """
-        app_label = 'infrastructure'
-        ordering = ['-created_at']
-        verbose_name = 'Invoice'
-        verbose_name_plural = 'Invoices'
+
+        app_label = "infrastructure"
+        ordering = ["-created_at"]
+        verbose_name = "Invoice"
+        verbose_name_plural = "Invoices"
         indexes = [
-            models.Index(fields=['invoice_number']),
-            models.Index(fields=['status']),
-            models.Index(fields=['due_date']),
+            models.Index(fields=["invoice_number"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["due_date"]),
         ]
 
     @classmethod
@@ -131,15 +131,15 @@ class Invoice(models.Model):
         amount: Decimal,
         due_date: date,
         uploaded_by_id: int,
-        file_path: str
-    ) -> 'Invoice':
+        file_path: str,
+    ) -> "Invoice":
         """Create a new Invoice instance with validation."""
         instance = cls(
             invoice_number=invoice_number,
             amount=amount,
             due_date=due_date,
             uploaded_by_id=uploaded_by_id,
-            file_path=file_path
+            file_path=file_path,
         )
         instance.full_clean()
         return instance
@@ -188,12 +188,13 @@ class Invoice(models.Model):
         if self.manual_urgency is not None:
             valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
-                raise ValidationError({
-                    'manual_urgency': (
-                        'Invalid urgency level. '
-                        f'Must be one of: {valid_levels}'
-                    )
-                })
+                raise ValidationError(
+                    {
+                        "manual_urgency": (
+                            "Invalid urgency level. " f"Must be one of: {valid_levels}"
+                        )
+                    }
+                )
 
     def update(
         self,
@@ -202,7 +203,7 @@ class Invoice(models.Model):
         due_date: Optional[date] = None,
         status: Optional[str] = None,
         uploaded_by_id: Optional[int] = None,
-        manual_urgency: Optional[int] = None
+        manual_urgency: Optional[int] = None,
     ) -> None:
         """Update invoice fields with validation.
 

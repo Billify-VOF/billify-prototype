@@ -4,11 +4,11 @@ from typing import Optional, Dict, Any, Tuple
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from domain.repositories.interfaces.ponto_repository import (
     IbanityAccountRepository,
-    PontoTokenRepository
+    PontoTokenRepository,
 )
 from domain.models.ponto import (
     IbanityAccount as DomainIbanityAccount,
-    PontoToken as DomainPontoToken
+    PontoToken as DomainPontoToken,
 )
 from domain.exceptions import (
     InvalidIbanityAccountError,
@@ -16,11 +16,11 @@ from domain.exceptions import (
     IbanityAccountDataError,
     IbanityAccountNotFoundError,
     PontoTokenNotFoundError,
-    PontoTokenDecryptionError
+    PontoTokenDecryptionError,
 )
 from infrastructure.django.models.ponto import (
     IbanityAccount as DjangoIbanityAccount,
-    PontoToken as DjangoPontoToken
+    PontoToken as DjangoPontoToken,
 )
 from logging import getLogger
 
@@ -63,28 +63,27 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             return domain_ibanity_account  # Ready for business logic
         """
         logger.debug(
-            "Converting DB IbanityAccount to domain model: %s",
-            db_ibanity_account
+            "Converting DB IbanityAccount to domain model: %s", db_ibanity_account
         )
         # All Django models have an id field by default
         ibanity_account_args = {
-            'user': db_ibanity_account.user,
-            'account_id': db_ibanity_account.account_id,
-            'description': db_ibanity_account.description,
-            'product': db_ibanity_account.product,
-            'reference': db_ibanity_account.reference,
-            'currency': db_ibanity_account.currency,
-            'authorization_expiration_expected_at': (
+            "user": db_ibanity_account.user,
+            "account_id": db_ibanity_account.account_id,
+            "description": db_ibanity_account.description,
+            "product": db_ibanity_account.product,
+            "reference": db_ibanity_account.reference,
+            "currency": db_ibanity_account.currency,
+            "authorization_expiration_expected_at": (
                 db_ibanity_account.authorization_expiration_expected_at
             ),
-            'current_balance': db_ibanity_account.current_balance,
-            'available_balance': db_ibanity_account.available_balance,
-            'subtype': db_ibanity_account.subtype,
-            'holder_name': db_ibanity_account.holder_name,
-            'resource_id': db_ibanity_account.resource_id,
+            "current_balance": db_ibanity_account.current_balance,
+            "available_balance": db_ibanity_account.available_balance,
+            "subtype": db_ibanity_account.subtype,
+            "holder_name": db_ibanity_account.holder_name,
+            "resource_id": db_ibanity_account.resource_id,
             # Map Django's auto-generated id to domain model's
             # ibanity_account_id parameter. Domain model stores it as self.id
-            'ibanity_account_id': db_ibanity_account.id  # type: ignore
+            "ibanity_account_id": db_ibanity_account.id,  # type: ignore
         }
 
         return DomainIbanityAccount(**ibanity_account_args)
@@ -145,7 +144,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
         db_ibanity_account.save()
         return self._to_domain(db_ibanity_account)
 
-    def get_or_create(self, user, account_id, data) -> Tuple[DomainIbanityAccount, bool]:
+    def get_or_create(
+        self, user, account_id, data
+    ) -> Tuple[DomainIbanityAccount, bool]:
         """Get or create by user or account_id and saves with the provided data
 
         Args:
@@ -167,46 +168,35 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             Tuple[DomainIbanityAccount, bool]: (Account domain model, created flag)
         """
         ibanity_account, created = DjangoIbanityAccount.objects.get_or_create(
-            user=user,
-            account_id=account_id,
-            defaults=data
+            user=user, account_id=account_id, defaults=data
         )
 
         return self._to_domain(ibanity_account), created
 
-    def get_by_id(
-        self, ibanity_account_id: int
-    ) -> Optional[DomainIbanityAccount]:
+    def get_by_id(self, ibanity_account_id: int) -> Optional[DomainIbanityAccount]:
         """Retrieve an IbanityAccount by its ID."""
         try:
-            db_ibanity_account = DjangoIbanityAccount.objects.get(
-                id=ibanity_account_id
-            )
+            db_ibanity_account = DjangoIbanityAccount.objects.get(id=ibanity_account_id)
             return self._to_domain(db_ibanity_account)
         except ObjectDoesNotExist:
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the ID {ibanity_account_id}")
+            raise IbanityAccountNotFoundError(
+                f"IbanityAccount not found with the ID {ibanity_account_id}"
+            )
 
-    def get_by_account_id(
-        self, account_id: str
-    ) -> Optional[DomainIbanityAccount]:
-        """Retrieve an IbanityAccount by its account ID.
-        """
-        logger.debug(
-            f"Searching for IbanityAccount with Account ID: "
-            f"{account_id}"
-        )
+    def get_by_account_id(self, account_id: str) -> Optional[DomainIbanityAccount]:
+        """Retrieve an IbanityAccount by its account ID."""
+        logger.debug(f"Searching for IbanityAccount with Account ID: " f"{account_id}")
         logger.debug(f"Type of account ID: {account_id}")
         try:
             # Order by created_at descending and get the first one
-            db_ibanity_account = DjangoIbanityAccount.objects.filter(
-                account_id=account_id
-            ).order_by('-created_at').first()
+            db_ibanity_account = (
+                DjangoIbanityAccount.objects.filter(account_id=account_id)
+                .order_by("-created_at")
+                .first()
+            )
 
             if db_ibanity_account:
-                logger.debug(
-                    f"Found IbanityAccount in DB: "
-                    f"{db_ibanity_account}"
-                )
+                logger.debug(f"Found IbanityAccount in DB: " f"{db_ibanity_account}")
                 return self._to_domain(db_ibanity_account)
             else:
                 logger.debug("No IbanityAccount found with that account ID")
@@ -214,24 +204,20 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the account ID {account_id}")
+            raise IbanityAccountNotFoundError(
+                f"IbanityAccount not found with the account ID {account_id}"
+            )
 
     def get_by_user(self, user) -> Optional[DomainIbanityAccount]:
-        """Retrieve an IbanityAccount by its user.
-        """
+        """Retrieve an IbanityAccount by its user."""
         logger.debug(f"Searching for IbanityAccount of User: {user}")
         logger.debug(f"Type of user: {user}")
         try:
             # Order by created_at descending and get the first one
-            db_ibanity_account = DjangoIbanityAccount.objects.filter(
-                user=user
-            ).first()
+            db_ibanity_account = DjangoIbanityAccount.objects.filter(user=user).first()
 
             if db_ibanity_account:
-                logger.debug(
-                    f"Found IbanityAccount in DB: "
-                    f"{db_ibanity_account}"
-                )
+                logger.debug(f"Found IbanityAccount in DB: " f"{db_ibanity_account}")
                 return self._to_domain(db_ibanity_account)
             else:
                 logger.debug("No IbanityAccount found of that user")
@@ -239,7 +225,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the user {user}")
+            raise IbanityAccountNotFoundError(
+                f"IbanityAccount not found with the user {user}"
+            )
 
     def update(
         self, domain_ibanity_account: DomainIbanityAccount, user
@@ -257,9 +245,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             InvalidIbanityAccountError: If IbanityAccount doesn't exist
         """
         try:
-            db_ibanity_account = DjangoIbanityAccount.objects.get(
-                user=user
-            )
+            db_ibanity_account = DjangoIbanityAccount.objects.get(user=user)
 
             db_ibanity_account.user = domain_ibanity_account.user
             db_ibanity_account.account_id = domain_ibanity_account.account_id
@@ -271,7 +257,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 domain_ibanity_account.authorization_expiration_expected_at
             )
             db_ibanity_account.current_balance = domain_ibanity_account.current_balance
-            db_ibanity_account.available_balance = domain_ibanity_account.available_balance
+            db_ibanity_account.available_balance = (
+                domain_ibanity_account.available_balance
+            )
             db_ibanity_account.subtype = domain_ibanity_account.subtype
             db_ibanity_account.holder_name = domain_ibanity_account.holder_name
             db_ibanity_account.resource_id = domain_ibanity_account.resource_id
@@ -284,9 +272,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 f"IbanityAccount {domain_ibanity_account.account_id} not found"
             ) from exc
 
-    def update_by_account_id(
-        self, account_id: str, data
-    ) -> DomainIbanityAccount:
+    def update_by_account_id(self, account_id: str, data) -> DomainIbanityAccount:
         """Update an existing IbanityAccount.
 
         This method should update all fields of an existing IbanityAccount
@@ -316,23 +302,21 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             RepositoryError: If there's a persistence-related error
         """
         try:
-            ibanity_account = DjangoIbanityAccount.objects.get(
-                account_id=account_id
-            )
+            ibanity_account = DjangoIbanityAccount.objects.get(account_id=account_id)
 
             field_mapping = {
-                'description': 'description',
-                'product': 'product',
-                'reference': 'reference',
-                'currency': 'currency',
-                'authorization_expiration_expected_at': (
-                    'authorization_expiration_expected_at'
+                "description": "description",
+                "product": "product",
+                "reference": "reference",
+                "currency": "currency",
+                "authorization_expiration_expected_at": (
+                    "authorization_expiration_expected_at"
                 ),
-                'current_balance': 'current_balance',
-                'available_balance': 'available_balance',
-                'subtype': 'subtype',
-                'holder_name': 'holder_name',
-                'resource_id': 'resource_id'
+                "current_balance": "current_balance",
+                "available_balance": "available_balance",
+                "subtype": "subtype",
+                "holder_name": "holder_name",
+                "resource_id": "resource_id",
             }
 
             # Update account fields
@@ -351,9 +335,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             ) from e
 
     def process_accounts_data(
-        self,
-        user: Any,
-        accounts_data: Dict[str, Any]
+        self, user: Any, accounts_data: Dict[str, Any]
     ) -> DomainIbanityAccount:
         """Process raw accounts data from Ponto API and save or update
            in repository.
@@ -376,22 +358,17 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         # Create or update the account
         account, created = self.get_or_create(
-            user=user,
-            account_id=account_info['id'],
-            data=account_data
+            user=user, account_id=account_info["id"], data=account_data
         )
 
         if not created:
             account = self.update_by_account_id(
-                account_id=account_info['id'],
-                data=account_data
+                account_id=account_info["id"], data=account_data
             )
 
         return account
 
-    def _validate_account_data(
-        self, accounts_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _validate_account_data(self, accounts_data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the account data from Ponto API.
 
         Args:
@@ -404,52 +381,48 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             IbanityAccountDataError: If the account data is invalid
         """
         # Check if there are any accounts in the data
-        data_empty = (
-            not accounts_data.get('data') or
-            len(accounts_data['data']) == 0
-        )
+        data_empty = not accounts_data.get("data") or len(accounts_data["data"]) == 0
         if data_empty:
             raise IbanityAccountDataError("No account data available")
 
         # Validate account data structure
-        account_info = accounts_data['data'][0]
-        if 'id' not in account_info:
+        account_info = accounts_data["data"][0]
+        if "id" not in account_info:
             raise IbanityAccountDataError("Missing account ID in data")
 
-        if 'attributes' not in account_info:
-            raise IbanityAccountDataError(
-                "Missing attributes in account data"
-            )
+        if "attributes" not in account_info:
+            raise IbanityAccountDataError("Missing attributes in account data")
 
-        attributes = account_info['attributes']
+        attributes = account_info["attributes"]
         required_attrs = [
-            'description', 'product', 'reference', 'currency',
-            'authorizationExpirationExpectedAt', 'currentBalance',
-            'availableBalance', 'subtype', 'holderName'
+            "description",
+            "product",
+            "reference",
+            "currency",
+            "authorizationExpirationExpectedAt",
+            "currentBalance",
+            "availableBalance",
+            "subtype",
+            "holderName",
         ]
 
-        missing_attrs = [
-            attr for attr in required_attrs
-            if attr not in attributes
-        ]
+        missing_attrs = [attr for attr in required_attrs if attr not in attributes]
         if missing_attrs:
             raise IbanityAccountDataError(
                 f"Missing required attributes: {', '.join(missing_attrs)}"
             )
 
         # Store the nested path for clarity
-        latest_sync = account_info['meta'].get('latestSynchronization', {})
+        latest_sync = account_info["meta"].get("latestSynchronization", {})
 
         meta_missing = (
-            'meta' not in account_info or
-            'latestSynchronization' not in account_info['meta'] or
-            'attributes' not in latest_sync or
-            'resourceId' not in latest_sync.get('attributes', {})
+            "meta" not in account_info
+            or "latestSynchronization" not in account_info["meta"]
+            or "attributes" not in latest_sync
+            or "resourceId" not in latest_sync.get("attributes", {})
         )
         if meta_missing:
-            raise IbanityAccountDataError(
-                "Missing resourceId in account data"
-            )
+            raise IbanityAccountDataError("Missing resourceId in account data")
 
         return account_info
 
@@ -465,25 +438,22 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             Dict: Data ready for domain model creation/update
         """
         return {
-            'description': account_info['attributes']['description'],
-            'product': account_info['attributes']['product'],
-            'reference': account_info['attributes']['reference'],
-            'currency': account_info['attributes']['currency'],
-            'authorization_expiration_expected_at': (
-                account_info['attributes']['authorizationExpirationExpectedAt']
+            "description": account_info["attributes"]["description"],
+            "product": account_info["attributes"]["product"],
+            "reference": account_info["attributes"]["reference"],
+            "currency": account_info["attributes"]["currency"],
+            "authorization_expiration_expected_at": (
+                account_info["attributes"]["authorizationExpirationExpectedAt"]
             ),
-            'current_balance': account_info['attributes']['currentBalance'],
-            'available_balance': (
-                account_info['attributes']['availableBalance']
+            "current_balance": account_info["attributes"]["currentBalance"],
+            "available_balance": (account_info["attributes"]["availableBalance"]),
+            "subtype": account_info["attributes"]["subtype"],
+            "holder_name": account_info["attributes"]["holderName"],
+            "resource_id": (
+                account_info["meta"]["latestSynchronization"]["attributes"][
+                    "resourceId"
+                ]
             ),
-            'subtype': account_info['attributes']['subtype'],
-            'holder_name': account_info['attributes']['holderName'],
-            'resource_id': (
-                account_info['meta']
-                ['latestSynchronization']
-                ['attributes']
-                ['resourceId']
-            )
         }
 
 
@@ -519,28 +489,23 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             domain_ponto_token = self._to_domain(db_ponto_token)
             return domain_ponto_token  # Ready for business logic
         """
-        logger.debug(
-            "Converting DB PontoToken to domain model: %s",
-            db_ponto_token
-        )
+        logger.debug("Converting DB PontoToken to domain model: %s", db_ponto_token)
         # All Django models have an id field by default
         pontoToken_args = {
-            'user': db_ponto_token.user,
-            'access_token': db_ponto_token.access_token,
-            'refresh_token': db_ponto_token.refresh_token,
-            'expires_in': db_ponto_token.expires_in,
+            "user": db_ponto_token.user,
+            "access_token": db_ponto_token.access_token,
+            "refresh_token": db_ponto_token.refresh_token,
+            "expires_in": db_ponto_token.expires_in,
             # Map Django's auto-generated id to domain model's
             # pontoToken_id parameter. Domain model stores it as self.id
-            'pontoToken_id': db_ponto_token.id  # type:ignore
+            "pontoToken_id": db_ponto_token.id,  # type:ignore
         }
         logger.debug("Created PontoToken args: %s", pontoToken_args)
 
         return DomainPontoToken(**pontoToken_args)
 
     def _to_django(
-        self,
-        domain_ponto_token: DomainPontoToken,
-        user
+        self, domain_ponto_token: DomainPontoToken, user
     ) -> DjangoPontoToken:
         """Convert domain model to Django model.
 
@@ -574,9 +539,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             expires_in=domain_ponto_token.expires_in,
         )
 
-    def save(
-        self, domain_ponto_token: DomainPontoToken, user
-    ) -> DomainPontoToken:
+    def save(self, domain_ponto_token: DomainPontoToken, user) -> DomainPontoToken:
         """Save a PontoToken to the database."""
         # come back to this later
         db_ponto_token = self._to_django(domain_ponto_token, user)
@@ -592,8 +555,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             return None
 
     def get_or_create_by_user(self, user, data) -> Tuple[DomainPontoToken, bool]:
-        """Retrieve an PontoToken by its user.
-        """
+        """Retrieve an PontoToken by its user."""
         logger.debug(f"Searching for PontoToken of User: {user}")
         logger.debug(f"Type of user: {user}")
         try:
@@ -630,17 +592,15 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
             InvalidPontoTokenError: If PontoToken doesn't exist
         """
         try:
-            db_ponto_token = DjangoPontoToken.objects.filter(
-                user=user
-            ).first()
-            
+            db_ponto_token = DjangoPontoToken.objects.filter(user=user).first()
+
             if db_ponto_token is None:
                 raise PontoTokenNotFoundError(f"PontoToken with user {user} not found")
 
             # Use model's update method for encapsulation
-            db_ponto_token.access_token = data['access_token']
-            db_ponto_token.refresh_token = data['refresh_token']
-            db_ponto_token.expires_in = data['expires_in']
+            db_ponto_token.access_token = data["access_token"]
+            db_ponto_token.refresh_token = data["refresh_token"]
+            db_ponto_token.expires_in = data["expires_in"]
             # Save the changes to the database
             db_ponto_token.save()
             return self._to_domain(db_ponto_token)

@@ -12,11 +12,7 @@ from domain.models.value_objects import InvoiceStatus
 class InvoiceService:
     """Domain service that implements business logic for invoice operations."""
 
-    def update(
-        self,
-        invoice: Invoice,
-        extracted_data: Dict[str, Any]
-    ) -> Invoice:
+    def update(self, invoice: Invoice, extracted_data: Dict[str, Any]) -> Invoice:
         """Update an invoice with data extracted from a document.
 
         This method applies business rules for updating an existing invoice
@@ -34,16 +30,12 @@ class InvoiceService:
         """
         # Delegate to the domain model's update method
         invoice.update(
-            amount=extracted_data['amount'],
-            due_date=extracted_data['due_date']
+            amount=extracted_data["amount"], due_date=extracted_data["due_date"]
         )
 
         return invoice
 
-    def create(
-        self,
-        extracted_data: Dict[str, Any]
-    ) -> Invoice:
+    def create(self, extracted_data: Dict[str, Any]) -> Invoice:
         """Create a new invoice from extracted document data.
 
         This method applies business rules for creating a new invoice
@@ -60,13 +52,13 @@ class InvoiceService:
             ValueError: If the extracted data is missing required fields
         """
         # Remove any non-domain fields
-        extracted_data.pop('file_path', None)
+        extracted_data.pop("file_path", None)
 
         # Use the factory method to create and validate the invoice
         return Invoice.create(
-            amount=extracted_data['amount'],
-            due_date=extracted_data['due_date'],
-            invoice_number=extracted_data['invoice_number']
+            amount=extracted_data["amount"],
+            due_date=extracted_data["due_date"],
+            invoice_number=extracted_data["invoice_number"],
         )
 
     def update_statuses(self, invoices: List[Invoice]) -> None:
@@ -84,11 +76,7 @@ class InvoiceService:
                 if invoice.is_overdue():
                     invoice.mark_as_overdue()
 
-    def _calculate_status(
-        self,
-        invoice: Invoice,
-        current_date
-    ) -> InvoiceStatus:
+    def _calculate_status(self, invoice: Invoice, current_date) -> InvoiceStatus:
         """Determine the status of an invoice based on business rules.
 
         Args:
@@ -109,26 +97,26 @@ class InvoiceService:
 
     def get_urgency_info(self, invoice: Invoice) -> Dict[str, Any]:
         """Extract urgency information from an invoice in a format suitable for APIs.
-        
+
         This method transforms the UrgencyLevel enum to a dictionary containing
         all relevant information for presentation purposes.
-        
+
         Args:
             invoice: The invoice to extract urgency information from
-            
+
         Returns:
             Dict with urgency level, display name, color code, and manual flag
         """
         # Get the UrgencyLevel enum from the invoice
         urgency_level = invoice.urgency
-        
+
         # Check if urgency was manually set
         is_manually_set = invoice.is_urgency_manually_set()
-        
+
         # Return a dictionary with all relevant information
         return {
-            'level': urgency_level.name if urgency_level else None,
-            'display_name': urgency_level.display_name if urgency_level else None,
-            'color_code': urgency_level.color_code if urgency_level else None,
-            'is_manual': is_manually_set
+            "level": urgency_level.name if urgency_level else None,
+            "display_name": urgency_level.display_name if urgency_level else None,
+            "color_code": urgency_level.color_code if urgency_level else None,
+            "is_manual": is_manually_set,
         }

@@ -27,12 +27,13 @@ class Invoice:
     """
 
     @classmethod
-    def create(cls,
-               amount: Decimal,
-               due_date: date,
-               invoice_number: str,
-               status: InvoiceStatus = InvoiceStatus.PENDING
-               ) -> 'Invoice':
+    def create(
+        cls,
+        amount: Decimal,
+        due_date: date,
+        invoice_number: str,
+        status: InvoiceStatus = InvoiceStatus.PENDING,
+    ) -> "Invoice":
         """Create a new valid invoice.
 
         Factory method that creates and validates a new invoice instance.
@@ -58,7 +59,7 @@ class Invoice:
             amount=amount,
             due_date=due_date,
             invoice_number=invoice_number,
-            status=status
+            status=status,
         )
         invoice.validate()
         return invoice
@@ -70,16 +71,12 @@ class Invoice:
         due_date: date,
         invoice_number: str,
         invoice_id: Optional[int] = None,
-        status: InvoiceStatus = InvoiceStatus.PENDING
+        status: InvoiceStatus = InvoiceStatus.PENDING,
     ) -> None:
         logger.debug("Invoice __init__ called")
         logger.debug("  amount: %s (%s)", amount, type(amount))
         logger.debug("  due_date: %s (%s)", due_date, type(due_date))
-        logger.debug(
-            "  invoice_number: %s (%s)",
-            invoice_number,
-            type(invoice_number)
-        )
+        logger.debug("  invoice_number: %s (%s)", invoice_number, type(invoice_number))
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
@@ -99,17 +96,19 @@ class Invoice:
         Raises:
             InvalidInvoiceError: If status violates business rules
         """
-        if (self.status == InvoiceStatus.OVERDUE
-                and self.due_date > timezone.now().date()):
+        if (
+            self.status == InvoiceStatus.OVERDUE
+            and self.due_date > timezone.now().date()
+        ):
             raise InvalidInvoiceError(
-                'Invoice cannot be overdue if due date is in the future'
+                "Invoice cannot be overdue if due date is in the future"
             )
         if not isinstance(self.status, InvoiceStatus):
             raise InvalidInvoiceError("Status must be an InvoiceStatus enum")
         valid_statuses = (
             InvoiceStatus.PENDING,
             InvoiceStatus.OVERDUE,
-            InvoiceStatus.PAID
+            InvoiceStatus.PAID,
         )
         if self.status not in valid_statuses:
             raise InvalidInvoiceError(f"Invalid status: {self.status}")
@@ -132,7 +131,7 @@ class Invoice:
         return self.status == InvoiceStatus.PAID
 
     @property
-    def urgency(self) -> 'UrgencyLevel':
+    def urgency(self) -> "UrgencyLevel":
         """Returns current urgency level: manual override or calculated.
 
         The urgency level can be either:
@@ -170,7 +169,7 @@ class Invoice:
 
     def is_urgency_manually_set(self) -> bool:
         """Check if the urgency level has been manually set.
-        
+
         Returns:
             bool: True if urgency has been manually overridden, False if it's calculated automatically
         """
@@ -192,8 +191,7 @@ class Invoice:
 
         The status change will be persisted through the repository pattern.
         """
-        if (self.status == InvoiceStatus.PENDING
-                or self.status == InvoiceStatus.OVERDUE):
+        if self.status == InvoiceStatus.PENDING or self.status == InvoiceStatus.OVERDUE:
             self.status = InvoiceStatus.PAID
 
     def is_overdue(self) -> bool:
@@ -240,9 +238,7 @@ class Invoice:
             invoice.set_urgency_manually("HIGH")  # Raises InvalidInvoiceError
         """
         if not isinstance(new_urgency, UrgencyLevel):
-            raise InvalidInvoiceError(
-                f"Expected UrgencyLevel, got {type(new_urgency)}"
-            )
+            raise InvalidInvoiceError(f"Expected UrgencyLevel, got {type(new_urgency)}")
         self._manual_urgency = new_urgency
         logger.debug("Update: Setting manual urgency to %s", new_urgency)
 
@@ -277,7 +273,7 @@ class Invoice:
         due_date: Optional[date] = None,
         invoice_number: Optional[str] = None,
         status: Optional[InvoiceStatus] = None,
-        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None
+        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None,
     ) -> None:
         """Update invoice fields with validation.
 
@@ -308,13 +304,13 @@ class Invoice:
                 due_date=date(2023, 2, 1),
                 status=InvoiceStatus.PAID
             )
-            
+
             # Set manual urgency alongside other updates
             invoice.update(
                 amount=Decimal("300.00"),
                 manual_urgency=UrgencyLevel.HIGH
             )
-            
+
             # Clear manual urgency and return to automatic calculation
             invoice.update(manual_urgency=False)
         """
@@ -330,7 +326,7 @@ class Invoice:
 
         if status is not None:
             self.status = status
-            
+
         # Handle manual urgency if provided
         if manual_urgency is not None:
             if manual_urgency is False:

@@ -15,34 +15,27 @@ setup(
         "django-filter==23.5",
         "django-storages==1.14.2",
         "drf-spectacular==0.27.0",
-
         # Database
         "psycopg2-binary==2.9.9",
-
         # Task Queue
         "celery==5.3.6",
         "kombu==5.4.2",
         "billiard==4.2.1",
         "amqp==5.3.1",
         "vine==5.1.0",
-
         # AWS
         "boto3==1.34.14",
         "botocore==1.34.162",
         "s3transfer==0.10.4",
-
         # Date/Time
         "python-dateutil==2.9.0.post0",
         "pytz==2024.2",
-
         # Environment Variables
         "python-dotenv==1.0.0",
-
         # PDF Processing
         "pytesseract==0.3.13",
         "pdf2image==1.17.0",
         "Pillow==11.0.0",
-
         # Utilities
         "six==1.16.0",
         "sqlparse==0.5.2",

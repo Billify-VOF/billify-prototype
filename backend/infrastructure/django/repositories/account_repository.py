@@ -18,7 +18,7 @@ def _to_domain(user_model) -> Optional[Account]:
         password=None,
         is_active=user_model.is_active,
         first_name=user_model.first_name,
-        last_name=user_model.last_name
+        last_name=user_model.last_name,
     )
 
 

@@ -53,9 +53,7 @@ class IbanityAccountRepository(ABC):
     """
 
     @abstractmethod
-    def save(
-        self, ibanity_account: IbanityAccount
-    ) -> IbanityAccount:
+    def save(self, ibanity_account: IbanityAccount) -> IbanityAccount:
         """Save an ibanity account to the database.
 
         This method must either create a new Ibanity account or update
@@ -136,9 +134,7 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def update(
-        self, ibanity_account: IbanityAccount, user
-    ) -> IbanityAccount:
+    def update(self, ibanity_account: IbanityAccount, user) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
         This method should update all fields of an existing IbanityAccount

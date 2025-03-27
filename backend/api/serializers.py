@@ -21,7 +21,7 @@ class InvoiceUploadSerializer(serializers.Serializer):
         - Must not exceed maximum allowed size
         - Must have valid filename
         """
-        if not value.name.endswith('.pdf'):
+        if not value.name.endswith(".pdf"):
             raise serializers.ValidationError(
                 "Invalid invoice format. Please upload PDF files only."
             )

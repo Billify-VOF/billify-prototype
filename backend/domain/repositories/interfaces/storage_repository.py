@@ -66,12 +66,12 @@ class StorageRepository(ABC):
     def move_file(self, source_identifier: str, target_identifier: str) -> str:
         """
         Move a file from one location to another within the storage system.
-        
+
         This operation should be atomic and implemented efficiently by the
         storage backend when possible (e.g., rename rather than copy+delete).
-        
+
         Concurrency guarantees:
-        - Atomicity: The operation should appear as a single indivisible action from the 
+        - Atomicity: The operation should appear as a single indivisible action from the
           perspective of other processes/threads. Implementations should ensure that:
             * Within a single filesystem: Use native rename operations where available
             * Across different storage systems: Either complete entirely or not at all
@@ -81,14 +81,14 @@ class StorageRepository(ABC):
         - Implementation note: Some storage systems may not support true atomic moves across
           different volumes or storage types. In these cases, implementers should document
           any limitations and potential race conditions.
-        
+
         Args:
             source_identifier: The identifier of the source file
             target_identifier: The identifier to use for the target location
-        
+
         Returns:
             str: New storage identifier for the moved file
-        
+
         Raises:
             StorageError: If file cannot be moved
         """
