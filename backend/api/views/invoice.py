@@ -15,7 +15,9 @@ from domain.services.invoice_service import InvoiceService
 from application.services.invoice_service import InvoiceProcessingService
 from domain.exceptions import StorageError, ProcessingError
 from infrastructure.storage.file_system import FileStorage
-from infrastructure.django.repositories.invoice_repository import DjangoInvoiceRepository
+from infrastructure.django.repositories.invoice_repository import (
+    DjangoInvoiceRepository,
+)
 from integrations.transformers.pdf.transformer import PDFTransformer
 
 logger = getLogger(__name__)
@@ -102,7 +104,13 @@ class InvoiceUploadView(APIView):
                     "date": formatted_date,
                     "supplier_name": result.get("supplier_name", ""),
                     "urgency": result.get(
-                        "urgency", {"level": None, "display_name": "", "color_code": None, "is_manual": False}
+                        "urgency",
+                        {
+                            "level": None,
+                            "display_name": "",
+                            "color_code": None,
+                            "is_manual": False,
+                        },
                     ),
                 },
             }
@@ -127,7 +135,11 @@ class InvoiceUploadView(APIView):
                 extra={"user_id": self._get_user_id(request)},
             )
             return Response(
-                {"status": "error", "error": "Unable to store invoice", "detail": "Please try again later"},
+                {
+                    "status": "error",
+                    "error": "Unable to store invoice",
+                    "detail": "Please try again later",
+                },
                 status=503,
             )
 
@@ -151,7 +163,12 @@ class InvoiceUploadView(APIView):
                 )
             else:
                 return Response(
-                    {"status": "error", "error": "Unable to process invoice", "detail": error_msg}, status=422
+                    {
+                        "status": "error",
+                        "error": "Unable to process invoice",
+                        "detail": error_msg,
+                    },
+                    status=422,
                 )
 
         except KeyError as e:
@@ -242,7 +259,12 @@ class InvoiceUploadView(APIView):
         for fmt in ["%Y-%m-%d", "%b %d %Y"]:
             try:
                 normalized_date = datetime.strptime(raw_date, fmt)
-                logger.debug("Normalized date %s to %s using format %s", raw_date, normalized_date, fmt)
+                logger.debug(
+                    "Normalized date %s to %s using format %s",
+                    raw_date,
+                    normalized_date,
+                    fmt,
+                )
                 return normalized_date.date()  # Convert to date object
             except ValueError:
                 logger.warning("Failed to normalize date %s with format %s", raw_date, fmt)
