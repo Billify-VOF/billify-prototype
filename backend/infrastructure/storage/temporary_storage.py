@@ -48,9 +48,7 @@ class TemporaryStorageAdapter:
         self.expiration_hours = expiration_hours
 
         # Set up registry file for tracking temporary files
-        self.registry_path = registry_path or (
-            Path(settings.MEDIA_ROOT) / "temp_registry.json"
-        )
+        self.registry_path = registry_path or (Path(settings.MEDIA_ROOT) / "temp_registry.json")
 
         # Set up lock file path
         self.lock_file_path = Path(str(self.registry_path) + ".lock")
@@ -65,9 +63,7 @@ class TemporaryStorageAdapter:
                 with self.registry_path.open("w") as f:
                     json.dump({}, f)
 
-                logger.debug(
-                    "Created new temporary file registry at %s", self.registry_path
-                )
+                logger.debug("Created new temporary file registry at %s", self.registry_path)
 
         logger.debug(
             "Initialized TemporaryStorageAdapter with expiration: %s hours, registry: %s",
@@ -95,9 +91,7 @@ class TemporaryStorageAdapter:
         """
         # Generate a unique temporary identifier with timestamp and random suffix
         timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-        random_suffix = uuid.uuid4().hex[
-            :8
-        ]  # Use 8 characters from a UUID for uniqueness
+        random_suffix = uuid.uuid4().hex[:8]  # Use 8 characters from a UUID for uniqueness
         temp_identifier = f"temp_{identifier}_{timestamp}_{random_suffix}"
 
         try:
@@ -123,7 +117,8 @@ class TemporaryStorageAdapter:
             # If tracking still failed after retries, clean up to avoid orphaned files
             if not tracking_success:
                 logger.error(
-                    "Failed to track file %s in registry after %d attempts. Cleaning up to avoid orphaned files.",
+                    "Failed to track file %s in registry after %d attempts. "
+                    "Cleaning up to avoid orphaned files.",
                     relative_path,
                     max_tracking_attempts,
                 )
@@ -131,15 +126,14 @@ class TemporaryStorageAdapter:
                     # Delete the file since we can't track it
                     self.storage_repository.delete_file(relative_path)
                     raise StorageError(
-                        f"Failed to store temporary file: Could not track in registry after {max_tracking_attempts} attempts"
+                        f"Failed to store temporary file: "
+                        f"Could not track in registry after {max_tracking_attempts} attempts"
                     )
                 except Exception as cleanup_error:
                     # If cleanup also fails, report both errors
-                    logger.error(
-                        "Failed to clean up untracked file: %s", str(cleanup_error)
-                    )
+                    logger.error("Failed to clean up untracked file: %s", str(cleanup_error))
                     raise StorageError(
-                        f"Failed to store temporary file: Could not track in registry and cleanup failed"
+                        "Failed to store temporary file: Could not track in registry and cleanup failed"
                     )
 
             logger.info(
@@ -176,16 +170,12 @@ class TemporaryStorageAdapter:
         registry = self._load_registry()
 
         if temp_path not in registry:
-            logger.warning(
-                "Attempting to promote untracked temporary file: %s", temp_path
-            )
+            logger.warning("Attempting to promote untracked temporary file: %s", temp_path)
             # Continue anyway - it might be a valid file that wasn't tracked properly
 
         try:
             # Use the repository's move_file method to handle the actual move
-            permanent_path = self.storage_repository.move_file(
-                temp_path, permanent_identifier
-            )
+            permanent_path = self.storage_repository.move_file(temp_path, permanent_identifier)
 
             # Remove from the temporary registry
             self._untrack_temporary_file(temp_path)
@@ -204,9 +194,7 @@ class TemporaryStorageAdapter:
                 temp_path,
                 str(e),
             )
-            raise StorageError(
-                f"Failed to promote temporary file to permanent: {str(e)}"
-            ) from e
+            raise StorageError(f"Failed to promote temporary file to permanent: {str(e)}") from e
 
     def cleanup_expired(self) -> Dict[str, Any]:
         """Remove all temporary files that have exceeded their expiration time.
@@ -242,9 +230,7 @@ class TemporaryStorageAdapter:
                 logger.info("No expired temporary files found during cleanup")
                 return cleanup_stats
 
-            logger.info(
-                "Found %d expired temporary files to clean up", len(expired_files)
-            )
+            logger.info("Found %d expired temporary files to clean up", len(expired_files))
 
             # Process each expired file
             for file_path in expired_files:
@@ -308,9 +294,7 @@ class TemporaryStorageAdapter:
 
         except Exception as e:
             logger.error("Critical error during temporary file cleanup: %s", str(e))
-            raise StorageError(
-                f"Failed to clean up expired temporary files: {str(e)}"
-            ) from e
+            raise StorageError(f"Failed to clean up expired temporary files: {str(e)}") from e
 
     def _load_registry(self) -> Dict:
         """Load the temporary file registry from disk.
@@ -365,9 +349,7 @@ class TemporaryStorageAdapter:
 
         except Exception as e:
             logger.error("Failed to save registry file: %s", str(e))
-            raise StorageError(
-                f"Failed to save temporary file registry: {str(e)}"
-            ) from e
+            raise StorageError(f"Failed to save temporary file registry: {str(e)}") from e
 
     def _track_temporary_file(self, path: str, creation_time: datetime) -> bool:
         """Add a file to the temporary registry.
@@ -405,9 +387,7 @@ class TemporaryStorageAdapter:
                 )
                 return True
             except StorageError as e:
-                logger.error(
-                    "Failed to save registry after tracking file %s: %s", path, str(e)
-                )
+                logger.error("Failed to save registry after tracking file %s: %s", path, str(e))
                 return False
 
         except Exception as e:
@@ -438,9 +418,7 @@ class TemporaryStorageAdapter:
 
             # Check if the file is in the registry
             if path not in registry:
-                logger.debug(
-                    "File %s was not in the registry, nothing to untrack", path
-                )
+                logger.debug("File %s was not in the registry, nothing to untrack", path)
                 return True  # Not an error, file just wasn't tracked
 
             # Remove the file from the registry
@@ -450,14 +428,10 @@ class TemporaryStorageAdapter:
             try:
                 self._save_registry(registry)
                 created_at = file_info.get("created_at", "unknown")
-                logger.debug(
-                    "Untracked temporary file %s (created: %s)", path, created_at
-                )
+                logger.debug("Untracked temporary file %s (created: %s)", path, created_at)
                 return True
             except StorageError as e:
-                logger.error(
-                    "Failed to save registry after untracking file %s: %s", path, str(e)
-                )
+                logger.error("Failed to save registry after untracking file %s: %s", path, str(e))
                 return False
 
         except Exception as e:
@@ -502,9 +476,7 @@ class TemporaryStorageAdapter:
                         )
                 except (KeyError, ValueError) as e:
                     # Handle missing or invalid timestamps
-                    logger.warning(
-                        "Invalid expiration data for file %s: %s", path, str(e)
-                    )
+                    logger.warning("Invalid expiration data for file %s: %s", path, str(e))
 
             if expired_files:
                 logger.info("Found %d expired files", len(expired_files))
@@ -541,9 +513,7 @@ class TemporaryStorageAdapter:
 
             # Check if the file is in the registry
             if path not in registry:
-                logger.debug(
-                    "File %s is not in the registry, cannot determine expiration", path
-                )
+                logger.debug("File %s is not in the registry, cannot determine expiration", path)
                 return False
 
             # Get file info and parse expiration time

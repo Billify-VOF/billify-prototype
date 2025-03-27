@@ -85,9 +85,7 @@ class PontoView(APIView):
         )
         self.ponto_token_repository = DjangoPontoTokenRepository()
         self.ponto_token_encryption_service = PontoTokenEncryptionService()
-        self.ponto_token_service = PontoTokenService(
-            ponto_token_repository=self.ponto_token_repository
-        )
+        self.ponto_token_service = PontoTokenService(ponto_token_repository=self.ponto_token_repository)
 
     def fetch_account_details(self, request):
         """Fetches account details for the authenticated user from the Ponto Connect API.
@@ -135,9 +133,7 @@ class PontoView(APIView):
             if not accounts_data.get("data"):
                 return Response({"error": "No accounts found"}, status=404)
 
-            account_data = self.ibanity_account_service.add_or_update(
-                user, accounts_data
-            )
+            account_data = self.ibanity_account_service.add_or_update(user, accounts_data)
 
             if isinstance(account_data, dict) and "error" in account_data:
                 return Response(account_data, status=500)
@@ -147,14 +143,10 @@ class PontoView(APIView):
             logger.error(f"Error decoding JSON response for user {user}: {str(e)}")
             return Response({"error": f"Invalid JSON response: {e}"}, status=500)
         except urllib3.exceptions.HTTPError as e:
-            logger.error(
-                f"HTTP error while fetching account details for user {user}: {str(e)}"
-            )
+            logger.error(f"HTTP error while fetching account details for user {user}: {str(e)}")
             return Response({"error": f"HTTP request failed: {e}"}, status=500)
         except Exception as e:
-            logger.error(
-                f"Error occurred while fetching account details for user {user}: {str(e)}"
-            )
+            logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
             return Response({"error": f"Request failed: {e}"}, status=500)
 
     def ponto_login(self, request: HttpRequest) -> Response:
@@ -184,9 +176,7 @@ class PontoView(APIView):
 
         # Step 2: Exchange authorization code for access token
         try:
-            client = PontoProvider.generate_client_credentials(
-                PONTO_CLIENT_ID, PONTO_CLIENT_SECRET
-            )
+            client = PontoProvider.generate_client_credentials(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
 
             # Prepare request data for the token exchange
             headers = {
@@ -216,9 +206,7 @@ class PontoView(APIView):
             # Process the response
             if response.status == 200:
                 try:
-                    token_data: Dict[str, Any] = json.loads(
-                        response.data.decode("utf-8")
-                    )
+                    token_data: Dict[str, Any] = json.loads(response.data.decode("utf-8"))
                     access_token = token_data.get("access_token")
                     refresh_token = token_data.get("refresh_token")
                     expires_in = token_data.get("expires_in")
@@ -243,9 +231,7 @@ class PontoView(APIView):
                     )
                 except json.JSONDecodeError:
                     logger.exception("Failed to decode JSON response from Ponto server")
-                    return Response(
-                        {"error": "Invalid JSON response from server"}, status=500
-                    )
+                    return Response({"error": "Invalid JSON response from server"}, status=500)
                 except Exception as e:
                     return Response(
                         {
@@ -259,9 +245,7 @@ class PontoView(APIView):
                 logger.error(
                     f"Failed to get access token: {response.status}, {response.data.decode('utf-8')}"
                 )
-                return Response(
-                    {"error": "Failed to get access token"}, status=response.status
-                )
+                return Response({"error": "Failed to get access token"}, status=response.status)
 
         except Exception as e:
             logger.exception(f"Unexpected error in ponto_login: {str(e)}")
@@ -286,13 +270,9 @@ class PontoView(APIView):
             if not ponto_token.refresh_token:
                 return Response({"error": "Refresh token not found"}, status=400)
             # Decrypt the stored refresh token
-            decrypted_refresh_token = PontoProvider.decrypt_token(
-                ponto_token.refresh_token
-            )
+            decrypted_refresh_token = PontoProvider.decrypt_token(ponto_token.refresh_token)
             # Prepare request data for refreshing the token
-            client = PontoProvider.generate_client_credentials(
-                PONTO_CLIENT_ID, PONTO_CLIENT_SECRET
-            )
+            client = PontoProvider.generate_client_credentials(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/vnd.api+json",
@@ -318,9 +298,7 @@ class PontoView(APIView):
 
             if response.status == 200:
                 token_data: Dict[str, Any] = json.loads(response.data.decode("utf-8"))
-                encrypted_access_token = PontoProvider.encrypt_token(
-                    token_data.get("access_token")
-                )
+                encrypted_access_token = PontoProvider.encrypt_token(token_data.get("access_token"))
                 encrypted_refresh_token = PontoProvider.encrypt_token(
                     token_data.get("refresh_token", decrypted_refresh_token)
                 )
@@ -343,9 +321,7 @@ class PontoView(APIView):
                     status=200,
                 )
             else:
-                logger.error(
-                    f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}"
-                )
+                logger.error(f"User {user} - Failed to refresh access token: {response.data.decode('utf-8')}")
                 return Response(
                     {
                         "error": "Failed to refresh access token",
@@ -361,9 +337,7 @@ class PontoView(APIView):
         try:
             return self.ponto_token_service.get_token_for_user(user)
         except ValueError as e:
-            raise InvalidPontoTokenError(
-                f"Invalid token for user {user}: {str(e)}"
-            ) from e
+            raise InvalidPontoTokenError(f"Invalid token for user {user}: {str(e)}") from e
         except Exception:
             raise PontoTokenNotFoundError(f"Token for user {user} not found")
 
@@ -372,13 +346,9 @@ class PontoView(APIView):
             ibanityAccount = self.ibanity_account_service.get(user=user)
             return ibanityAccount.account_id
         except ValueError as e:
-            raise InvalidIbanityAccountError(
-                f"Invalid Ibanity account for user {user}: {str(e)}"
-            ) from e
-        except Exception as e:
-            raise IbanityAccountNotFoundError(
-                {"error": "No Ibanity account found for this user"}, status=404
-            )
+            raise InvalidIbanityAccountError(f"Invalid Ibanity account for user {user}: {str(e)}") from e
+        except Exception:
+            raise IbanityAccountNotFoundError({"error": "No Ibanity account found for this user"}, status=404)
 
     def get_transaction_history(self, request: HttpRequest):
         """Get transaction history for a user's account.
@@ -401,19 +371,13 @@ class PontoView(APIView):
             limit = request.GET.get("limit")
             if before and after:
                 return Response(
-                    {
-                        "error": "Cannot specify both 'before' and 'after' parameters simultaneously"
-                    },
+                    {"error": "Cannot specify both 'before' and 'after' parameters simultaneously"},
                     status=400,
                 )
             if not limit:
-                return Response(
-                    {"error": "The 'limit' parameter is required"}, status=400
-                )
+                return Response({"error": "The 'limit' parameter is required"}, status=400)
             if limit not in PONTO_PAGE_LIMIT_LIST:
-                return Response(
-                    {"error": "The 'limit' parameter is invalid"}, status=400
-                )
+                return Response({"error": "The 'limit' parameter is invalid"}, status=400)
 
             token = self._get_user_access_token(user=user)
 
@@ -446,9 +410,7 @@ class PontoView(APIView):
                     },
                     status=response.status,
                 )
-            transactions_data: Dict[str, Any] = json.loads(
-                response.data.decode("utf-8")
-            )
+            transactions_data: Dict[str, Any] = json.loads(response.data.decode("utf-8"))
             return Response(transactions_data)
         except InvalidPontoTokenError as e:
             logger.error(f"Invalid token for user {user}: {str(e)}")
@@ -464,9 +426,7 @@ class PontoView(APIView):
             return Response({"error": f"Request failed: {str(e)}"}, status=500)
         except json.JSONDecodeError as json_error:
             logger.error(f"JSON decoding error: {json_error}")
-            return Response(
-                {"error": "Failed to decode the response data as JSON."}, status=500
-            )
+            return Response({"error": "Failed to decode the response data as JSON."}, status=500)
         except Exception as e:
             logger.error(f"Unhandled exception in get_transaction_history: {str(e)}")
             return Response({"error": f"Request failed: {str(e)}"}, status=500)

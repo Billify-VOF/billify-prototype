@@ -125,9 +125,7 @@ class IbanityAccount:
         self.product: str = product
         self.reference: str = reference
         self.currency: str = currency
-        self.authorization_expiration_expected_at: datetime = (
-            authorization_expiration_expected_at
-        )
+        self.authorization_expiration_expected_at: datetime = authorization_expiration_expected_at
         self.current_balance: Decimal = current_balance
         self.available_balance: Decimal = available_balance
         self.subtype: str = subtype
@@ -145,9 +143,7 @@ class IbanityAccount:
             )
 
         if self.available_balance < 0:
-            raise NegativeBalanceError(
-                "IbanityAccount available balance can't be negative"
-            )
+            raise NegativeBalanceError("IbanityAccount available balance can't be negative")
 
         expire_at = self.authorization_expiration_expected_at
         dt = datetime.fromisoformat(expire_at.replace("Z", "+00:00"))
@@ -230,9 +226,7 @@ class IbanityAccount:
             self.currency = currency
 
         if authorization_expiration_expected_at is not None:
-            self.authorization_expiration_expected_at = (
-                authorization_expiration_expected_at
-            )
+            self.authorization_expiration_expected_at = authorization_expiration_expected_at
 
         if current_balance is not None:
             self.current_balance = current_balance

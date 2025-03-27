@@ -90,16 +90,12 @@ class TextAnalyzer:
         """Apply regex patterns to extract fields."""
         extracted = {}
         doc_no_pattern = r"DOCUMENT\s*NO\.\s*BEL\s*\n([A-Z0-9]+)\s+(\d+)"
-        doc_no_match = re.search(
-            doc_no_pattern, text, re.MULTILINE | re.DOTALL | re.IGNORECASE
-        )
+        doc_no_match = re.search(doc_no_pattern, text, re.MULTILINE | re.DOTALL | re.IGNORECASE)
 
         if doc_no_match:
             # Extract the document number and assign it to invoice_number
             extracted["invoice_number"] = doc_no_match.group(2)
-            logger.info(
-                "Document No. (as invoice_number): %s", extracted["invoice_number"]
-            )
+            logger.info("Document No. (as invoice_number): %s", extracted["invoice_number"])
         else:
             logger.info("Document No. not found, invoice_number not set.")
 
@@ -112,9 +108,7 @@ class TextAnalyzer:
 
                 # Check if the match came from "Receipt" keyword
                 if field == "invoice_number":
-                    receipt_match = re.search(
-                        r"(Receipt number|Receipt |Order)", text, re.IGNORECASE
-                    )
+                    receipt_match = re.search(r"(Receipt number|Receipt |Order)", text, re.IGNORECASE)
 
                     if receipt_match and not extracted[field].startswith("#"):
                         extracted[field] = f"#{extracted[field]}"

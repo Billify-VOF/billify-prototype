@@ -59,13 +59,10 @@ class Invoice(models.Model):
     amount: models.DecimalField = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Total invoice amount. "
-        "Maximum 99,999,999.99. "
-        "Negative amounts not allowed.",
+        help_text="Total invoice amount. " "Maximum 99,999,999.99. " "Negative amounts not allowed.",
     )
     due_date: models.DateField = models.DateField(
-        help_text="Date when payment is due. "
-        "Used for overdue calculations and urgency levels."
+        help_text="Date when payment is due. " "Used for overdue calculations and urgency levels."
     )
 
     # Metadata
@@ -84,8 +81,7 @@ class Invoice(models.Model):
         choices=URGENCY_LEVELS,
         null=True,
         blank=True,
-        help_text="Manual override for invoice urgency. "
-        "If not set, urgency is calculated from due date.",
+        help_text="Manual override for invoice urgency. " "If not set, urgency is calculated from due date.",
     )
 
     # Timestamps
@@ -189,11 +185,7 @@ class Invoice(models.Model):
             valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
                 raise ValidationError(
-                    {
-                        "manual_urgency": (
-                            "Invalid urgency level. " f"Must be one of: {valid_levels}"
-                        )
-                    }
+                    {"manual_urgency": ("Invalid urgency level. " f"Must be one of: {valid_levels}")}
                 )
 
     def update(

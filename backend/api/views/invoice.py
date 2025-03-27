@@ -70,9 +70,7 @@ class InvoiceUploadView(APIView):
             return Response(serializer.errors, status=400)
 
         uploaded_file = serializer.validated_data["file"]
-        logger.info(
-            "Validated file: %s, size: %s", uploaded_file.name, uploaded_file.size
-        )
+        logger.info("Validated file: %s, size: %s", uploaded_file.name, uploaded_file.size)
 
         try:
             # Process invoice using the application service
@@ -94,10 +92,7 @@ class InvoiceUploadView(APIView):
                     "id": result["invoice_id"],
                     "status": (
                         str(result.get("status").value)
-                        if (
-                            result.get("status")
-                            and hasattr(result.get("status"), "value")
-                        )
+                        if (result.get("status") and hasattr(result.get("status"), "value"))
                         else str(result.get("status", ""))
                     ),
                     "file_path": result["file_path"],
@@ -105,11 +100,7 @@ class InvoiceUploadView(APIView):
                 },
                 "invoice_data": {
                     "invoice_number": result.get("invoice_number"),
-                    "amount": (
-                        str(result.get("amount"))
-                        if result.get("amount") is not None
-                        else None
-                    ),
+                    "amount": (str(result.get("amount")) if result.get("amount") is not None else None),
                     "date": formatted_date,
                     "supplier_name": result.get("supplier_name", ""),
                     "urgency": result.get(
@@ -182,18 +173,14 @@ class InvoiceUploadView(APIView):
 
         except KeyError as e:
             logger.error("Missing required data: %s", e)
-            return Response(
-                {"error": "Missing required data", "details": str(e)}, status=400
-            )
+            return Response({"error": "Missing required data", "details": str(e)}, status=400)
 
         except (ValueError, TypeError, OSError) as e:
             logger.exception(
                 "Unexpected error occurred during invoice upload",
                 extra={"user_id": self._get_user_id(request)},
             )
-            return Response(
-                {"error": "Internal server error", "details": str(e)}, status=500
-            )
+            return Response({"error": "Internal server error", "details": str(e)}, status=500)
 
     def _convert_amount(self, amount_str):
         """Convert string amount to Decimal or None."""
@@ -229,9 +216,7 @@ class InvoiceUploadView(APIView):
         # Validate due_date format with debug logging
         raw_due_date = data.get("due_date")
         if raw_due_date:
-            logger.debug(
-                "Validating due_date: %s (type: %s)", raw_due_date, type(raw_due_date)
-            )
+            logger.debug("Validating due_date: %s (type: %s)", raw_due_date, type(raw_due_date))
             # If it's already a date object, it's valid
             if isinstance(raw_due_date, date):
                 logger.debug("Due date is already a date object: %s", raw_due_date)
@@ -282,9 +267,7 @@ class InvoiceUploadView(APIView):
                 )
                 return normalized_date.date()  # Convert to date object
             except ValueError:
-                logger.warning(
-                    "Failed to normalize date %s with format %s", raw_date, fmt
-                )
+                logger.warning("Failed to normalize date %s with format %s", raw_date, fmt)
                 continue
 
         return None
@@ -333,9 +316,7 @@ class InvoicePreviewView(APIView):
                 return Response({"error": "File not found"}, status=404)
 
             logger.info("File exists, attempting to serve: %s", full_path)
-            response = FileResponse(
-                open(full_path, "rb"), content_type="application/pdf"
-            )
+            response = FileResponse(open(full_path, "rb"), content_type="application/pdf")
             filename = Path(file_path).name
             response["Content-Disposition"] = f'inline; filename="{filename}"'
             logger.info("Successfully created response for file: %s", filename)
@@ -343,6 +324,4 @@ class InvoicePreviewView(APIView):
 
         except (OSError, StorageError, ValueError) as e:
             logger.exception("Error serving PDF file: %s", str(e))
-            return Response(
-                {"error": "Failed to serve file", "detail": str(e)}, status=500
-            )
+            return Response({"error": "Failed to serve file", "detail": str(e)}, status=500)

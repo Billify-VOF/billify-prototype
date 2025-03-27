@@ -95,10 +95,7 @@ DATABASES = {
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "UserAttributeSimilarityValidator"),
     },
     {
         "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
@@ -153,9 +150,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"]
-)
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -253,9 +248,7 @@ missing_vars = [var for var in required_env_vars if not env(var)]
 
 # If there are any missing variables, raise an error with the list of missing vars
 if missing_vars:
-    raise EnvironmentError(
-        f"Missing required environment variables: {', '.join(missing_vars)}"
-    )
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
 PONTO_CLIENT_ID = env("PONTO_CLIENT_ID")
 PONTO_CLIENT_SECRET = env("PONTO_CLIENT_SECRET")
@@ -278,9 +271,7 @@ if FERNET_KEY is None:
 
 # Verify the FERNET_KEY format (should be a 44-character base64 encoded string)
 if len(FERNET_KEY) != 44:
-    raise ValueError(
-        "FERNET_KEY has invalid length. It should be a 44-character base64 encoded key."
-    )
+    raise ValueError("FERNET_KEY has invalid length. It should be a 44-character base64 encoded key.")
 
 try:
     # Check if the key is base64 encoded

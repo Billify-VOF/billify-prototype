@@ -96,13 +96,8 @@ class Invoice:
         Raises:
             InvalidInvoiceError: If status violates business rules
         """
-        if (
-            self.status == InvoiceStatus.OVERDUE
-            and self.due_date > timezone.now().date()
-        ):
-            raise InvalidInvoiceError(
-                "Invoice cannot be overdue if due date is in the future"
-            )
+        if self.status == InvoiceStatus.OVERDUE and self.due_date > timezone.now().date():
+            raise InvalidInvoiceError("Invoice cannot be overdue if due date is in the future")
         if not isinstance(self.status, InvoiceStatus):
             raise InvalidInvoiceError("Status must be an InvoiceStatus enum")
         valid_statuses = (
@@ -336,9 +331,7 @@ class Invoice:
                 # Set the manual urgency level
                 self.set_urgency_manually(manual_urgency)
             else:
-                raise InvalidInvoiceError(
-                    f"Expected UrgencyLevel or False, got {type(manual_urgency)}"
-                )
+                raise InvalidInvoiceError(f"Expected UrgencyLevel or False, got {type(manual_urgency)}")
         else:  # manual_urgency is None
             logger.debug("Update: No change to urgency settings")
 

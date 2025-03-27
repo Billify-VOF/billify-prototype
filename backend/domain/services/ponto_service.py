@@ -41,9 +41,7 @@ class IbanityAccountService:
         """
         self.ibanity_account_repository = ibanity_account_repository
 
-    def update(
-        self, ibanity_account: IbanityAccount, extracted_data: Dict[str, Any]
-    ) -> IbanityAccount:
+    def update(self, ibanity_account: IbanityAccount, extracted_data: Dict[str, Any]) -> IbanityAccount:
         """Update an Ibanity account with data extracted from a document.
 
         This method applies business rules for updating an existing Ibanity
@@ -89,13 +87,9 @@ class IbanityAccountService:
         ]
 
         # Validate that all required fields exist
-        missing_fields = [
-            field for field in required_fields if field not in extracted_data
-        ]
+        missing_fields = [field for field in required_fields if field not in extracted_data]
         if missing_fields:
-            raise IbanityAccountDataError(
-                f"Missing required fields: {', '.join(missing_fields)}"
-            )
+            raise IbanityAccountDataError(f"Missing required fields: {', '.join(missing_fields)}")
 
         try:
             # Delegate to the domain model's update method
@@ -106,9 +100,7 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(
-                    extracted_data["authorization_expiration_expected_at"]
-                ),
+                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
@@ -169,13 +161,9 @@ class IbanityAccountService:
         ]
 
         # Validate that all required fields exist
-        missing_fields = [
-            field for field in required_fields if field not in extracted_data
-        ]
+        missing_fields = [field for field in required_fields if field not in extracted_data]
         if missing_fields:
-            raise IbanityAccountDataError(
-                f"Missing required fields: {', '.join(missing_fields)}"
-            )
+            raise IbanityAccountDataError(f"Missing required fields: {', '.join(missing_fields)}")
 
         try:
             # Use the factory method to create and validate the Ibanity account
@@ -186,9 +174,7 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(
-                    extracted_data["authorization_expiration_expected_at"]
-                ),
+                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
@@ -230,9 +216,7 @@ class IbanityAccountService:
             logger.error(f"Missing key in account data for user: {user.id}, error: {e}")
             raise IbanityAccountDataError(f"Missing data in account information: {e}")
         except Exception as e:
-            logger.error(
-                f"Failed to save or update account for user: {user.id}, " f"error: {e}"
-            )
+            logger.error(f"Failed to save or update account for user: {user.id}, " f"error: {e}")
             raise IbanityAccountDataError(f"Failed to save or update account: {e}")
 
     # Get IbanityAccount data by user
@@ -259,9 +243,7 @@ class IbanityAccountService:
             raise
         except Exception as e:
             # For unexpected errors, preserve context with detailed logging
-            logger.error(
-                f"Error retrieving IbanityAccount for user {user}", exc_info=True
-            )
+            logger.error(f"Error retrieving IbanityAccount for user {user}", exc_info=True)
             raise IbanityAccountDataError("Error retrieving account data") from e
 
 
@@ -272,9 +254,7 @@ class PontoTokenService:
     """
 
     @classmethod
-    def create(
-        cls, ponto_token_repository: PontoTokenRepository
-    ) -> "PontoTokenService":
+    def create(cls, ponto_token_repository: PontoTokenRepository) -> "PontoTokenService":
         """Create a properly configured PontoTokenService instance.
 
         Args:
@@ -299,9 +279,7 @@ class PontoTokenService:
         """
         self.ponto_token_repository = ponto_token_repository
 
-    def update(
-        self, ponto_token: PontoToken, extracted_data: Dict[str, Any]
-    ) -> PontoToken:
+    def update(self, ponto_token: PontoToken, extracted_data: Dict[str, Any]) -> PontoToken:
         """Update a Ponto token with data extracted from a document.
 
         This method applies business rules for updating an existing Ponto token
@@ -325,13 +303,9 @@ class PontoTokenService:
         required_fields = ["user", "access_token", "refresh_token", "expires_in"]
 
         # Validate that all required fields exist
-        missing_fields = [
-            field for field in required_fields if field not in extracted_data
-        ]
+        missing_fields = [field for field in required_fields if field not in extracted_data]
         if missing_fields:
-            raise PontoTokenCreationError(
-                f"Missing required fields: {', '.join(missing_fields)}"
-            )
+            raise PontoTokenCreationError(f"Missing required fields: {', '.join(missing_fields)}")
 
         try:
             # Delegate to the domain model's update method
@@ -372,13 +346,9 @@ class PontoTokenService:
         required_fields = ["user", "access_token", "refresh_token", "expires_in"]
 
         # Validate that all required fields exist
-        missing_fields = [
-            field for field in required_fields if field not in extracted_data
-        ]
+        missing_fields = [field for field in required_fields if field not in extracted_data]
         if missing_fields:
-            raise PontoTokenCreationError(
-                f"Missing required fields: {', '.join(missing_fields)}"
-            )
+            raise PontoTokenCreationError(f"Missing required fields: {', '.join(missing_fields)}")
 
         try:
             # Use the factory method to create and validate the Ponto token
@@ -428,9 +398,7 @@ class PontoTokenService:
                 f"Unexpected error retrieving token for user {user}: {str(e)}",
                 exc_info=True,
             )
-            raise PontoTokenDecryptionError(
-                f"Error while retrieving the access token: {str(e)}"
-            ) from e
+            raise PontoTokenDecryptionError(f"Error while retrieving the access token: {str(e)}") from e
 
     def add_or_update(self, user: Any, data):
         """Apply domain rules to create or update a Ponto token.
@@ -453,9 +421,7 @@ class PontoTokenService:
         required_fields = ["access_token", "refresh_token", "expires_in"]
         missing_fields = [f for f in required_fields if f not in data]
         if missing_fields:
-            raise PontoTokenCreationError(
-                f"Missing required fields: {', '.join(missing_fields)}"
-            )
+            raise PontoTokenCreationError(f"Missing required fields: {', '.join(missing_fields)}")
 
         try:
             # 2. Check if token exists with domain-specific rules
@@ -522,6 +488,4 @@ class PontoTokenService:
             raise PontoTokenNotFoundError(f"No token found for user {user}")
         except Exception as e:
             logger.error(f"Error retrieving access token for user {user}: {str(e)}")
-            raise PontoTokenDecryptionError(
-                f"Error while retrieving the access token: {str(e)}"
-            ) from e
+            raise PontoTokenDecryptionError(f"Error while retrieving the access token: {str(e)}") from e

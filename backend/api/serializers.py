@@ -22,25 +22,20 @@ class InvoiceUploadSerializer(serializers.Serializer):
         - Must have valid filename
         """
         if not value.name.endswith(".pdf"):
-            raise serializers.ValidationError(
-                "Invalid invoice format. Please upload PDF files only."
-            )
+            raise serializers.ValidationError("Invalid invoice format. Please upload PDF files only.")
 
         # Size limit from business requirements
         max_size = 10 * 1024 * 1024  # 10 MB
         if value.size > max_size:
             max_mb = max_size / (1024 * 1024)
-            raise serializers.ValidationError(
-                f"Invoice file exceeds maximum allowed size of {max_mb}MB."
-            )
+            raise serializers.ValidationError(f"Invoice file exceeds maximum allowed size of {max_mb}MB.")
 
         return value
 
     def create(self, *_):
         """Not used - this serializer only validates file uploads."""
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. "
-            "Use InvoiceService for invoice creation."
+            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice creation."
         )
 
     def update(self, *_):
@@ -54,6 +49,5 @@ class InvoiceUploadSerializer(serializers.Serializer):
             NotImplementedError: This serializer doesn't update objects
         """
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. "
-            "Use InvoiceService for invoice updates."
+            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice updates."
         )

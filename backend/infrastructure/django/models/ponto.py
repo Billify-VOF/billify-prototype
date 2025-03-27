@@ -16,9 +16,7 @@ class IbanityAccount(models.Model):
     product: models.CharField = models.CharField(max_length=255, blank=True)
     reference: models.CharField = models.CharField(max_length=255, blank=True)
     currency: models.CharField = models.CharField(max_length=10, blank=True)
-    authorization_expiration_expected_at: models.DateTimeField = models.DateTimeField(
-        null=True, blank=True
-    )
+    authorization_expiration_expected_at: models.DateTimeField = models.DateTimeField(null=True, blank=True)
     current_balance: models.DecimalField = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
     )
@@ -46,15 +44,9 @@ class PontoToken(models.Model):
     """
 
     user: models.OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
-    access_token: models.CharField = models.CharField(
-        max_length=255, null=True, blank=True, unique=True
-    )
-    refresh_token: models.CharField = models.CharField(
-        max_length=255, null=True, blank=True, unique=True
-    )
-    expires_in: models.IntegerField = models.IntegerField(
-        default=3600, null=True, blank=True
-    )
+    access_token: models.CharField = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    refresh_token: models.CharField = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    expires_in: models.IntegerField = models.IntegerField(default=3600, null=True, blank=True)
     created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
     updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
 

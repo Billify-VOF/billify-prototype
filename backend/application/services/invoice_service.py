@@ -86,18 +86,14 @@ class InvoiceProcessingService:
             logger.info("PDF transformation successful: %s", invoice_data)
 
             # Check for existing invoice
-            existing_invoice = self.invoice_repository.get_by_number(
-                invoice_data["invoice_number"]
-            )
+            existing_invoice = self.invoice_repository.get_by_number(invoice_data["invoice_number"])
 
             if existing_invoice:
                 # Generate old file identifier using invoice number
                 old_id = f"invoice_{user_id}_{existing_invoice.invoice_number}"
 
                 # Use domain service to update the invoice with extracted data
-                updated_invoice = self.invoice_service.update(
-                    existing_invoice, invoice_data
-                )
+                updated_invoice = self.invoice_service.update(existing_invoice, invoice_data)
 
                 # Save updated invoice
                 saved_invoice = self.invoice_repository.save(updated_invoice, user_id)

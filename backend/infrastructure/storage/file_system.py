@@ -125,9 +125,7 @@ class FileStorageService:
             # than a copy+delete operation
             shutil.move(str(source_path), str(target_path))
 
-            logger.info(
-                "File moved successfully from %s to %s", source_path, target_path
-            )
+            logger.info("File moved successfully from %s to %s", source_path, target_path)
 
         except Exception as e:
             logger.error("Failed to move file: %s", str(e))
@@ -201,9 +199,7 @@ class FileStorage(StorageRepository):
             file_name = getattr(file, "name", None)
 
             # Use service to generate paths (service responsibility)
-            relative_path, full_path = self.storage_service.generate_storage_path(
-                identifier, file_name
-            )
+            relative_path, full_path = self.storage_service.generate_storage_path(identifier, file_name)
 
             # Delegate file writing to service (infrastructure concern)
             self.storage_service.write_file(file, full_path)

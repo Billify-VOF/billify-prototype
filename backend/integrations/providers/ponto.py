@@ -61,9 +61,7 @@ class PontoProvider:
             raise ValueError(f"Invalid input for encryption: {str(ve)}") from ve
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            raise RuntimeError(
-                "An unexpected error occurred while encrypting token."
-            ) from e
+            raise RuntimeError("An unexpected error occurred while encrypting token.") from e
 
     @staticmethod
     def decrypt_token(encrypted_token: str) -> str:
@@ -105,9 +103,7 @@ class PontoProvider:
             raise TypeError(f"Type error during decryption: {str(te)}") from te
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            raise RuntimeError(
-                "An unexpected error occurred while decrypting token."
-            ) from e
+            raise RuntimeError("An unexpected error occurred while decrypting token.") from e
 
     @staticmethod
     def generate_client_credentials(client_id: str, client_secret: str) -> str:
@@ -184,7 +180,8 @@ class PontoProvider:
         if not request_target or not digest:
             raise ValueError("Required parameters cannot be empty")
 
-        signing_string = f"""(request-target): {request_target}\ndigest: {digest}\n(created): {created}\nhost: {IBANITY_API_HOST}"""
+        signing_string = f"""(request-target): {request_target}\n
+        digest: {digest}\n(created): {created}\nhost: {IBANITY_API_HOST}"""
 
         try:
             # Load the private key with the password
@@ -264,8 +261,6 @@ class PontoProvider:
             raise RuntimeError("SSL configuration failed.") from e
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            raise RuntimeError(
-                "An unexpected error occurred while creating HTTP instance."
-            ) from e
+            raise RuntimeError("An unexpected error occurred while creating HTTP instance.") from e
 
         return http

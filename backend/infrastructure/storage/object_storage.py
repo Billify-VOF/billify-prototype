@@ -51,9 +51,7 @@ class ObjectStorage(StorageRepository):
             ext = Path(file_name or "").suffix or ".pdf"
             storage_path = f"invoices/{year_month}/{identifier}{ext}"
 
-            self.client.upload_fileobj(
-                file, self.bucket, storage_path, ExtraArgs={"ACL": "private"}
-            )
+            self.client.upload_fileobj(file, self.bucket, storage_path, ExtraArgs={"ACL": "private"})
 
             return storage_path
         except Exception as e:

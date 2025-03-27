@@ -12,9 +12,7 @@ class AuthenticationService:
         self.domain_auth_service = domain_auth_service
 
     def login(self, identifier: str, password: str) -> Tuple[bool, Dict[str, Any]]:
-        success, account, error_message = self.domain_auth_service.login(
-            identifier, password
-        )
+        success, account, error_message = self.domain_auth_service.login(identifier, password)
 
         if not success:
             return False, {"error": error_message}

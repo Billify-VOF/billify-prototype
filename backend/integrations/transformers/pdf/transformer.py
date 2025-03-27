@@ -65,9 +65,7 @@ class PDFTransformer:
             logger.error("Transformation error: %s", str(e))
             raise PDFTransformationError(f"PDF transformation failed: {str(e)}") from e
 
-    def _standardize_data(
-        self, raw_data: Dict, file_path: str
-    ) -> Dict[str, Union[str, Decimal, date]]:
+    def _standardize_data(self, raw_data: Dict, file_path: str) -> Dict[str, Union[str, Decimal, date]]:
         """
         Convert raw extracted data into our standard invoice format.
 
@@ -107,9 +105,7 @@ class PDFTransformer:
             if raw_data.get("amount"):
                 amount_str = raw_data["amount"].strip()
                 format_type = "belgian" if "," in amount_str else "english"
-                std_amount = self.text_analyzer.standardize_amount(
-                    amount_str, format_type
-                )
+                std_amount = self.text_analyzer.standardize_amount(amount_str, format_type)
                 standardized["amount"] = Decimal(std_amount)
                 logger.debug("Standardized amount: %s", std_amount)
             else:

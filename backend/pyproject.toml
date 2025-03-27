@@ -2,6 +2,17 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.black]
+line-length = 110
+exclude = '''
+/(
+    \.venv
+  | build
+  | dist
+  | migrations
+)/
+'''
+
 [project]
 name = "billify-backend"
 version = "1.0.0"

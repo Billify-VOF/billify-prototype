@@ -25,7 +25,6 @@ Example:
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, Tuple
 
-from django.contrib.auth.models import User
 from domain.models.ponto import IbanityAccount, PontoToken
 
 
@@ -75,9 +74,7 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def get_or_create(
-        self, user, account_id: str, data: Dict[str, Any]
-    ) -> Tuple[IbanityAccount, bool]:
+    def get_or_create(self, user, account_id: str, data: Dict[str, Any]) -> Tuple[IbanityAccount, bool]:
         """Get an existing account or create a new one.
 
         Args:
@@ -155,9 +152,7 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def update_by_account_id(
-        self, account_id: str, data: Dict[str, Any]
-    ) -> IbanityAccount:
+    def update_by_account_id(self, account_id: str, data: Dict[str, Any]) -> IbanityAccount:
         """Update an existing IbanityAccount.
 
         This method should update all fields of an existing IbanityAccount
@@ -188,9 +183,7 @@ class IbanityAccountRepository(ABC):
         """
 
     @abstractmethod
-    def process_accounts_data(
-        self, user, accounts_data: Dict[str, Any]
-    ) -> IbanityAccount:
+    def process_accounts_data(self, user, accounts_data: Dict[str, Any]) -> IbanityAccount:
         """Process raw accounts data from Ponto API and save or update
         in repository.
 
@@ -265,9 +258,7 @@ class PontoTokenRepository(ABC):
         """
 
     @abstractmethod
-    def get_or_create_by_user(
-        self, user, data: Dict[str, Any]
-    ) -> Tuple[PontoToken, bool]:
+    def get_or_create_by_user(self, user, data: Dict[str, Any]) -> Tuple[PontoToken, bool]:
         """Get an existing token or create a new one.
 
         Args:
