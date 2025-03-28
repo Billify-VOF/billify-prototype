@@ -37,13 +37,7 @@ class AuthenticationService:
         # Create new account
         try:
             account = self.account_repository.save(
-                Account(
-                    id=None,
-                    username=username,
-                    email=email,
-                    password=password,
-                    company_name=company_name
-                )
+                Account(id=None, username=username, email=email, password=password, company_name=company_name)
             )
             return True, account, ""
         except Exception as e:

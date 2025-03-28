@@ -2,10 +2,9 @@
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 
 User = get_user_model()
+
 
 class InvoiceUploadSerializer(serializers.Serializer):
     """
@@ -56,9 +55,10 @@ class InvoiceUploadSerializer(serializers.Serializer):
             "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice updates."
         )
 
+
 class RegisterSerializer(serializers.Serializer):
     """Serializer for user registration."""
-    
+
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True, min_length=3, max_length=150)
     password = serializers.CharField(required=True, min_length=8, write_only=True)
@@ -68,11 +68,11 @@ class RegisterSerializer(serializers.Serializer):
         """Validate password strength."""
         if value.isdigit():
             raise serializers.ValidationError("Password cannot be entirely numeric")
-        
+
         # Check for at least one number and one letter
         if not any(char.isdigit() for char in value):
             raise serializers.ValidationError("Password must contain at least one number")
         if not any(char.isalpha() for char in value):
             raise serializers.ValidationError("Password must contain at least one letter")
-        
+
         return value

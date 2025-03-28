@@ -24,18 +24,15 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        
+
         if not serializer.is_valid():
-            return Response(
-                {"error": serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         success, response_data = auth_service.register(
             email=serializer.validated_data["email"],
             username=serializer.validated_data["username"],
             password=serializer.validated_data["password"],
-            company_name=serializer.validated_data["company_name"]
+            company_name=serializer.validated_data["company_name"],
         )
 
         return Response(

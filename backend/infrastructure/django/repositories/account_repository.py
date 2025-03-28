@@ -21,7 +21,7 @@ class DjangoAccountRepository(AccountRepository):
             company_name=user.company_name,
             is_active=user.is_active,
             first_name=user.first_name,
-            last_name=user.last_name
+            last_name=user.last_name,
         )
 
     def _prepare_password(self, password: str) -> str:
@@ -80,7 +80,7 @@ class DjangoAccountRepository(AccountRepository):
             # Create new user
             if not account._password:
                 raise ValueError("Password is required for new accounts")
-            
+
             user = User.objects.create(**user_data)
             return self._to_domain(user)
 
@@ -88,13 +88,13 @@ class DjangoAccountRepository(AccountRepository):
         """Authenticate user with username/email and password."""
         # Try with username
         user = authenticate(username=username, password=password)
-        
+
         # If authentication with username fails, try with email
-        if not user and '@' in username:
+        if not user and "@" in username:
             try:
                 user_obj = User.objects.get(email=username)
                 user = authenticate(username=user_obj.username, password=password)
             except User.DoesNotExist:
                 return None
-                
+
         return self._to_domain(user)

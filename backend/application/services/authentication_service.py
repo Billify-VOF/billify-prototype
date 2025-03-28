@@ -28,10 +28,7 @@ class AuthenticationService:
             - dict: Response data with account info or error message
         """
         success, account, error_message = self.domain_auth_service.register(
-            email=email,
-            username=username,
-            password=password,
-            company_name=company_name
+            email=email, username=username, password=password, company_name=company_name
         )
 
         if not success:
@@ -43,8 +40,8 @@ class AuthenticationService:
                 "id": account.id,
                 "username": account.username,
                 "email": account.email,
-                "company_name": account.company_name
-            }
+                "company_name": account.company_name,
+            },
         }
 
     def login(self, identifier: str, password: str) -> Tuple[bool, Dict[str, Any]]:
