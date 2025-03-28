@@ -7,6 +7,7 @@ class Account:
         id,
         username,
         email,
+        company_name=None,
         password=None,
         is_active=True,
         first_name="",
@@ -15,6 +16,7 @@ class Account:
         self.id = id
         self.username = username
         self.email = email
+        self.company_name = company_name
         self._password = password  # Not stored directly, used for authentication
         self.is_active = is_active
         self.first_name = first_name

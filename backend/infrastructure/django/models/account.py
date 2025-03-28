@@ -7,6 +7,7 @@ class Account(AbstractUser):
 
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
+    company_name = models.CharField(max_length=255, null=True, blank=True)
 
     groups = models.ManyToManyField(
         Group,
