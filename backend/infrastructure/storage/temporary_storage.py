@@ -16,7 +16,9 @@ from logging import getLogger
 from filelock import FileLock  # Import filelock for thread-safe file access
 
 from domain.exceptions import StorageError
-from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.storage_repository import (
+    StorageRepository,
+)
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -117,7 +119,8 @@ class TemporaryStorageAdapter:
             # If tracking still failed after retries, clean up to avoid orphaned files
             if not tracking_success:
                 logger.error(
-                    "Failed to track file %s in registry after %d attempts. Cleaning up to avoid orphaned files.",
+                    "Failed to track file %s in registry after %d attempts. "
+                    "Cleaning up to avoid orphaned files.",
                     relative_path,
                     max_tracking_attempts,
                 )
@@ -125,17 +128,20 @@ class TemporaryStorageAdapter:
                     # Delete the file since we can't track it
                     self.storage_repository.delete_file(relative_path)
                     raise StorageError(
-                        f"Failed to store temporary file: Could not track in registry after {max_tracking_attempts} attempts"
+                        f"Failed to store temporary file: "
+                        f"Could not track in registry after {max_tracking_attempts} attempts"
                     )
                 except Exception as cleanup_error:
                     # If cleanup also fails, report both errors
                     logger.error("Failed to clean up untracked file: %s", str(cleanup_error))
                     raise StorageError(
-                        f"Failed to store temporary file: Could not track in registry and cleanup failed"
+                        "Failed to store temporary file: Could not track in registry and cleanup failed"
                     )
 
             logger.info(
-                "Stored temporary file at %s (expires in %d hours)", relative_path, self.expiration_hours
+                "Stored temporary file at %s (expires in %d hours)",
+                relative_path,
+                self.expiration_hours,
             )
 
             return relative_path
@@ -176,7 +182,11 @@ class TemporaryStorageAdapter:
             # Remove from the temporary registry
             self._untrack_temporary_file(temp_path)
 
-            logger.info("Promoted temporary file from %s to permanent location %s", temp_path, permanent_path)
+            logger.info(
+                "Promoted temporary file from %s to permanent location %s",
+                temp_path,
+                permanent_path,
+            )
 
             return permanent_path
 
@@ -247,14 +257,21 @@ class TemporaryStorageAdapter:
                 except Exception as e:
                     deletion_successful = False  # Explicitly mark deletion as failed
                     cleanup_stats["files_failed"] += 1
-                    logger.warning("Failed to remove expired temporary file %s: %s", file_path, str(e))
+                    logger.warning(
+                        "Failed to remove expired temporary file %s: %s",
+                        file_path,
+                        str(e),
+                    )
 
                 # Only attempt to untrack if deletion was successful and track operation fails
                 if deletion_successful and not self._untrack_temporary_file(file_path):
                     cleanup_stats["registry_inconsistencies"] = (
                         cleanup_stats.get("registry_inconsistencies", 0) + 1
                     )
-                    logger.warning("File was deleted but could not be untracked from registry: %s", file_path)
+                    logger.warning(
+                        "File was deleted but could not be untracked from registry: %s",
+                        file_path,
+                    )
 
             if cleanup_stats.get("registry_inconsistencies", 0) > 0:
                 logger.warning(
@@ -445,7 +462,10 @@ class TemporaryStorageAdapter:
                     if now > expires_at:
                         expired_files.append(path)
                         logger.debug(
-                            "File %s expired at %s (now: %s)", path, expires_at.isoformat(), now.isoformat()
+                            "File %s expired at %s (now: %s)",
+                            path,
+                            expires_at.isoformat(),
+                            now.isoformat(),
                         )
                 except (KeyError, ValueError) as e:
                     # Handle missing or invalid timestamps
