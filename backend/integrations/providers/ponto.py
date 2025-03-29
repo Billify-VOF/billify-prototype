@@ -185,9 +185,7 @@ class PontoProvider:
         try:
             # Load the private key with the password
             with open(PONTO_PRIVATE_KEY_PATH, "rb") as key_file:
-                private_key = serialization.load_pem_private_key(
-                    key_file.read(), password=PONTO_PRIVATE_KEY_PASSWORD.encode(), backend=default_backend()
-                )
+                private_key = serialization.load_pem_private_key(key_file.read(), password=PONTO_PRIVATE_KEY_PASSWORD.encode(), backend=default_backend())
 
             # Sign the message
             signature_bytes = private_key.sign(
@@ -244,9 +242,7 @@ class PontoProvider:
             )
 
             # Create a PoolManager with the SSL context
-            http = urllib3.PoolManager(
-                num_pools=50, cert_reqs=ssl.CERT_REQUIRED, ca_certs=certifi.where(), ssl_context=context
-            )
+            http = urllib3.PoolManager(num_pools=50, cert_reqs=ssl.CERT_REQUIRED, ca_certs=certifi.where(), ssl_context=context)
         except FileNotFoundError as e:
             logger.error(f"Certificate or key file not found: {e}")
             raise RuntimeError("Failed to load SSL certificate or key.") from e
