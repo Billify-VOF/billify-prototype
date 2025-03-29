@@ -107,7 +107,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         Example:
             # When saving a new IbanityAccount:
-            db_ibanity_account = self._to_django(domain_ibanity_account, user)
+            db_ibanity_account = self._to_django(domain_ibanity_account)
             db_ibanity_account.save()
             return self._to_domain(db_ibanity_account)
         """
@@ -168,12 +168,12 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
         try:
             db_ibanity_account = DjangoIbanityAccount.objects.get(id=ibanity_account_id)
             return self._to_domain(db_ibanity_account)
-        except ObjectDoesNotExist:
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the ID {ibanity_account_id}")
+        except ObjectDoesNotExist as exc:
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the ID {ibanity_account_id}") from exc
 
     def get_by_account_id(self, account_id: str) -> Optional[DomainIbanityAccount]:
         """Retrieve an IbanityAccount by its account ID."""
-        logger.debug(f"Searching for IbanityAccount with Account ID: " f"{account_id}")
+        logger.debug(f"Searching for IbanityAccount with Account ID: {account_id}")
         logger.debug(f"Type of account ID: {account_id}")
         try:
             # Order by created_at descending and get the first one
@@ -182,7 +182,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             )
 
             if db_ibanity_account:
-                logger.debug(f"Found IbanityAccount in DB: " f"{db_ibanity_account}")
+                logger.debug(f"Found IbanityAccount in DB: {db_ibanity_account}")
                 return self._to_domain(db_ibanity_account)
             else:
                 logger.debug("No IbanityAccount found with that account ID")
@@ -190,9 +190,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the account ID {account_id}")
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the account ID {account_id}") from e
 
-    def get_by_user(self, user) -> Optional[DomainIbanityAccount]:
+    def get_by_user(self, user) -> DomainIbanityAccount:
         """Retrieve an IbanityAccount by its user."""
         logger.debug(f"Searching for IbanityAccount of User: {user}")
         logger.debug(f"Type of user: {user}")
@@ -201,7 +201,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             db_ibanity_account = DjangoIbanityAccount.objects.filter(user=user).first()
 
             if db_ibanity_account:
-                logger.debug(f"Found IbanityAccount in DB: " f"{db_ibanity_account}")
+                logger.debug(f"Found IbanityAccount in DB: {db_ibanity_account}")
                 return self._to_domain(db_ibanity_account)
             else:
                 logger.debug("No IbanityAccount found of that user")
@@ -209,7 +209,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the user {user}")
+            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the user {user}") from e
 
     def update(self, domain_ibanity_account: DomainIbanityAccount, user) -> DomainIbanityAccount:
         """Update an existing IbanityAccount.
@@ -508,9 +508,11 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         """Retrieve an PontoToken by its ID."""
         try:
             db_ponto_token = DjangoPontoToken.objects.filter(id=pontoToken_id).first()
+            if db_ponto_token is None:
+                raise ObjectDoesNotExist("PontoToken not found")
             return self._to_domain(db_ponto_token)
-        except ObjectDoesNotExist:
-            raise PontoTokenNotFoundError(f"PontoToken not found with ID {pontoToken_id}")
+        except ObjectDoesNotExist as exc:
+            raise PontoTokenNotFoundError(f"PontoToken not found with ID {pontoToken_id}") from exc
 
     def get_or_create_by_user(self, user, data) -> Tuple[DomainPontoToken, bool]:
         """Retrieve an PontoToken by its user."""
