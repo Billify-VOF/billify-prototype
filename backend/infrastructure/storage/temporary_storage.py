@@ -136,7 +136,7 @@ class TemporaryStorageAdapter:
                     logger.error("Failed to clean up untracked file: %s", str(cleanup_error))
                     raise StorageError(
                         "Failed to store temporary file: Could not track in registry and cleanup failed"
-                    )
+                    ) from cleanup_error
 
             logger.info(
                 "Stored temporary file at %s (expires in %d hours)",
