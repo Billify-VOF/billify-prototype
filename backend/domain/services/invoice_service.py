@@ -1,4 +1,7 @@
-"""Domain service for invoice business logic.
+"""This module contains the domain service for invoices. It encapsulates business
+logic related to invoices, ensures adherence to domain rules, and enforces
+invariants for invoice operations. It contains no references to infrastructure
+or application-specific concerns.
 
 This service contains pure domain logic related to invoices,
 independent of infrastructure concerns like storage or data transformation.
@@ -34,7 +37,10 @@ class InvoiceService:
             ValueError: If the extracted data is invalid
         """
         # Delegate to the domain model's update method
-        invoice.update(amount=extracted_data["amount"], due_date=extracted_data["due_date"])
+        invoice.update(
+            amount=extracted_data["amount"],
+            due_date=extracted_data["due_date"],
+        )
 
         return invoice
 
@@ -216,7 +222,13 @@ class InvoiceService:
             setattr(invoice, "is_updated", False)
 
         # Update file metadata
-        self._update_file_metadata(invoice, file_path, file_size, file_type, original_file_name)
+        self._update_file_metadata(
+            invoice,
+            file_path,
+            file_size,
+            file_type,
+            original_file_name,
+        )
 
         # Set user if not already set
         if hasattr(invoice, "uploaded_by") and user_id and not invoice.uploaded_by:
