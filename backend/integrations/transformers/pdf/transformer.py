@@ -13,6 +13,13 @@ from logging import getLogger
 # Module-level logger
 logger = getLogger(__name__)
 
+# Import dateutil at module level with type ignore
+try:
+    from dateutil.parser import parse as parse_date  # type: ignore
+except ImportError:
+    parse_date = None
+    logger.warning("dateutil module not available, date parsing will be limited")
+
 
 class PDFTransformationError(Exception):
     """Raised when the overall PDF transformation process fails."""
@@ -87,17 +94,60 @@ class PDFTransformer:
             raise PDFTransformationError(f"Failed to extract file metadata: {str(e)}") from e
 
     def _standardize_data(self, raw_data: Dict, file_metadata: Dict) -> Dict[str, Any]:
-        """Convert raw extracted data into standardized invoice format.
+        """Standardize extracted fields to a consistent format.
 
         Args:
-            raw_data: Dictionary containing extracted field values
-            file_metadata: Dictionary containing extracted file metadata
+            raw_data: Extracted raw data from PDF
+            file_metadata: Metadata about the file
 
         Returns:
-            Dictionary with standardized invoice data
+            Dict with standardized values
+
+        Raises:
+            PDFTransformationError: If standardization fails
         """
         try:
             logger.info("Standardizing extracted data")
+            
+            # Standardize amounts by replacing European format with standard decimal format
+            amount = raw_data.get("amount", "0.00")
+            if amount and isinstance(amount, str):
+                # Replace comma with placeholder, remove thousands separator, restore decimal point
+                amount = amount.replace(",", "@").replace(".", "").replace("@", ".")
+            
+            subtotal = raw_data.get("subtotal", "0.00")
+            if subtotal and isinstance(subtotal, str):
+                subtotal = subtotal.replace(",", "@").replace(".", "").replace("@", ".")
+                
+            vat_amount = raw_data.get("vat_amount", "0.00")
+            if vat_amount and isinstance(vat_amount, str):
+                vat_amount = vat_amount.replace(",", "@").replace(".", "").replace("@", ".")
+                
+            total_amount = raw_data.get("total_amount", "0.00")
+            if total_amount and isinstance(total_amount, str):
+                total_amount = total_amount.replace(",", "@").replace(".", "").replace("@", ".")
+            
+            # Parse and convert dates from various formats
+            due_date = raw_data.get("due_date")
+            parsed_due_date = date.today()  # Default to today
+            
+            if due_date and isinstance(due_date, str):
+                # Try to parse European format (DD/MM/YYYY)
+                if re.match(r'\d{1,2}/\d{1,2}/\d{4}', due_date):
+                    try:
+                        day, month, year = due_date.split('/')
+                        parsed_due_date = date(int(year), int(month), int(day))
+                        logger.info(f"Successfully parsed European date format: {due_date} -> {parsed_due_date}")
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Failed to parse European date format: {due_date} - {str(e)}")
+                # Try standard date parsing for other formats
+                elif parse_date is not None:
+                    try:
+                        parsed_due_date = parse_date(due_date).date()
+                        logger.info(f"Successfully parsed date using dateutil: {due_date} -> {parsed_due_date}")
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Failed to parse date using dateutil: {due_date} - {str(e)}")
+            
             standardized: Dict[str, Any] = {
                 # File metadata
                 "file_path": file_metadata.get("file_name", "UNKNOWN"),
@@ -105,8 +155,8 @@ class PDFTransformer:
                 "file_type": file_metadata.get("file_type"),
                 # Default values for required fields
                 "invoice_number": raw_data.get("invoice_number", "UNKNOWN"),
-                "amount": Decimal(raw_data.get("amount", "0.00")),
-                "due_date": raw_data.get("due_date", date.today()),
+                "amount": Decimal(amount),
+                "due_date": parsed_due_date,
                 # Buyer & Seller Information
                 "buyer_name": raw_data.get("buyer_name", ""),
                 "buyer_address": raw_data.get("buyer_address", ""),
@@ -122,9 +172,9 @@ class PDFTransformer:
                 "payment_processor": raw_data.get("payment_processor", ""),
                 "transaction_id": raw_data.get("transaction_id", ""),
                 # Amounts
-                "subtotal": Decimal(raw_data.get("subtotal", "0.00")),
-                "vat_amount": Decimal(raw_data.get("vat_amount", "0.00")),
-                "total_amount": Decimal(raw_data.get("total_amount", "0.00")),
+                "subtotal": Decimal(subtotal),
+                "vat_amount": Decimal(vat_amount),
+                "total_amount": Decimal(total_amount),
             }
 
             self._validate_standardized_data(standardized)
