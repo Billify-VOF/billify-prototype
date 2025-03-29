@@ -8,7 +8,9 @@ from pathlib import Path
 from datetime import datetime
 from django.conf import settings
 from domain.exceptions import StorageError
-from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.storage_repository import (
+    StorageRepository,
+)
 from django.core.files.uploadedfile import UploadedFile
 from logging import getLogger
 from typing import BinaryIO, Union, Optional, Tuple
@@ -242,9 +244,10 @@ class FileStorage(StorageRepository):
             file_name = source_path.name
 
             # Generate new storage path for the target
-            target_relative_path, target_full_path = self.storage_service.generate_storage_path(
-                target_identifier, file_name
-            )
+            (
+                target_relative_path,
+                target_full_path,
+            ) = self.storage_service.generate_storage_path(target_identifier, file_name)
 
             # Delegate file moving to service (infrastructure concern)
             self.storage_service.move_file(source_full_path, target_full_path)
