@@ -191,7 +191,11 @@ class TemporaryStorageAdapter:
             return permanent_path
 
         except Exception as e:
-            logger.error("Failed to promote temporary file %s to permanent: %s", temp_path, str(e))
+            logger.error(
+                "Failed to promote temporary file %s to permanent: %s",
+                temp_path,
+                str(e),
+            )
             raise StorageError(f"Failed to promote temporary file to permanent: {str(e)}") from e
 
     def cleanup_expired(self) -> Dict[str, Any]:
@@ -307,7 +311,8 @@ class TemporaryStorageAdapter:
             with FileLock(self.lock_file_path):
                 if not self.registry_path.exists():
                     logger.warning(
-                        "Registry file not found at %s, returning empty registry", self.registry_path
+                        "Registry file not found at %s, returning empty registry",
+                        self.registry_path,
                     )
                     return {}
 
@@ -377,7 +382,11 @@ class TemporaryStorageAdapter:
             # Save updated registry
             try:
                 self._save_registry(registry)
-                logger.debug("Tracked temporary file %s, expires at %s", path, expiration_time.isoformat())
+                logger.debug(
+                    "Tracked temporary file %s, expires at %s",
+                    path,
+                    expiration_time.isoformat(),
+                )
                 return True
             except StorageError as e:
                 logger.error("Failed to save registry after tracking file %s: %s", path, str(e))
