@@ -37,10 +37,7 @@ class InvoiceService:
             ValueError: If the extracted data is invalid
         """
         # Delegate to the domain model's update method
-        invoice.update(
-            amount=extracted_data["amount"],
-            due_date=extracted_data["due_date"],
-        )
+        invoice.update(amount=extracted_data["amount"], due_date=extracted_data["due_date"])
 
         return invoice
 
