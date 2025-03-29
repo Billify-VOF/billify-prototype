@@ -4,10 +4,10 @@ import os
 import re
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from integrations.transformers.pdf.ocr import OCRService, OCRError
 from integrations.transformers.pdf.text_analysis import TextAnalyzer, TextAnalysisError
-from datetime import date, datetime
+from datetime import date
 from logging import getLogger
 
 # Module-level logger
