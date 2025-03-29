@@ -53,7 +53,10 @@ def api_root(*_):
                 "methods": ["GET", "POST"],
                 "description": "User account management",
             },
-            "admin": {"url": "/admin/", "description": "Administrative interface (staff only)"},
+            "admin": {
+                "url": "/admin/",
+                "description": "Administrative interface (staff only)",
+            },
         },
         "documentation": {
             "repository": "https://github.com/Billify-VOF/billify-prototype",
