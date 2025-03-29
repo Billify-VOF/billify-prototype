@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from datetime import date
-from typing import Optional, Union
+from typing import Optional
 from domain.exceptions import InvalidInvoiceError
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from django.utils import timezone
@@ -44,7 +44,7 @@ class PaymentInfo:
 class FileInfo:
     path: Optional[str] = None
     size: Optional[int] = None
-    type: Optional[str] = None
+    file_type: Optional[str] = None
     original_name: Optional[str] = None
 
 
@@ -72,7 +72,7 @@ class Invoice:
         buyer: Optional[BuyerInfo] = None,
         seller: Optional[SellerInfo] = None,
         payment: Optional[PaymentInfo] = None,
-        file_path: Optional[str] = None,
+        file: Optional[FileInfo] = None,
         uploaded_by=None,
     ) -> "Invoice":
         """Create a new valid invoice.
@@ -101,11 +101,11 @@ class Invoice:
             due_date=due_date,
             invoice_number=invoice_number,
             status=status,
-            file_path=file_path,
-            uploaded_by=uploaded_by,
             buyer=buyer,
             seller=seller,
             payment=payment,
+            file=file,
+            uploaded_by=uploaded_by,
         )
         invoice.validate()
         return invoice
@@ -141,6 +141,7 @@ class Invoice:
         self.seller = seller or SellerInfo()
         self.payment = payment or PaymentInfo()
         self.file = file or FileInfo()
+        self._manual_urgency: Optional[UrgencyLevel] = None
 
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""
@@ -315,59 +316,38 @@ class Invoice:
         self._manual_urgency = None
         logger.debug("Update: Clearing manual urgency override")
 
-    def update(
-        self,
-        *,
-        amount: Optional[Decimal] = None,
-        due_date: Optional[date] = None,
-        invoice_number: Optional[str] = None,
-        status: Optional[InvoiceStatus] = None,
-        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None,
-        buyer_name: Optional[str] = None,
-        buyer_address: Optional[str] = None,
-        buyer_vat: Optional[str] = None,
-        buyer_email: Optional[str] = None,
-        seller_name: Optional[str] = None,
-        seller_vat: Optional[str] = None,
-        payment_method: Optional[str] = None,
-        currency: Optional[str] = None,
-        iban: Optional[str] = None,
-        bic: Optional[str] = None,
-        payment_processor: Optional[str] = None,
-        transaction_id: Optional[str] = None,
-        subtotal: Optional[Decimal] = None,
-        vat_amount: Optional[Decimal] = None,
-        total_amount: Optional[Decimal] = None,
-        file_size: Optional[int] = None,
-        file_type: Optional[str] = None,
-        original_file_name: Optional[str] = None,
-    ) -> None:
+    def update(self, **kwargs) -> None:
         """Update invoice fields with validation.
 
         Updates fields while ensuring validation rules are met.
 
         Args:
-            amount (Optional[Decimal]): New invoice amount
-            due_date (Optional[date]): New due date
-            invoice_number (Optional[str]): New invoice number
-            status (Optional[InvoiceStatus]): New invoice status
-            manual_urgency (Optional[Union[UrgencyLevel, bool]]): New urgency level
-                or False to clear manual urgency and switch to automatic calculation
+            **kwargs: Field updates as keyword arguments, which can include:
+                amount (Decimal): New invoice amount
+                due_date (date): New due date
+                invoice_number (str): New invoice number
+                status (InvoiceStatus): New invoice status
+                manual_urgency (UrgencyLevel or False): New urgency level
+                    or False to clear manual urgency
+                buyer_name, buyer_address, buyer_vat, buyer_email: Buyer fields
+                seller_name, seller_vat: Seller fields
+                payment_method, currency, iban, bic: Payment fields
+                payment_processor, transaction_id: Payment processor fields
+                subtotal, vat_amount, total_amount: Amount fields
+                file_size, file_type, original_file_name: File metadata
         """
-        # Collect all non-None fields dynamically
-        fields_to_update = {
-            key: value for key, value in locals().items() if key != "self" and value is not None
-        }
+        # Use only non-None values
+        fields_to_update = {k: v for k, v in kwargs.items() if v is not None}
 
         # Handle manual urgency separately
         if "manual_urgency" in fields_to_update:
-            manual_urgency = fields_to_update.pop("manual_urgency")
-            if manual_urgency is False:
+            urgency_value = fields_to_update.pop("manual_urgency")
+            if urgency_value is False:
                 self.clear_manual_urgency()
-            elif isinstance(manual_urgency, UrgencyLevel):
-                self.set_urgency_manually(manual_urgency)
+            elif isinstance(urgency_value, UrgencyLevel):
+                self.set_urgency_manually(urgency_value)
             else:
-                raise InvalidInvoiceError(f"Expected UrgencyLevel or False, got {type(manual_urgency)}")
+                raise InvalidInvoiceError(f"Expected UrgencyLevel or False, got {type(urgency_value)}")
 
         # Apply updates dynamically
         for field, value in fields_to_update.items():

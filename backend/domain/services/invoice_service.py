@@ -171,7 +171,7 @@ class InvoiceService:
             if file_size:
                 invoice.file.size = file_size
             if file_type:
-                invoice.file.type = file_type
+                invoice.file.file_type = file_type
             if original_file_name:
                 invoice.file.original_name = original_file_name
         elif hasattr(invoice, "file_path") and file_path:
