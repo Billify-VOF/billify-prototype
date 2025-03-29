@@ -34,7 +34,7 @@ class StorageRepository(ABC):
         pass
 
     @abstractmethod
-    def get_file_path(self, identifier: str) -> Path:
+    def get_file_path(self, file_path) -> Path:
         """
         Get the full path to a stored file.
 

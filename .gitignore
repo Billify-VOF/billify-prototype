@@ -166,4 +166,8 @@ profile_default/
 *.mo
 *.pot
 
-#Migrations
+# Migrations
+*/migrations/0*.py
+backend/*/migrations/00*.py
+backend/*/migrations/00*.pyc
+backend/infrastructure/migrations/*_*.py

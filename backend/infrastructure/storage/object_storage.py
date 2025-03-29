@@ -13,7 +13,9 @@ from django.conf import settings
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 from domain.exceptions import StorageError
-from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.storage_repository import (
+    StorageRepository,
+)
 from django.core.files.uploadedfile import UploadedFile
 from typing import Union, BinaryIO
 

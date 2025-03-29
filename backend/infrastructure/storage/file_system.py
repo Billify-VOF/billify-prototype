@@ -8,7 +8,9 @@ from pathlib import Path
 from datetime import datetime
 from django.conf import settings
 from domain.exceptions import StorageError
-from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.storage_repository import (
+    StorageRepository,
+)
 from django.core.files.uploadedfile import UploadedFile
 from logging import getLogger
 from typing import BinaryIO, Union, Optional, Tuple

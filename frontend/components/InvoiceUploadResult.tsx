@@ -61,7 +61,23 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
 
   useEffect(() => {    
     if (result?.invoice_data) {
-      const formattedDate = result?.invoice_data?.date ? format(new Date(result.invoice_data.date), 'yyyy-MM-dd') : '';
+      // Safely parse date and format it
+      let formattedDate = '';
+      if (result.invoice_data.date) {
+        try {
+          const dateValue = new Date(result.invoice_data.date);
+          // Check if date is valid before formatting
+          if (!isNaN(dateValue.getTime())) {
+            formattedDate = format(dateValue, 'yyyy-MM-dd');
+            setDate(dateValue); // Set the date state only if valid
+          } else {
+            console.warn("Invalid date received:", result.invoice_data.date);
+          }
+        } catch (error) {
+          console.error("Error formatting date:", error);
+        }
+      }
+      
       setInvoiceData({
         invoice_id: result.invoice_data.invoice_id || 0,
         status: result.invoice_data.status || 'pending',
@@ -72,9 +88,6 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         urgency: result.invoice_data.urgency || DEFAULT_URGENCY,
       });
       setAutoCalculatedUrgency(result.invoice_data.urgency);
-      if (result.invoice_data.date) {
-        setDate(new Date(result.invoice_data.date));
-      }
     }
   }, [result]);
 
@@ -131,20 +144,45 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         urgency,
       }));
     } else {
-      setDate(result.invoice_data?.date ? new Date(result.invoice_data.date) : undefined);
-      const formattedDate = result?.invoice_data?.date
-        ? format(new Date(result.invoice_data.date), 'yyyy-MM-dd')
-        : '';
+      // Safely handle date when resetting to original date
+      let formattedDate = '';
+      let originalDate: Date | undefined = undefined;
+      
+      if (result?.invoice_data?.date) {
+        try {
+          const dateValue = new Date(result.invoice_data.date);
+          // Check if date is valid
+          if (!isNaN(dateValue.getTime())) {
+            formattedDate = format(dateValue, 'yyyy-MM-dd');
+            originalDate = dateValue;
+          } else {
+            console.warn("Invalid original date:", result.invoice_data.date);
+          }
+        } catch (error) {
+          console.error("Error handling original date:", error);
+        }
+      }
+      
+      setDate(originalDate);
       setInvoiceData((prev) => ({
         ...prev,
-        date: formattedDate || '',
+        date: formattedDate,
         urgency: autoCalculatedUrgency,
       }));
     }
   };
 
-  const getUrgencyDateMessage = (slectedDate: Date) => {
-    return `${format(slectedDate, "dd/MM/yyyy")} ${invoiceData.urgency?.is_manual ? '' : getDueDateMessage(invoiceData.urgency?.level)}`;
+  const getUrgencyDateMessage = (selectedDate: Date) => {
+    try {
+      // Validate the date before formatting
+      if (!selectedDate || isNaN(selectedDate.getTime())) {
+        return "Invalid date";
+      }
+      return `${format(selectedDate, "dd/MM/yyyy")} ${invoiceData.urgency?.is_manual ? '' : getDueDateMessage(invoiceData.urgency?.level)}`;
+    } catch (error) {
+      console.error("Error in getUrgencyDateMessage:", error);
+      return "Error formatting date";
+    }
   }
 
   if (!result || !result.status) {

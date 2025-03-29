@@ -1,8 +1,9 @@
 """Domain model representing an invoice and its business rules."""
 
+from dataclasses import dataclass
 from decimal import Decimal
 from datetime import date
-from typing import Optional, Union
+from typing import Optional
 from domain.exceptions import InvalidInvoiceError
 from domain.models.value_objects import UrgencyLevel, InvoiceStatus
 from django.utils import timezone
@@ -10,6 +11,41 @@ from logging import getLogger
 
 # Module-level logger
 logger = getLogger(__name__)
+
+
+@dataclass
+class BuyerInfo:
+    name: Optional[str] = None
+    address: Optional[str] = None
+    vat: Optional[str] = None
+    email: Optional[str] = None
+
+
+@dataclass
+class SellerInfo:
+    name: Optional[str] = None
+    vat: Optional[str] = None
+
+
+@dataclass
+class PaymentInfo:
+    method: Optional[str] = None
+    currency: Optional[str] = None
+    iban: Optional[str] = None
+    bic: Optional[str] = None
+    processor: Optional[str] = None
+    transaction_id: Optional[str] = None
+    subtotal: Optional[Decimal] = None
+    vat_amount: Optional[Decimal] = None
+    total_amount: Optional[Decimal] = None
+
+
+@dataclass
+class FileInfo:
+    path: Optional[str] = None
+    size: Optional[int] = None
+    file_type: Optional[str] = None
+    original_name: Optional[str] = None
 
 
 class Invoice:
@@ -33,6 +69,11 @@ class Invoice:
         due_date: date,
         invoice_number: str,
         status: InvoiceStatus = InvoiceStatus.PENDING,
+        buyer: Optional[BuyerInfo] = None,
+        seller: Optional[SellerInfo] = None,
+        payment: Optional[PaymentInfo] = None,
+        file: Optional[FileInfo] = None,
+        uploaded_by=None,
     ) -> "Invoice":
         """Create a new valid invoice.
 
@@ -60,28 +101,46 @@ class Invoice:
             due_date=due_date,
             invoice_number=invoice_number,
             status=status,
+            buyer=buyer,
+            seller=seller,
+            payment=payment,
+            file=file,
+            uploaded_by=uploaded_by,
         )
         invoice.validate()
         return invoice
 
+    # class Invoice:
     def __init__(
         self,
-        *,  # This makes all following arguments keyword-only
+        *,
         amount: Decimal,
         due_date: date,
         invoice_number: str,
-        invoice_id: Optional[int] = None,
+        uploaded_by: Optional[int] = None,
         status: InvoiceStatus = InvoiceStatus.PENDING,
+        invoice_id: Optional[int] = None,
+        buyer: Optional[BuyerInfo] = None,
+        seller: Optional[SellerInfo] = None,
+        payment: Optional[PaymentInfo] = None,
+        file: Optional[FileInfo] = None,
     ) -> None:
         logger.debug("Invoice __init__ called")
         logger.debug("  amount: %s (%s)", amount, type(amount))
         logger.debug("  due_date: %s (%s)", due_date, type(due_date))
         logger.debug("  invoice_number: %s (%s)", invoice_number, type(invoice_number))
+
         self.id: Optional[int] = invoice_id
         self.amount: Decimal = amount
         self.due_date: date = due_date
         self.invoice_number: str = invoice_number
         self.status: InvoiceStatus = status
+        self.uploaded_by: Optional[int] = uploaded_by
+
+        self.buyer = buyer or BuyerInfo()  # Avoid None checks later
+        self.seller = seller or SellerInfo()
+        self.payment = payment or PaymentInfo()
+        self.file = file or FileInfo()
         self._manual_urgency: Optional[UrgencyLevel] = None
 
     def validate(self) -> None:
@@ -100,11 +159,7 @@ class Invoice:
             raise InvalidInvoiceError("Invoice cannot be overdue if due date is in the future")
         if not isinstance(self.status, InvoiceStatus):
             raise InvalidInvoiceError("Status must be an InvoiceStatus enum")
-        valid_statuses = (
-            InvoiceStatus.PENDING,
-            InvoiceStatus.OVERDUE,
-            InvoiceStatus.PAID,
-        )
+        valid_statuses = (InvoiceStatus.PENDING, InvoiceStatus.OVERDUE, InvoiceStatus.PAID)
         if self.status not in valid_statuses:
             raise InvalidInvoiceError(f"Invalid status: {self.status}")
 
@@ -261,79 +316,42 @@ class Invoice:
         self._manual_urgency = None
         logger.debug("Update: Clearing manual urgency override")
 
-    def update(
-        self,
-        *,
-        amount: Optional[Decimal] = None,
-        due_date: Optional[date] = None,
-        invoice_number: Optional[str] = None,
-        status: Optional[InvoiceStatus] = None,
-        manual_urgency: Optional[Union[UrgencyLevel, bool]] = None,
-    ) -> None:
+    def update(self, **kwargs) -> None:
         """Update invoice fields with validation.
 
-        This method allows updating one or more invoice fields and ensures
-        that all business rules are validated after the update.
+        Updates fields while ensuring validation rules are met.
 
         Args:
-            amount (Optional[Decimal]): New invoice amount
-            due_date (Optional[date]): New due date
-            invoice_number (Optional[str]): New invoice number
-            status (Optional[InvoiceStatus]): New invoice status
-            manual_urgency (Optional[Union[UrgencyLevel, bool]]): New urgency level
-                or False to clear manual urgency and switch to automatic calculation
-
-        Raises:
-            InvalidInvoiceError: If the updated data violates business rules
-
-        Example:
-            invoice = Invoice(amount=100, due_date=date(2023, 1, 1),
-                             invoice_number="INV-001")
-
-            # Update just the amount
-            invoice.update(amount=Decimal("150.00"))
-
-            # Update multiple fields
-            invoice.update(
-                amount=Decimal("200.00"),
-                due_date=date(2023, 2, 1),
-                status=InvoiceStatus.PAID
-            )
-
-            # Set manual urgency alongside other updates
-            invoice.update(
-                amount=Decimal("300.00"),
-                manual_urgency=UrgencyLevel.HIGH
-            )
-
-            # Clear manual urgency and return to automatic calculation
-            invoice.update(manual_urgency=False)
+            **kwargs: Field updates as keyword arguments, which can include:
+                amount (Decimal): New invoice amount
+                due_date (date): New due date
+                invoice_number (str): New invoice number
+                status (InvoiceStatus): New invoice status
+                manual_urgency (UrgencyLevel or False): New urgency level
+                    or False to clear manual urgency
+                buyer_name, buyer_address, buyer_vat, buyer_email: Buyer fields
+                seller_name, seller_vat: Seller fields
+                payment_method, currency, iban, bic: Payment fields
+                payment_processor, transaction_id: Payment processor fields
+                subtotal, vat_amount, total_amount: Amount fields
+                file_size, file_type, original_file_name: File metadata
         """
-        # Update fields that are provided (not None)
-        if amount is not None:
-            self.amount = amount
+        # Use only non-None values
+        fields_to_update = {k: v for k, v in kwargs.items() if v is not None}
 
-        if due_date is not None:
-            self.due_date = due_date
-
-        if invoice_number is not None:
-            self.invoice_number = invoice_number
-
-        if status is not None:
-            self.status = status
-
-        # Handle manual urgency if provided
-        if manual_urgency is not None:
-            if manual_urgency is False:
-                # Special case: False means clear the manual override
+        # Handle manual urgency separately
+        if "manual_urgency" in fields_to_update:
+            urgency_value = fields_to_update.pop("manual_urgency")
+            if urgency_value is False:
                 self.clear_manual_urgency()
-            elif isinstance(manual_urgency, UrgencyLevel):
-                # Set the manual urgency level
-                self.set_urgency_manually(manual_urgency)
+            elif isinstance(urgency_value, UrgencyLevel):
+                self.set_urgency_manually(urgency_value)
             else:
-                raise InvalidInvoiceError(f"Expected UrgencyLevel or False, got {type(manual_urgency)}")
-        else:  # manual_urgency is None
-            logger.debug("Update: No change to urgency settings")
+                raise InvalidInvoiceError(f"Expected UrgencyLevel or False, got {type(urgency_value)}")
+
+        # Apply updates dynamically
+        for field, value in fields_to_update.items():
+            setattr(self, field, value)
 
         # Validate the updated invoice
         self.validate()
