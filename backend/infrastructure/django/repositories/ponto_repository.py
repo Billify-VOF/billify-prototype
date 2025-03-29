@@ -2,8 +2,14 @@
 
 from typing import Optional, Dict, Any, Tuple
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from domain.repositories.interfaces.ponto_repository import IbanityAccountRepository, PontoTokenRepository
-from domain.models.ponto import IbanityAccount as DomainIbanityAccount, PontoToken as DomainPontoToken
+from domain.repositories.interfaces.ponto_repository import (
+    IbanityAccountRepository,
+    PontoTokenRepository,
+)
+from domain.models.ponto import (
+    IbanityAccount as DomainIbanityAccount,
+    PontoToken as DomainPontoToken,
+)
 from domain.exceptions import (
     InvalidIbanityAccountError,
     InvalidPontoTokenError,
@@ -199,7 +205,7 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
                 return self._to_domain(db_ibanity_account)
             else:
                 logger.debug("No IbanityAccount found of that user")
-                return None
+                raise IbanityAccountNotFoundError(f"IbanityAccount not found with the user {user}")
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
@@ -498,13 +504,13 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         db_ponto_token.save()
         return self._to_domain(db_ponto_token)
 
-    def get_by_id(self, pontoToken_id: int) -> Optional[DomainPontoToken]:
+    def get_by_id(self, pontoToken_id: int) -> DomainPontoToken:
         """Retrieve an PontoToken by its ID."""
         try:
             db_ponto_token = DjangoPontoToken.objects.filter(id=pontoToken_id).first()
             return self._to_domain(db_ponto_token)
         except ObjectDoesNotExist:
-            return None
+            raise PontoTokenNotFoundError(f"PontoToken not found with ID {pontoToken_id}")
 
     def get_or_create_by_user(self, user, data) -> Tuple[DomainPontoToken, bool]:
         """Retrieve an PontoToken by its user."""
@@ -519,7 +525,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
                 return self._to_domain(db_ponto_token), created
             else:
                 logger.debug("No PontoToken found of that user")
-                return None, False
+                raise PontoTokenNotFoundError(f"No PontoToken found for user {user}")
 
         except Exception as e:
             logger.error(f"Error retrieving PontoToken: {str(e)}")
