@@ -101,28 +101,28 @@ class Invoice(models.Model):
     )
 
     # Meta Data
-    buyer_name = models.CharField(max_length=255, null=True, blank=True)
-    buyer_address = models.TextField(null=True, blank=True)
-    buyer_email = models.EmailField(null=True, blank=True)
-    buyer_vat = models.CharField(max_length=50, null=True, blank=True)
-    seller_name = models.CharField(max_length=255, null=True, blank=True)
-    seller_vat = models.CharField(max_length=50, null=True, blank=True)
-    payment_method = models.CharField(max_length=50, null=True, blank=True)
-    currency = models.CharField(max_length=10, null=True, blank=True)
-    iban = models.CharField(max_length=34, null=True, blank=True)
-    bic = models.CharField(max_length=11, null=True, blank=True)
-    payment_processor = models.CharField(max_length=100, null=True, blank=True)
-    transaction_id = models.CharField(max_length=100, null=True, blank=True)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    vat_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    invoice_date = models.DateField(null=True, blank=True)
+    buyer_name: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    buyer_address: models.TextField = models.TextField(null=True, blank=True)
+    buyer_email: models.EmailField = models.EmailField(null=True, blank=True)
+    buyer_vat: models.CharField = models.CharField(max_length=50, null=True, blank=True)
+    seller_name: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    seller_vat: models.CharField = models.CharField(max_length=50, null=True, blank=True)
+    payment_method: models.CharField = models.CharField(max_length=50, null=True, blank=True)
+    currency: models.CharField = models.CharField(max_length=10, null=True, blank=True)
+    iban: models.CharField = models.CharField(max_length=34, null=True, blank=True)
+    bic: models.CharField = models.CharField(max_length=11, null=True, blank=True)
+    payment_processor: models.CharField = models.CharField(max_length=100, null=True, blank=True)
+    transaction_id: models.CharField = models.CharField(max_length=100, null=True, blank=True)
+    subtotal: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vat_amount: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_amount: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    invoice_date: models.DateField = models.DateField(null=True, blank=True)
 
-    file_size = models.BigIntegerField(null=True, blank=True, help_text="Size of the uploaded file in bytes.")
-    file_type = models.CharField(
+    file_size: models.BigIntegerField = models.BigIntegerField(null=True, blank=True, help_text="Size of the uploaded file in bytes.")
+    file_type: models.CharField = models.CharField(
         max_length=100, null=True, blank=True, help_text="MIME type of the uploaded file."
     )
-    original_file_name = models.CharField(
+    original_file_name: models.CharField = models.CharField(
         max_length=255, null=True, blank=True, help_text="Original name of the uploaded file."
     )
 
