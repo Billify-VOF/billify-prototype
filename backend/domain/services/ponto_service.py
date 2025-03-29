@@ -100,9 +100,7 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(
-                    extracted_data["authorization_expiration_expected_at"]
-                ),
+                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
@@ -176,9 +174,7 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(
-                    extracted_data["authorization_expiration_expected_at"]
-                ),
+                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
