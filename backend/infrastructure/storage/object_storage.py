@@ -13,7 +13,9 @@ from django.conf import settings
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 from domain.exceptions import StorageError
-from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.storage_repository import (
+    StorageRepository,
+)
 from django.core.files.uploadedfile import UploadedFile
 from typing import Union, BinaryIO
 
@@ -73,7 +75,9 @@ class ObjectStorage(StorageRepository):
         """
         try:
             url = self.client.generate_presigned_url(
-                "get_object", Params={"Bucket": self.bucket, "Key": storage_path}, ExpiresIn=expires_in
+                "get_object",
+                Params={"Bucket": self.bucket, "Key": storage_path},
+                ExpiresIn=expires_in,
             )
             return url
         except ClientError as e:
