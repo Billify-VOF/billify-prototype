@@ -15,7 +15,10 @@ from domain.exceptions import (
     IbanityAccountNotFoundError,
     IbanityAccountDataError,
 )
-from domain.repositories.interfaces.ponto_repository import IbanityAccountRepository, PontoTokenRepository
+from domain.repositories.interfaces.ponto_repository import (
+    IbanityAccountRepository,
+    PontoTokenRepository,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -97,7 +100,9 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
+                authorization_expiration_expected_at=(
+                    extracted_data["authorization_expiration_expected_at"]
+                ),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
@@ -171,7 +176,9 @@ class IbanityAccountService:
                 product=extracted_data["product"],
                 reference=extracted_data["reference"],
                 currency=extracted_data["currency"],
-                authorization_expiration_expected_at=(extracted_data["authorization_expiration_expected_at"]),
+                authorization_expiration_expected_at=(
+                    extracted_data["authorization_expiration_expected_at"]
+                ),
                 current_balance=extracted_data["current_balance"],
                 available_balance=extracted_data["available_balance"],
                 subtype=extracted_data["subtype"],
@@ -391,7 +398,10 @@ class PontoTokenService:
             raise PontoTokenDecryptionError(f"Invalid token data: {str(e)}") from e
         except Exception as e:
             # Fallback for unexpected errors
-            logger.error(f"Unexpected error retrieving token for user {user}: {str(e)}", exc_info=True)
+            logger.error(
+                f"Unexpected error retrieving token for user {user}: {str(e)}",
+                exc_info=True,
+            )
             raise PontoTokenDecryptionError(f"Error while retrieving the access token: {str(e)}") from e
 
     def add_or_update(self, user: Any, data):
