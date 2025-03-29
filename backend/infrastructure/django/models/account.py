@@ -9,7 +9,10 @@ class Account(AbstractUser):
     is_active = models.BooleanField(default=True)
 
     groups = models.ManyToManyField(
-        Group, related_name="account_set", blank=True, help_text="The groups this user belongs to."
+        Group,
+        related_name="account_set",
+        blank=True,
+        help_text="The groups this user belongs to.",
     )
     user_permissions = models.ManyToManyField(
         Permission,
