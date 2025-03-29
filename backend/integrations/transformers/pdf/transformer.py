@@ -2,6 +2,7 @@
 
 import os
 import re
+import mimetypes
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, Any
@@ -81,7 +82,7 @@ class PDFTransformer:
         try:
             file_size = os.path.getsize(pdf_path)  # File size in bytes
             file_name = pdf_path.name  # Extract original file name
-            file_type = "PDF"
+            file_type = mimetypes.guess_type(str(pdf_path))[0] or "application/pdf"
 
             return {
                 "file_size": file_size,
@@ -92,6 +93,19 @@ class PDFTransformer:
         except Exception as e:
             logger.error("Failed to extract file metadata: %s", str(e))
             raise PDFTransformationError(f"Failed to extract file metadata: {str(e)}") from e
+
+    def _standardize_amount(self, amount_str: str) -> str:
+        """Convert European number format to standard decimal format.
+        
+        Args:
+            amount_str: Amount string potentially in European format
+            
+        Returns:
+            Standardized amount string
+        """
+        if amount_str and isinstance(amount_str, str):
+            return amount_str.replace(",", "@").replace(".", "").replace("@", ".")
+        return amount_str
 
     def _standardize_data(self, raw_data: Dict, file_metadata: Dict) -> Dict[str, Any]:
         """Standardize extracted fields to a consistent format.
@@ -109,23 +123,11 @@ class PDFTransformer:
         try:
             logger.info("Standardizing extracted data")
             
-            # Standardize amounts by replacing European format with standard decimal format
-            amount = raw_data.get("amount", "0.00")
-            if amount and isinstance(amount, str):
-                # Replace comma with placeholder, remove thousands separator, restore decimal point
-                amount = amount.replace(",", "@").replace(".", "").replace("@", ".")
-            
-            subtotal = raw_data.get("subtotal", "0.00")
-            if subtotal and isinstance(subtotal, str):
-                subtotal = subtotal.replace(",", "@").replace(".", "").replace("@", ".")
-                
-            vat_amount = raw_data.get("vat_amount", "0.00")
-            if vat_amount and isinstance(vat_amount, str):
-                vat_amount = vat_amount.replace(",", "@").replace(".", "").replace("@", ".")
-                
-            total_amount = raw_data.get("total_amount", "0.00")
-            if total_amount and isinstance(total_amount, str):
-                total_amount = total_amount.replace(",", "@").replace(".", "").replace("@", ".")
+            # Standardize amounts
+            amount = self._standardize_amount(raw_data.get("amount", "0.00"))
+            subtotal = self._standardize_amount(raw_data.get("subtotal", "0.00"))
+            vat_amount = self._standardize_amount(raw_data.get("vat_amount", "0.00"))
+            total_amount = self._standardize_amount(raw_data.get("total_amount", "0.00"))
             
             # Parse and convert dates from various formats
             due_date = raw_data.get("due_date")
@@ -137,16 +139,16 @@ class PDFTransformer:
                     try:
                         day, month, year = due_date.split('/')
                         parsed_due_date = date(int(year), int(month), int(day))
-                        logger.info(f"Successfully parsed European date format: {due_date} -> {parsed_due_date}")
+                        logger.info("Successfully parsed European date format: %s -> %s", due_date, parsed_due_date)
                     except (ValueError, TypeError) as e:
-                        logger.warning(f"Failed to parse European date format: {due_date} - {str(e)}")
+                        logger.warning("Failed to parse European date format: %s - %s", due_date, str(e))
                 # Try standard date parsing for other formats
                 elif parse_date is not None:
                     try:
                         parsed_due_date = parse_date(due_date).date()
-                        logger.info(f"Successfully parsed date using dateutil: {due_date} -> {parsed_due_date}")
+                        logger.info("Successfully parsed date using dateutil: %s -> %s", due_date, parsed_due_date)
                     except (ValueError, TypeError) as e:
-                        logger.warning(f"Failed to parse date using dateutil: {due_date} - {str(e)}")
+                        logger.warning("Failed to parse date using dateutil: %s - %s", due_date, str(e))
             
             standardized: Dict[str, Any] = {
                 # File metadata
@@ -154,7 +156,7 @@ class PDFTransformer:
                 "file_size": file_metadata.get("file_size"),
                 "file_type": file_metadata.get("file_type"),
                 # Default values for required fields
-                "invoice_number": raw_data.get("invoice_number", "UNKNOWN"),
+                "invoice_number": raw_data.get("invoice_number", ""),
                 "amount": Decimal(amount),
                 "due_date": parsed_due_date,
                 # Buyer & Seller Information
