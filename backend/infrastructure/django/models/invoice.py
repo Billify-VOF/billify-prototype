@@ -7,7 +7,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from domain.models.value_objects import InvoiceStatus, UrgencyLevel
 from logging import getLogger
-from typing import Optional
+from typing import Any
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -59,10 +59,10 @@ class Invoice(models.Model):
     amount: models.DecimalField = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Total invoice amount. " "Maximum 99,999,999.99. " "Negative amounts not allowed.",
+        help_text="Total invoice amount. Maximum 99,999,999.99. Negative amounts not allowed.",
     )
     due_date: models.DateField = models.DateField(
-        help_text="Date when payment is due. " "Used for overdue calculations and urgency levels."
+        help_text="Date when payment is due. Used for overdue calculations and urgency levels."
     )
 
     # Metadata
@@ -72,8 +72,7 @@ class Invoice(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default="pending",
-        help_text="Current payment status of the invoice. "
-        "Automatically updated based on payment and due date.",
+        help_text="Current payment status of the invoice. Automatically updated based on payment and due date.",
     )
 
     URGENCY_LEVELS = UrgencyLevel.choices()
@@ -81,7 +80,7 @@ class Invoice(models.Model):
         choices=URGENCY_LEVELS,
         null=True,
         blank=True,
-        help_text="Manual override for invoice urgency. " "If not set, urgency is calculated from due date.",
+        help_text="Manual override for invoice urgency. If not set, urgency is calculated from due date.",
     )
 
     # Timestamps
@@ -92,7 +91,7 @@ class Invoice(models.Model):
     uploaded_by: models.ForeignKey = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        help_text="User who uploaded the invoice PDF. " "Protected from deletion.",
+        help_text="User who uploaded the invoice PDF. Protected from deletion.",
     )
     uploaded_by_id: int
 
@@ -151,52 +150,27 @@ class Invoice(models.Model):
         invoice_number: str,
         amount: Decimal,
         due_date: date,
-        uploaded_by: int,  # Change from uploaded_by_id
+        uploaded_by: int,
         file_path: str,
-        buyer_name: Optional[str] = None,
-        buyer_address: Optional[str] = None,
-        buyer_vat: Optional[str] = None,
-        buyer_email: Optional[str] = None,
-        seller_name: Optional[str] = None,
-        seller_vat: Optional[str] = None,
-        payment_method: Optional[str] = None,
-        currency: Optional[str] = None,
-        iban: Optional[str] = None,
-        bic: Optional[str] = None,
-        payment_processor: Optional[str] = None,
-        transaction_id: Optional[str] = None,
-        subtotal: Optional[Decimal] = None,
-        vat_amount: Optional[Decimal] = None,
-        total_amount: Optional[Decimal] = None,
-        file_size: Optional[int] = None,
-        file_type: Optional[str] = None,
-        original_file_name: Optional[str] = None,
+        **optional_fields: Any
     ) -> "Invoice":
-        """Create a new Invoice instance with validation."""
+        """Create a new Invoice instance with validation.
+        
+        Args:
+            invoice_number: Business identifier of the invoice
+            amount: Total invoice amount
+            due_date: When payment is due
+            uploaded_by: User ID who uploaded the invoice
+            file_path: Path to the stored invoice file
+            **optional_fields: Additional fields like buyer_name, seller_name, etc.
+        """
         instance = cls(
             invoice_number=invoice_number,
             amount=amount,
             due_date=due_date,
             uploaded_by_id=uploaded_by,
             file_path=file_path,
-            buyer_name=buyer_name if buyer_name is not None else None,
-            buyer_address=buyer_address if buyer_address is not None else None,
-            buyer_vat=buyer_vat if buyer_vat is not None else None,
-            buyer_email=buyer_email if buyer_email is not None else None,
-            seller_name=seller_name if seller_name is not None else None,
-            seller_vat=seller_vat if seller_vat is not None else None,
-            payment_method=payment_method if payment_method is not None else None,
-            currency=currency if currency is not None else None,
-            iban=iban if iban is not None else None,
-            bic=bic if bic is not None else None,
-            payment_processor=payment_processor if payment_processor is not None else None,
-            transaction_id=transaction_id if transaction_id is not None else None,
-            subtotal=subtotal if subtotal is not None else None,
-            vat_amount=vat_amount if vat_amount is not None else None,
-            total_amount=total_amount if total_amount is not None else None,
-            file_size=file_size if file_size is not None else None,
-            file_type=file_type if file_type is not None else None,
-            original_file_name=original_file_name if original_file_name is not None else None,
+            **optional_fields
         )
         instance.full_clean()
         return instance
@@ -230,6 +204,8 @@ class Invoice(models.Model):
         """
         # Run base parent model validations before custom validations
         super().clean()
+        if self.amount is not None and self.amount < 0:
+            raise ValidationError({"amount": "Negative amounts are not allowed."})
         self._validate_urgency_level()
 
     def _validate_urgency_level(self) -> None:
@@ -246,47 +222,28 @@ class Invoice(models.Model):
             valid_levels = [level.db_value for level in UrgencyLevel]
             if self.manual_urgency not in valid_levels:
                 raise ValidationError(
-                    {"manual_urgency": ("Invalid urgency level. " f"Must be one of: {valid_levels}")}
+                    {"manual_urgency": f"Invalid urgency level. Must be one of: {valid_levels}"}
                 )
 
     def update(
         self,
-        *,
-        amount: Optional[Decimal] = None,
-        due_date: Optional[date] = None,
-        status: Optional[str] = None,
-        manual_urgency: Optional[int] = None,
-        buyer_name: Optional[str] = None,
-        buyer_address: Optional[str] = None,
-        buyer_vat: Optional[str] = None,
-        buyer_email: Optional[str] = None,
-        seller_name: Optional[str] = None,
-        seller_vat: Optional[str] = None,
-        payment_method: Optional[str] = None,
-        currency: Optional[str] = None,
-        iban: Optional[str] = None,
-        bic: Optional[str] = None,
-        payment_processor: Optional[str] = None,
-        transaction_id: Optional[str] = None,
-        subtotal: Optional[Decimal] = None,
-        vat_amount: Optional[Decimal] = None,
-        total_amount: Optional[Decimal] = None,
-        uploaded_by: Optional[int] = None,
-        file_size: Optional[int] = None,
-        file_type: Optional[str] = None,
-        original_file_name: Optional[str] = None,
+        **fields_to_update: Any
     ) -> None:
         """Update invoice fields with validation.
 
-        Updates only the fields that are not None, ensuring proper validation.
-
+        Updates only the fields that are provided in kwargs, ensuring proper validation.
+        
+        Args:
+            **fields_to_update: Fields to update (amount, due_date, status, etc.)
+            
         Raises:
             ValidationError: If updated fields don't meet validation requirements.
         """
-        fields_to_update = {
-            key: value for key, value in locals().items() if key != "self" and value is not None
-        }
-
+        # Handle UrgencyLevel conversion if present
+        if "manual_urgency" in fields_to_update and isinstance(fields_to_update["manual_urgency"], UrgencyLevel):
+            fields_to_update["manual_urgency"] = fields_to_update["manual_urgency"].db_value
+            
+        # Update fields
         for field, value in fields_to_update.items():
             setattr(self, field, value)
 
