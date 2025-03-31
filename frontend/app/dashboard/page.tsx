@@ -1,14 +1,35 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { Menu, Upload, Settings, Receipt, Wallet } from '@/components/ui/icons';
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
-import { InvoiceData, InvoiceUploadResult } from '@/components/InvoiceUploadResult';
-import SearchComponent from '@/components/SearchComponent';
-import { dummySearchResults, SearchItemResult } from '@/components/types';
-import SearchResultItem from '@/components/SearchResultItem';
-import NotificationBell from '@/components/NotificationBell';
-import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
+"use client";
+import React, { useState, useEffect } from "react";
+
+import type { UploadStatus } from "@/components/definitions/invoice";
+import {
+  INVOICES_DATA,
+  STATUS_COLORS,
+  InvoiceStatus,
+} from "@/components/definitions/invoice";
+import type { InvoiceData } from "@/components/InvoiceUploadResult";
+import { InvoiceUploadResult } from "@/components/InvoiceUploadResult";
+import NotificationBell from "@/components/NotificationBell";
+import SearchComponent from "@/components/SearchComponent";
+import SearchResultItem from "@/components/SearchResultItem";
+import type { SearchItemResult } from "@/components/types";
+import { dummySearchResults } from "@/components/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import {
+  Menu,
+  Upload,
+  Settings,
+  Receipt,
+  Wallet,
+  Unlock,
+} from "@/components/ui/icons";
+import { Ponto_Connect_2_Options } from "@/constants/api";
+import {
+  base64_urlencode,
+  generateCodeChallenge,
+  generateCodeVerifier,
+} from "@/lib/utils";
 
 const BillifyDashboard = () => {
   // Add state for file upload
@@ -48,6 +69,7 @@ const BillifyDashboard = () => {
     }
 
     const file = event.target.files?.[0];
+
 
     if (file) {
       if (file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024) {
@@ -137,7 +159,13 @@ const BillifyDashboard = () => {
   const onSearch = async (query: string) => {
     // TODO: Implement search functionality
     setSearchResult([...dummySearchResults]);
-    console.log('Search query: ', query);
+  };
+
+  const onPontoConnect = async () => {
+    const state = base64_urlencode(generateCodeVerifier());
+    const codeChallenge = await generateCodeChallenge();
+    const PONTO_CONNECT_OAUTH2_URL = `https://sandbox-authorization.myponto.com/oauth2/auth?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
+    window.open(PONTO_CONNECT_OAUTH2_URL);
   };
 
   return (
@@ -150,10 +178,11 @@ const BillifyDashboard = () => {
         </div>
         {/* Navigation Icons */}
         <div className="space-y-6">
-          <Menu className="h-6 w-6 text-gray-400" />
-          <Receipt className="h-6 w-6 text-gray-400" />
-          <Wallet className="h-6 w-6 text-gray-400" />
-          <Settings className="h-6 w-6 text-gray-400" />
+          <Menu className="w-6 h-6 text-gray-400" />
+          <Receipt className="w-6 h-6 text-gray-400" />
+          <Wallet className="w-6 h-6 text-gray-400" />
+          <Settings className="w-6 h-6 text-gray-400" />
+          <Unlock className="w-6 h-6 text-gray-400" onClick={onPontoConnect} />
         </div>
       </div>
 
