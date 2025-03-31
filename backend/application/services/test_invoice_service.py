@@ -17,22 +17,22 @@ class TestInvoiceProcessing(TestCase):
         self.invoice_service = Mock(spec=InvoiceService)
         self.invoice_repository = Mock(spec=InvoiceRepository)
         self.storage_repository = Mock(spec=StorageRepository)
-        
+
         # Configure basic mock behaviors
         self.storage_repository.save_file.return_value = "test_path"
         self.storage_repository.get_file_path.return_value = "full_test_path"
-        
+
         # Create mock PDF transformer directly
         self.pdf_transformer_mock = Mock(spec=PDFTransformer)
-        
+
         # Create processing service with mocks
         self.processing_service = InvoiceProcessingService(
             self.invoice_service, self.invoice_repository, self.storage_repository
         )
-        
+
         # Replace the transformer with our mock
         self.processing_service.pdf_transformer = self.pdf_transformer_mock
-        
+
         # Sample path for testing
         self.sample_pdf = Path("backend/infrastructure/django/repositories/sample.pdf")
 
@@ -57,16 +57,16 @@ class TestInvoiceProcessing(TestCase):
             "iban": "US123456789",
             "bic": "BANKUS12",
             "payment_processor": None,
-            "transaction_id": None
+            "transaction_id": None,
         }
-        
+
         # Configure the PDF transformer mock
         mock_pdf_transformer.return_value.transform.return_value = sample_invoice_data
-        
+
         # Create a mocked file
         file_mock = MagicMock()
         file_mock.name = "test_invoice.pdf"
-        
+
         # Configure the invoice service to return a mocked domain object
         mock_invoice = Mock()
         mock_invoice.id = 42
@@ -74,25 +74,22 @@ class TestInvoiceProcessing(TestCase):
         mock_invoice.status = "pending"
         mock_invoice.is_updated = False
         self.invoice_service.process_invoice.return_value = mock_invoice
-        
+
         # Configure urgency info
-        self.invoice_service.get_urgency_info.return_value = {
-            "days_until_due": 30,
-            "priority": "normal"
-        }
-        
+        self.invoice_service.get_urgency_info.return_value = {"days_until_due": 30, "priority": "normal"}
+
         # Configure storage path for testing
         with patch("os.path.getsize", return_value=102400):
             with patch("mimetypes.guess_type", return_value=["application/pdf"]):
                 # Call the method being tested
                 result = self.processing_service.process_invoice(file_mock, user_id=1)
-        
+
         # Verify all important fields in the result
         self.assertEqual(result["invoice_id"], 42)
         self.assertEqual(result["invoice_number"], "INV-001")
         self.assertEqual(result["status"], "pending")
         self.assertEqual(result["updated"], False)
-        
+
         # Verify all metadata fields from invoice data
         self.assertEqual(result["buyer_name"], "John Doe")
         self.assertEqual(result["buyer_address"], "123 Main St")
@@ -107,16 +104,16 @@ class TestInvoiceProcessing(TestCase):
         self.assertEqual(result["subtotal"], "180.00")
         self.assertEqual(result["vat_amount"], "20.00")
         self.assertEqual(result["total_amount"], "200.00")
-        
+
         # Verify file metadata
         self.assertEqual(result["file_size"], 102400)
         self.assertEqual(result["file_type"], "application/pdf")
         self.assertEqual(result["original_file_name"], "test_invoice.pdf")
-        
+
         # Verify urgency info
         self.assertEqual(result["urgency"]["days_until_due"], 30)
         self.assertEqual(result["urgency"]["priority"], "normal")
-        
+
         # Verify correct method calls
         self.pdf_transformer_mock.transform.assert_called_once()
         self.invoice_service.process_invoice.assert_called_once()

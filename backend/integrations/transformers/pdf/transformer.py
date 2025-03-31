@@ -96,10 +96,10 @@ class PDFTransformer:
 
     def _standardize_amount(self, amount_str: str) -> str:
         """Convert European number format to standard decimal format.
-        
+
         Args:
             amount_str: Amount string potentially in European format
-            
+
         Returns:
             Standardized amount string
         """
@@ -122,34 +122,38 @@ class PDFTransformer:
         """
         try:
             logger.info("Standardizing extracted data")
-            
+
             # Standardize amounts
             amount = self._standardize_amount(raw_data.get("amount", "0.00"))
             subtotal = self._standardize_amount(raw_data.get("subtotal", "0.00"))
             vat_amount = self._standardize_amount(raw_data.get("vat_amount", "0.00"))
             total_amount = self._standardize_amount(raw_data.get("total_amount", "0.00"))
-            
+
             # Parse and convert dates from various formats
             due_date = raw_data.get("due_date")
             parsed_due_date = date.today()  # Default to today
-            
+
             if due_date and isinstance(due_date, str):
                 # Try to parse European format (DD/MM/YYYY)
-                if re.match(r'\d{1,2}/\d{1,2}/\d{4}', due_date):
+                if re.match(r"\d{1,2}/\d{1,2}/\d{4}", due_date):
                     try:
-                        day, month, year = due_date.split('/')
+                        day, month, year = due_date.split("/")
                         parsed_due_date = date(int(year), int(month), int(day))
-                        logger.info("Successfully parsed European date format: %s -> %s", due_date, parsed_due_date)
+                        logger.info(
+                            "Successfully parsed European date format: %s -> %s", due_date, parsed_due_date
+                        )
                     except (ValueError, TypeError) as e:
                         logger.warning("Failed to parse European date format: %s - %s", due_date, str(e))
                 # Try standard date parsing for other formats
                 elif parse_date is not None:
                     try:
                         parsed_due_date = parse_date(due_date).date()
-                        logger.info("Successfully parsed date using dateutil: %s -> %s", due_date, parsed_due_date)
+                        logger.info(
+                            "Successfully parsed date using dateutil: %s -> %s", due_date, parsed_due_date
+                        )
                     except (ValueError, TypeError) as e:
                         logger.warning("Failed to parse date using dateutil: %s - %s", due_date, str(e))
-            
+
             standardized: Dict[str, Any] = {
                 # File metadata
                 "file_path": file_metadata.get("file_name", "UNKNOWN"),

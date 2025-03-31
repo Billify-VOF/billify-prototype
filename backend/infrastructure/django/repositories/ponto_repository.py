@@ -169,7 +169,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
             db_ibanity_account = DjangoIbanityAccount.objects.get(id=ibanity_account_id)
             return self._to_domain(db_ibanity_account)
         except ObjectDoesNotExist as exc:
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the ID {ibanity_account_id}") from exc
+            raise IbanityAccountNotFoundError(
+                f"IbanityAccount not found with the ID {ibanity_account_id}"
+            ) from exc
 
     def get_by_account_id(self, account_id: str) -> Optional[DomainIbanityAccount]:
         """Retrieve an IbanityAccount by its account ID."""
@@ -190,7 +192,9 @@ class DjangoIbanityAccountRepository(IbanityAccountRepository):
 
         except Exception as e:
             logger.error(f"Error retrieving IbanityAccount: {str(e)}")
-            raise IbanityAccountNotFoundError(f"IbanityAccount not found with the account ID {account_id}") from e
+            raise IbanityAccountNotFoundError(
+                f"IbanityAccount not found with the account ID {account_id}"
+            ) from e
 
     def get_by_user(self, user) -> DomainIbanityAccount:
         """Retrieve an IbanityAccount by its user."""
