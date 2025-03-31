@@ -16,11 +16,23 @@ export function base64_urlencode(str: string) {
   return urlencoded;
 }
 
+export function getSecureRandomInt(min: number, max: number) {
+  const range = max - min + 1;
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+  const randomBytes = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(randomBytes);
+  let randomValue = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    randomValue = (randomValue << 8) | randomBytes[i];
+  }
+  return min + (randomValue % range);
+}
+
 export function generateCodeVerifier(): string {
   const allowedChars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
   // Random length between 43-128 because that is the CodeVerifier requirement
-  const length = Math.floor(Math.random() * (128 - 43 + 1)) + 43;
+  const length = getSecureRandomInt(43, 128);
 
   const randomBytes = new Uint8Array(length);
 
