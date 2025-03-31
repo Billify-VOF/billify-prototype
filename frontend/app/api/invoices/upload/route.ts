@@ -8,6 +8,7 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File;
 
     const backendFormData = new FormData();
+
     backendFormData.append("file", file);
 
     const backendResponse = await fetch(

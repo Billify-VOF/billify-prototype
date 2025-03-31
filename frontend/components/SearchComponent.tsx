@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { Loader2, Search, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SearchComponentProps<T> {
   /**
@@ -46,6 +46,7 @@ export default function SearchComponent<T>({
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 

@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import Switch from 'react-switch'; // Import react-switch
-import { DEFAULT_URGENCY, Urgency, URGENCY_LEVELS } from '../definitions/invoice';
-import { lightenColor } from '@/app/lib/utils';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown } from 'lucide-react';
+import React, { useRef, useState , useId } from 'react';
+import Switch from 'react-switch'; // Import react-switch
 import { Tooltip } from 'react-tooltip';
+
+import { lightenColor } from '@/app/lib/utils';
+
 import { getDueDateMessage } from '../../lib/invoice';
-import { useId } from 'react';
+import { DEFAULT_URGENCY, URGENCY_LEVELS } from '../definitions/invoice';
+import type { Urgency} from '../definitions/invoice';
+
+
 
 interface UrgencySelectorProps {
   urgency?: Urgency;
@@ -91,7 +95,7 @@ export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: Urgency
                     className='flex items-center rounded-md hover:bg-gray-100 cursor-pointer'>
                     <div
                       className='min-w-2 min-h-2 rounded-full mx-1 mr-2'
-                      style={{ backgroundColor: item.color_code }}></div>
+                      style={{ backgroundColor: item.color_code }} />
 
                     {item.display_name}
                   </DropdownMenu.Item>
@@ -107,7 +111,7 @@ export function UrgencySelector({ urgency = DEFAULT_URGENCY, onChange }: Urgency
               <Tooltip id={tooltipId} />
               <div
                 className='min-w-2 min-h-2 rounded-full'
-                style={{ backgroundColor: urgency.color_code }}></div>
+                style={{ backgroundColor: urgency.color_code }} />
               <span className='ml-2'>{urgency.display_name}</span>
             </div>
           )}

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function GET(
   _: NextRequest,
@@ -6,6 +7,7 @@ export async function GET(
 ) {
   try {
     const filePath = params.filePath;
+
     console.log('Fetching PDF preview for:', filePath);
     
     // Forward the request to the Django backend
@@ -24,6 +26,7 @@ export async function GET(
 
     // Get the PDF file as a blob
     const blob = await response.blob();
+
     console.log('PDF blob received:', blob.size, 'bytes');
 
     // Return the PDF with appropriate headers
@@ -35,6 +38,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching PDF:', error);
+
     return NextResponse.json(
       { error: 'Failed to fetch PDF file' },
       { status: 500 }
