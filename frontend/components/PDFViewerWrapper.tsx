@@ -6,6 +6,8 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
+import { BACKEND_API_URL } from "@/constants/api";
+
 // Initialize PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -88,7 +90,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   }
 
   // Use the Django backend URL (port 8000)
-  const pdfUrl = `http://localhost:8000/api/invoices/preview/${filePath}/`;
+  const pdfUrl = `${BACKEND_API_URL}/api/invoices/preview/${filePath}/`;
 
   console.log("Attempting to load PDF from:", pdfUrl);
 
