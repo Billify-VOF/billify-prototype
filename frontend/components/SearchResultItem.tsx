@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { SearchItemResult } from "./types";
+
+import type { SearchItemResult } from "./types";
 
 interface SearchResultItemProps {
   item: SearchItemResult
@@ -8,6 +9,7 @@ interface SearchResultItemProps {
 
 export default function SearchResultItem({ item }: SearchResultItemProps) {
   const { name, description } = item
+
   return (
     <Card className="m-2 border border-gray-200 shadow-sm hover:shadow-lg transition rounded-lg bg-white max-h-26">
       <CardHeader>

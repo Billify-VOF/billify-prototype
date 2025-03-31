@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Circle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Notification interface
@@ -30,6 +30,7 @@ export default function NotificationBell(props: { className?: string }) {
   // Fetch Notifications (Simulating API)
   useEffect(() => {
     let isMounted = true;
+
     async function fetchNotifications() {
       const dummyNotifications: Notification[] = [
         { id: '1', message: 'Invoice #1023 has been generated', isRead: false },
@@ -50,6 +51,7 @@ export default function NotificationBell(props: { className?: string }) {
           isRead: false,
         },
       ];
+
       if (isMounted) {
         setNotifications(dummyNotifications);
         setUnreadCount(dummyNotifications.filter((n) => !n.isRead).length);
@@ -80,6 +82,7 @@ export default function NotificationBell(props: { className?: string }) {
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 

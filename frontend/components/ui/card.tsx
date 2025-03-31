@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { cn } from "@/app/lib/utils"
 
 // Define the base Card component props interface
@@ -24,6 +25,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     />
   )
 )
+
 Card.displayName = "Card"
 
 // Card Header component
@@ -36,6 +38,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
     />
   )
 )
+
 CardHeader.displayName = "CardHeader"
 
 // Card Title component
@@ -51,6 +54,7 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, CardTitleProps>(
     />
   )
 )
+
 CardTitle.displayName = "CardTitle"
 
 // Card Description component
@@ -63,6 +67,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionPr
     />
   )
 )
+
 CardDescription.displayName = "CardDescription"
 
 // Card Content component
@@ -71,6 +76,7 @@ const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
     <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
   )
 )
+
 CardContent.displayName = "CardContent"
 
 // Card Footer component
@@ -83,6 +89,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
     />
   )
 )
+
 CardFooter.displayName = "CardFooter"
 
 // Export all components

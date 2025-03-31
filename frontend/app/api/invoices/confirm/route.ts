@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Upload error details:", error);
+
     return NextResponse.json(
       {
         status: "error",
