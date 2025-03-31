@@ -42,6 +42,7 @@ export default function SearchComponent<T>({
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 

@@ -48,6 +48,7 @@ const BillifyDashboard = () => {
     }
 
     const file = event.target.files?.[0];
+
     if (file) {
       if (file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024) {
         setUploadStatus('error');

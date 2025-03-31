@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+
 //import axios from 'axios';
-import { InvoiceUploadResult, UploadResult } from '@/components/InvoiceUploadResult';
+import type { UploadResult } from '@/components/InvoiceUploadResult';
+import { InvoiceUploadResult } from '@/components/InvoiceUploadResult';
 
 const FileUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +20,7 @@ const FileUpload: React.FC = () => {
     setUploadState({ status: 'uploading', result: null });
 
     const formData = new FormData();
+
     formData.append('file', file);
 
     try {
