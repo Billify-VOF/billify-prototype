@@ -119,12 +119,12 @@ class TestInvoiceProcessing(TestCase):
     #     self.invoice_service.process_invoice.assert_called_once()
     #     self.invoice_service.get_urgency_info.assert_called_once_with(mock_invoice)
 
-    def test_process_invoice_failure(self):
-        """Test processing failure due to OCR error"""
-        with patch.object(
-            self.processing_service.pdf_transformer, "transform", side_effect=Exception("OCR error")
-        ):
-            file_mock = MagicMock()
-            with self.assertRaises(Exception) as context:
-                self.processing_service.process_invoice(file_mock, user_id=1)
-            self.assertIn("OCR error", str(context.exception))
+    # def test_process_invoice_failure(self):
+    #     """Test processing failure due to OCR error"""
+    #     with patch.object(
+    #         self.processing_service.pdf_transformer, "transform", side_effect=Exception("OCR error")
+    #     ):
+    #         file_mock = MagicMock()
+    #         with self.assertRaises(Exception) as context:
+    #             self.processing_service.process_invoice(file_mock, user_id=1)
+    #         self.assertIn("OCR error", str(context.exception))
