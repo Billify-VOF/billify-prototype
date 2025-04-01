@@ -19,6 +19,18 @@ auth_service = AuthenticationService(domain_auth_service)
 
 
 class RegisterView(APIView):
+    """
+    API View for handling user registration.
+
+    This view accepts POST requests with user registration data including email,
+    username, password and optional company information. It validates the input
+    using RegisterSerializer and delegates the registration process to the
+    authentication service.
+
+    Methods:
+        post(request: Request) -> Response: Handle user registration requests
+    """
+
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
 

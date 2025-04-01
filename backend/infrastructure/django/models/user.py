@@ -5,7 +5,7 @@ from django.db import models
 class User(AbstractUser):
     """Custom user model that extends Django's AbstractUser."""
 
-    company_name = models.CharField(max_length=255)
+    company_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(unique=True)
 
     class Meta:

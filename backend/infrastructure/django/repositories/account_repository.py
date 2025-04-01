@@ -1,6 +1,7 @@
 from typing import Optional
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import AbstractUser
 from domain.models.account import Account
 from domain.repositories.interfaces.account_repository import AccountRepository
 
@@ -10,10 +11,11 @@ User = get_user_model()
 class DjangoAccountRepository(AccountRepository):
     """Django implementation of the account repository."""
 
-    def _to_domain(self, user) -> Optional[Account]:
+    def _to_domain(self, user: Optional[AbstractUser]) -> Optional[Account]:
         """Convert Django user model to domain Account."""
         if not user:
             return None
+
         return Account(
             id=user.id,
             username=user.username,

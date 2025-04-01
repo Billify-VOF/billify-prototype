@@ -34,6 +34,8 @@ class AuthenticationService:
         if not success:
             return False, {"error": error_message}
 
+        assert account is not None  # Ensure account is not None when registration succeeds
+
         return True, {
             "message": "Registration successful",
             "user": {

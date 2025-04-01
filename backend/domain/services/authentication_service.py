@@ -1,6 +1,10 @@
 from typing import Optional, Tuple
+import logging
 from domain.models.account import Account
 from domain.repositories.interfaces.account_repository import AccountRepository
+from domain.exceptions import ValidationError, RepositoryError
+
+logger = logging.getLogger(__name__)
 
 
 class AuthenticationService:
@@ -40,8 +44,15 @@ class AuthenticationService:
                 Account(id=None, username=username, email=email, password=password, company_name=company_name)
             )
             return True, account, ""
-        except Exception as e:
-            return False, None, str(e)
+        except ValidationError as e:
+            logger.error("Account validation failed during registration: %s", str(e))
+            return False, None, "Invalid account data provided"
+        except RepositoryError as e:
+            logger.error("Database error during account registration: %s", str(e))
+            return False, None, "Unable to create account at this time. Please try again later."
+        except Exception:
+            logger.exception("Unexpected error during account registration")
+            return False, None, "An unexpected error occurred. Please try again later."
 
     def login(self, identifier: str, password: str) -> Tuple[bool, Optional[Account], str]:
         """Authenticate a user with identifier (username or email) and password."""

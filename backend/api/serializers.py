@@ -57,7 +57,19 @@ class InvoiceUploadSerializer(serializers.Serializer):
 
 
 class RegisterSerializer(serializers.Serializer):
-    """Serializer for user registration."""
+    """
+    Serializer for handling user registration requests.
+
+    This serializer validates and processes user registration data including email,
+    username, password and optional company information. It enforces business rules
+    around password strength and field requirements.
+
+    Attributes:
+        email (EmailField): User's email address
+        username (CharField): Chosen username for the account
+        password (CharField): User's password (write-only)
+        company_name (CharField): Optional company/organization name
+    """
 
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True, min_length=3, max_length=150)
