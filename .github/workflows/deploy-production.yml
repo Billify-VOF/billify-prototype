@@ -30,10 +30,15 @@ jobs:
       - name: Install Frontend Dependencies
         working-directory: ./frontend
         run: npm ci
-        
-      - name: Frontend Lint
+  
+      - name: Install eslint in frontend
         working-directory: ./frontend
-        run: npm run lint
+        run: yarn add eslint
+
+      - name: Run ESLint
+        uses: stefanoeb/eslint-action@1.0.2
+        with:
+          files: ./frontend
         
       - name: Frontend Tests
         working-directory: ./frontend
