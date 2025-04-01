@@ -61,16 +61,23 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Verify PR is from staging
+      - name: Verify PR source branch
         if: github.event_name == 'pull_request'
         run: |
+          TARGET_BRANCH=${{ github.base_ref }}
           SOURCE_BRANCH=${{ github.head_ref }}
-          if [ "$SOURCE_BRANCH" != "staging" ]; then
-            echo "Error: Pull requests to main must come from the staging branch"
+          
+          if [ "$TARGET_BRANCH" == "main" ] && [ "$SOURCE_BRANCH" != "testing" ]; then
+            echo "Error: Pull requests to main must come from the testing branch"
             exit 1
           fi
-          echo "Pull request is correctly sourced from staging branch"
-
+          
+          if [ "$TARGET_BRANCH" == "testing" ] && [ "$SOURCE_BRANCH" != "staging" ]; then
+            echo "Error: Pull requests to testing must come from the staging branch"
+            exit 1
+          fi
+          
+          echo "Pull request source branch is valid"
 
   deploy:
     needs: [test, verify-staging-merge]
