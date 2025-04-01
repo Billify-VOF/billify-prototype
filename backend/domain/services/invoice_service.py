@@ -6,10 +6,11 @@ or application-specific concerns.
 This service contains pure domain logic related to invoices,
 independent of infrastructure concerns like storage or data transformation.
 
-NOTE: Currently this service mixes some domain, infrastructure, and application 
-layer concerns. This is a known technical debt that should be refactored 
-post-MVP to better adhere to clean architecture principles. The current 
-implementation was kept due to time constraints for the MVP release.
+NOTE: Currently this service mixes some domain, infrastructure, and
+application layer concerns.
+This is a known technical debt that should be refactored
+post-MVP to better adhere to clean architecture principles.
+The current implementation was kept due to time constraints for the MVP release.
 """
 
 from typing import Dict, Any, List, Optional

@@ -10,11 +10,47 @@ from domain.services.authentication_service import (
 from infrastructure.django.repositories.account_repository import (
     DjangoAccountRepository,
 )
+from api.serializers import RegisterSerializer
 
 # Dependency Injection
 account_repository = DjangoAccountRepository()
 domain_auth_service = DomainAuthService(account_repository)
 auth_service = AuthenticationService(domain_auth_service)
+
+
+class RegisterView(APIView):
+    """
+    API View for handling user registration.
+
+    This view accepts POST requests with user registration data including email,
+    username, password and optional company information. It validates the input
+    using RegisterSerializer and delegates the registration process to the
+    authentication service.
+
+    Methods:
+        post(request: Request) -> Response: Handle user registration requests
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        success, response_data = auth_service.register(
+            email=serializer.validated_data["email"],
+            username=serializer.validated_data["username"],
+            password=serializer.validated_data["password"],
+            company_name=serializer.validated_data["company_name"],
+        )
+
+        return Response(
+            response_data,
+            status=status.HTTP_201_CREATED if success else status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class LoginView(APIView):

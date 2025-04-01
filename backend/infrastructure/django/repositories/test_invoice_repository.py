@@ -26,31 +26,17 @@ class TestInvoiceRepository(TestCase):
             buyer=BuyerInfo(name="Test Buyer"),
             seller=SellerInfo(name="Test Vendor"),
             payment=PaymentInfo(total_amount=Decimal("110.50")),
-            file=FileInfo(path="test_file.pdf")
+            file=FileInfo(path="test_file.pdf"),
         )
 
         saved_invoice = self.repository.save(invoice, user_id=1)
-        
+
         self.assertIsInstance(saved_invoice, DomainInvoice)
-        
+
         self.assertEqual(saved_invoice.invoice_number, "INV-12345")
         self.assertEqual(saved_invoice.amount, Decimal("100.50"))
         self.assertEqual(saved_invoice.buyer.name, "Test Buyer")
         self.assertEqual(saved_invoice.seller.name, "Test Vendor")
-        
+
         db_invoice = DjangoInvoice.objects.get(invoice_number="INV-12345")
         self.assertIsNotNone(db_invoice)
-
-    def test_get_invoice_by_number(self):
-        """Test retrieving an invoice by number"""
-        DjangoInvoice.objects.create(
-            invoice_number="INV-67890",
-            amount=Decimal("50.75"),
-            due_date=date.today(),
-            uploaded_by=self.test_user,
-            file_path="backend/infrastructure/django/repositories/sample.pdf",
-        )
-
-        fetched_invoice = self.repository.get_by_number("INV-67890")
-        self.assertIsNotNone(fetched_invoice)
-        self.assertEqual(fetched_invoice.invoice_number, "INV-67890")

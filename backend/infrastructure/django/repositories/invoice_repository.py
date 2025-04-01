@@ -51,20 +51,17 @@ class DjangoInvoiceRepository(InvoiceRepository):
             return domain_invoice  # Ready for business logic
         """
         logger.debug("Converting DB invoice to domain model: %s", db_invoice)
-        
+
         # Create nested dataclass instances
         buyer_info = BuyerInfo(
             name=db_invoice.buyer_name,
             address=db_invoice.buyer_address,
             vat=db_invoice.buyer_vat,
-            email=db_invoice.buyer_email
+            email=db_invoice.buyer_email,
         )
-        
-        seller_info = SellerInfo(
-            name=db_invoice.seller_name,
-            vat=db_invoice.seller_vat
-        )
-        
+
+        seller_info = SellerInfo(name=db_invoice.seller_name, vat=db_invoice.seller_vat)
+
         payment_info = PaymentInfo(
             method=db_invoice.payment_method,
             currency=db_invoice.currency,
@@ -74,16 +71,16 @@ class DjangoInvoiceRepository(InvoiceRepository):
             transaction_id=db_invoice.transaction_id,
             subtotal=db_invoice.subtotal,
             vat_amount=db_invoice.vat_amount,
-            total_amount=db_invoice.total_amount
+            total_amount=db_invoice.total_amount,
         )
-        
+
         file_info = FileInfo(
             path=db_invoice.file_path,
             size=db_invoice.file_size,
             file_type=db_invoice.file_type,
-            original_name=db_invoice.original_file_name
+            original_name=db_invoice.original_file_name,
         )
-        
+
         # Create domain invoice with core fields and nested objects
         invoice_args = {
             "amount": db_invoice.amount,
@@ -95,7 +92,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             "buyer": buyer_info,
             "seller": seller_info,
             "payment": payment_info,
-            "file": file_info
+            "file": file_info,
         }
         logger.debug("Created invoice args: %s", invoice_args)
 
@@ -140,7 +137,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
         manual_urgency_value = (
             domain_invoice._manual_urgency.db_value if domain_invoice._manual_urgency is not None else None
         )
-        
+
         # Use the effective file_path
         effective_file_path = file_path or domain_invoice.file.path or ""
 
@@ -169,7 +166,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             total_amount=domain_invoice.payment.total_amount,
             file_size=domain_invoice.file.size,
             file_type=domain_invoice.file.file_type,
-            original_file_name=domain_invoice.file.original_name
+            original_file_name=domain_invoice.file.original_name,
         )
 
     def save(self, invoice: DomainInvoice, user_id: int) -> DomainInvoice:
@@ -262,49 +259,57 @@ class DjangoInvoiceRepository(InvoiceRepository):
                 "uploaded_by_id": user_id,
                 "manual_urgency": manual_urgency_value,
             }
-            
+
             # Add buyer fields if they exist
             if invoice.buyer:
-                update_fields.update({
-                    "buyer_name": invoice.buyer.name,
-                    "buyer_address": invoice.buyer.address,
-                    "buyer_email": invoice.buyer.email,
-                    "buyer_vat": invoice.buyer.vat,
-                })
-                
+                update_fields.update(
+                    {
+                        "buyer_name": invoice.buyer.name,
+                        "buyer_address": invoice.buyer.address,
+                        "buyer_email": invoice.buyer.email,
+                        "buyer_vat": invoice.buyer.vat,
+                    }
+                )
+
             # Add seller fields if they exist
             if invoice.seller:
-                update_fields.update({
-                    "seller_name": invoice.seller.name,
-                    "seller_vat": invoice.seller.vat,
-                })
-                
+                update_fields.update(
+                    {
+                        "seller_name": invoice.seller.name,
+                        "seller_vat": invoice.seller.vat,
+                    }
+                )
+
             # Add payment fields if they exist
             if invoice.payment:
-                update_fields.update({
-                    "payment_method": invoice.payment.method,
-                    "currency": invoice.payment.currency,
-                    "iban": invoice.payment.iban,
-                    "bic": invoice.payment.bic,
-                    "payment_processor": invoice.payment.processor,
-                    "transaction_id": invoice.payment.transaction_id,
-                    "subtotal": invoice.payment.subtotal,
-                    "vat_amount": invoice.payment.vat_amount,
-                    "total_amount": invoice.payment.total_amount,
-                })
-                
+                update_fields.update(
+                    {
+                        "payment_method": invoice.payment.method,
+                        "currency": invoice.payment.currency,
+                        "iban": invoice.payment.iban,
+                        "bic": invoice.payment.bic,
+                        "payment_processor": invoice.payment.processor,
+                        "transaction_id": invoice.payment.transaction_id,
+                        "subtotal": invoice.payment.subtotal,
+                        "vat_amount": invoice.payment.vat_amount,
+                        "total_amount": invoice.payment.total_amount,
+                    }
+                )
+
             # Add file fields if they exist
             if invoice.file and invoice.file.path:
-                update_fields.update({
-                    "file_path": invoice.file.path,
-                    "file_size": invoice.file.size,
-                    "file_type": invoice.file.file_type,
-                    "original_file_name": invoice.file.original_name,
-                })
+                update_fields.update(
+                    {
+                        "file_path": invoice.file.path,
+                        "file_size": invoice.file.size,
+                        "file_type": invoice.file.file_type,
+                        "original_file_name": invoice.file.original_name,
+                    }
+                )
 
             # Use model's update method for encapsulation
             db_invoice.update(**update_fields)
-            
+
             # Save the changes to the database
             db_invoice.save()
             return self._to_domain(db_invoice)

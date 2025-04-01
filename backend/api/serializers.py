@@ -1,6 +1,9 @@
 """Serializers for invoice-related API endpoints."""
 
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class InvoiceUploadSerializer(serializers.Serializer):
@@ -51,3 +54,37 @@ class InvoiceUploadSerializer(serializers.Serializer):
         raise NotImplementedError(
             "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice updates."
         )
+
+
+class RegisterSerializer(serializers.Serializer):
+    """
+    Serializer for handling user registration requests.
+
+    This serializer validates and processes user registration data including email,
+    username, password and optional company information. It enforces business rules
+    around password strength and field requirements.
+
+    Attributes:
+        email (EmailField): User's email address
+        username (CharField): Chosen username for the account
+        password (CharField): User's password (write-only)
+        company_name (CharField): Optional company/organization name
+    """
+
+    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True, min_length=3, max_length=150)
+    password = serializers.CharField(required=True, min_length=8, write_only=True)
+    company_name = serializers.CharField(required=False, min_length=2, max_length=255, default="")
+
+    def validate_password(self, value):
+        """Validate password strength."""
+        if value.isdigit():
+            raise serializers.ValidationError("Password cannot be entirely numeric")
+
+        # Check for at least one number and one letter
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Password must contain at least one number")
+        if not any(char.isalpha() for char in value):
+            raise serializers.ValidationError("Password must contain at least one letter")
+
+        return value

@@ -72,7 +72,8 @@ class Invoice(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default="pending",
-        help_text="Current payment status of the invoice. Automatically updated based on payment and due date.",
+        help_text="Current payment status of the invoice. "
+        "Automatically updated based on payment and due date.",
     )
 
     URGENCY_LEVELS = UrgencyLevel.choices()
@@ -112,12 +113,20 @@ class Invoice(models.Model):
     bic: models.CharField = models.CharField(max_length=11, null=True, blank=True)
     payment_processor: models.CharField = models.CharField(max_length=100, null=True, blank=True)
     transaction_id: models.CharField = models.CharField(max_length=100, null=True, blank=True)
-    subtotal: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    vat_amount: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    total_amount: models.DecimalField = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    subtotal: models.DecimalField = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    vat_amount: models.DecimalField = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    total_amount: models.DecimalField = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     invoice_date: models.DateField = models.DateField(null=True, blank=True)
 
-    file_size: models.BigIntegerField = models.BigIntegerField(null=True, blank=True, help_text="Size of the uploaded file in bytes.")
+    file_size: models.BigIntegerField = models.BigIntegerField(
+        null=True, blank=True, help_text="Size of the uploaded file in bytes."
+    )
     file_type: models.CharField = models.CharField(
         max_length=100, null=True, blank=True, help_text="MIME type of the uploaded file."
     )
@@ -152,10 +161,10 @@ class Invoice(models.Model):
         due_date: date,
         uploaded_by: int,
         file_path: str,
-        **optional_fields: Any
+        **optional_fields: Any,
     ) -> "Invoice":
         """Create a new Invoice instance with validation.
-        
+
         Args:
             invoice_number: Business identifier of the invoice
             amount: Total invoice amount
@@ -170,7 +179,7 @@ class Invoice(models.Model):
             due_date=due_date,
             uploaded_by_id=uploaded_by,
             file_path=file_path,
-            **optional_fields
+            **optional_fields,
         )
         instance.full_clean()
         return instance
@@ -225,24 +234,23 @@ class Invoice(models.Model):
                     {"manual_urgency": f"Invalid urgency level. Must be one of: {valid_levels}"}
                 )
 
-    def update(
-        self,
-        **fields_to_update: Any
-    ) -> None:
+    def update(self, **fields_to_update: Any) -> None:
         """Update invoice fields with validation.
 
         Updates only the fields that are provided in kwargs, ensuring proper validation.
-        
+
         Args:
             **fields_to_update: Fields to update (amount, due_date, status, etc.)
-            
+
         Raises:
             ValidationError: If updated fields don't meet validation requirements.
         """
         # Handle UrgencyLevel conversion if present
-        if "manual_urgency" in fields_to_update and isinstance(fields_to_update["manual_urgency"], UrgencyLevel):
+        if "manual_urgency" in fields_to_update and isinstance(
+            fields_to_update["manual_urgency"], UrgencyLevel
+        ):
             fields_to_update["manual_urgency"] = fields_to_update["manual_urgency"].db_value
-            
+
         # Update fields
         for field, value in fields_to_update.items():
             setattr(self, field, value)

@@ -1,6 +1,10 @@
 from typing import Optional, Tuple
+import logging
 from domain.models.account import Account
 from domain.repositories.interfaces.account_repository import AccountRepository
+from domain.exceptions import ValidationError, RepositoryError
+
+logger = logging.getLogger(__name__)
 
 
 class AuthenticationService:
@@ -8,6 +12,47 @@ class AuthenticationService:
 
     def __init__(self, account_repository: AccountRepository):
         self.account_repository = account_repository
+
+    def register(
+        self, email: str, username: str, password: str, company_name: str
+    ) -> Tuple[bool, Optional[Account], str]:
+        """Register a new user account with the given details.
+
+        Args:
+            email: User's email address
+            username: User's username
+            password: User's password
+            company_name: User's company name
+
+        Returns:
+            Tuple containing:
+            - bool: Success status
+            - Optional[Account]: Created account if successful, None otherwise
+            - str: Error message if unsuccessful, empty string otherwise
+        """
+        # Check if email already exists
+        if self.account_repository.find_by_email(email):
+            return False, None, "Email already exists"
+
+        # Check if username already exists
+        if self.account_repository.find_by_username(username):
+            return False, None, "Username already exists"
+
+        # Create new account
+        try:
+            account = self.account_repository.save(
+                Account(id=None, username=username, email=email, password=password, company_name=company_name)
+            )
+            return True, account, ""
+        except ValidationError as e:
+            logger.error("Account validation failed during registration: %s", str(e))
+            return False, None, "Invalid account data provided"
+        except RepositoryError as e:
+            logger.error("Database error during account registration: %s", str(e))
+            return False, None, "Unable to create account at this time. Please try again later."
+        except Exception:
+            logger.exception("Unexpected error during account registration")
+            return False, None, "An unexpected error occurred. Please try again later."
 
     def login(self, identifier: str, password: str) -> Tuple[bool, Optional[Account], str]:
         """Authenticate a user with identifier (username or email) and password."""

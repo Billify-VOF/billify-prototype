@@ -6,6 +6,24 @@ errors appropriately at different layers of the application.
 """
 
 
+class ValidationError(Exception):
+    """Base exception for validation errors.
+
+    Raised when data fails domain-level validation rules.
+    """
+
+    pass
+
+
+class RepositoryError(Exception):
+    """Base exception for repository operations.
+
+    Raised when there are issues with data persistence operations.
+    """
+
+    pass
+
+
 class InvoiceError(Exception):
     """Base exception class for all invoice-related errors.
 
