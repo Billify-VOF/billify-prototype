@@ -33,7 +33,7 @@ jobs:
   
       - name: Install eslint in frontend
         working-directory: ./frontend
-        run: yarn add eslint
+        run: npm i eslint
 
       - name: Run ESLint
         uses: stefanoeb/eslint-action@1.0.2
