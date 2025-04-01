@@ -51,6 +51,27 @@ jobs:
         run: |
           exit 0 
           # npm run test
+      - name: Start CI environment
+        run: docker compose -f infrastructure/docker-compose.ci.yml up -d
+  
+      - name: Wait for backend
+        run: |
+          attempts=12
+          interval=10
+          for ((i=1; i<=attempts; i++)); do
+              if curl -f http://api.localhost; then
+                  echo "Smoke test passed"
+                  exit 0
+              fi
+              echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
+              sleep $interval
+          done
+          
+          docker logs infrastructure-traefik-1
+          docker logs infrastructure-backend-1
+          
+          echo "Smoke test failed after $attempts attempts"
+          exit 1
 
       - name: Run tests
         run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
