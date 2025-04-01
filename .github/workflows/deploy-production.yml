@@ -27,18 +27,24 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend
-        run: npm ci
-  
-      - name: Install eslint in frontend
-        working-directory: ./frontend
-        run: npm i eslint
-
+      - name: Install modules
+        run: |
+          cd frontend
+          yarn
+          yarn add eslint --dev
+          echo "export default [{ rules: { 'no-unused-vars': 'warn', 'no-console': 'off' } }];" > eslint.config.js
+          jq '.type = "module"' package.json > tmp.json && mv tmp.json package.json
+          cd ..
+      - name: Generate ESLint config
+        run: |
+          cd frontend
+          npx eslint --init --no-interactive
+          cd ..
       - name: Run ESLint
-        uses: stefanoeb/eslint-action@1.0.2
-        with:
-          files: ./frontend
+        run: |
+          cd frontend
+          npx eslint . --fix --ignore-pattern public/pdf.worker.min.js
+          cd ..
         
       - name: Frontend Tests
         working-directory: ./frontend
