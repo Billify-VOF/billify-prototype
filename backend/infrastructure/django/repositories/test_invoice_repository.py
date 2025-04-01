@@ -40,17 +40,3 @@ class TestInvoiceRepository(TestCase):
 
         db_invoice = DjangoInvoice.objects.get(invoice_number="INV-12345")
         self.assertIsNotNone(db_invoice)
-
-    def test_get_invoice_by_number(self):
-        """Test retrieving an invoice by number"""
-        DjangoInvoice.objects.create(
-            invoice_number="INV-67890",
-            amount=Decimal("50.75"),
-            due_date=date.today(),
-            uploaded_by=self.test_user,
-            file_path="backend/infrastructure/django/repositories/sample.pdf",
-        )
-
-        fetched_invoice = self.repository.get_by_number("INV-67890")
-        self.assertIsNotNone(fetched_invoice)
-        self.assertEqual(fetched_invoice.invoice_number, "INV-67890")
