@@ -1,21 +1,30 @@
 from typing import Optional
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import AbstractUser
+from infrastructure.django.models.user import User
 from domain.models.account import Account
 from domain.repositories.interfaces.account_repository import AccountRepository
 
-User = get_user_model()
-
 
 class DjangoAccountRepository(AccountRepository):
-    """Django implementation of the account repository."""
+    """Django implementation of the account repository.
 
-    def _to_domain(self, user: Optional[AbstractUser]) -> Optional[Account]:
-        """Convert Django user model to domain Account."""
+    This class implements the AccountRepository interface using Django's ORM
+    and authentication system. It handles user persistence, authentication,
+    and conversion between Django User models and domain Account entities.
+    """
+
+    def _to_domain(self, user: Optional[User]) -> Optional[Account]:
+        """Convert Django user model to domain Account entity.
+
+        Args:
+            user: Django User model instance or None
+
+        Returns:
+            Optional[Account]: Domain Account entity or None if user is None
+        """
         if not user:
             return None
-
         return Account(
             id=user.id,
             username=user.username,
