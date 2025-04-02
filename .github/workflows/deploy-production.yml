@@ -135,18 +135,22 @@ jobs:
           script: |
             set -x
             cd /home/billify/app/infrastructure
-            sudo apt-get update --fix-missing && sudo apt-get install -f -y
-            sudo apt-get remove -y containerd.io || true
-            sudo apt-get install -y docker.io docker-compose || { echo "Failed to install dependencies"; exit 1; }
+            sudo apt-get update --fix-missing -y && sudo apt-get install -f -y
+            sudo apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt update -y
+            sudo apt install -y docker-ce docker-ce-cli containerd.io
+            sudo systemctl start docker
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin || { echo "Failed to login to GHCR"; exit 1; }
             docker volume inspect minio_data >/dev/null 2>&1 || docker volume create --name=minio_data || { echo "Failed to create minio_data volume"; exit 1; }
             export REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export FRONTEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
             export NGINX_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
-            docker-compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
-            docker-compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
-            docker-compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy services"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy services"; exit 1; }
             attempts=12
             interval=10
             for ((i=1; i<=attempts; i++)); do
