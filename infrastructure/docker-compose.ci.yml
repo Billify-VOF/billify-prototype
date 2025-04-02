@@ -29,6 +29,7 @@ services:
       - ../backend/.env.example
     environment:
       - FERNET_KEY=5DUeQJYi4i98AbN75RUF7UZVAXM959CwkYiyIU8mutk=
+      - DATABASE_URL=postgres://billify:billify_local@db:5432/billify
     restart: always
     command: >
       sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
