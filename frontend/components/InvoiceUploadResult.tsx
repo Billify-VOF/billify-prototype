@@ -40,7 +40,7 @@ export interface UploadResult {
 }
 
 interface Props {
-  result: UploadResult;
+  result: UploadResult | null; // Allow null values
   onChange: (data: InvoiceData) => void;
 }
 

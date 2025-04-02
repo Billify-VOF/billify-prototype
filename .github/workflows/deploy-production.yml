@@ -6,6 +6,7 @@ on:
       - staging
       - main
       - testing
+      - kunal/cicd
   pull_request:
     branches:
       - staging
@@ -22,40 +23,6 @@ env:
   DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          
-      - name: Install and Configure Frontend
-        run: |
-          cd frontend
-          yarn
-          yarn add eslint --dev
-          echo "export default [{ rules: { 'no-unused-vars': 'warn', 'no-console': 'off' } }];" > eslint.config.js
-          jq '.type = "module"' package.json > tmp.json && mv tmp.json package.json
-          npx eslint --init --no-interactive
-          npx eslint . --fix --ignore-pattern public/pdf.worker.min.js
-          cd ..
-
-      - name: Frontend Tests
-        working-directory: ./frontend
-        run: exit 0 # Placeholder for actual tests
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-  
-      - name: Start CI environment
-        run: docker compose -f infrastructure/docker-compose.ci.yml up -d
-  
-      - name: Run tests
-        run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing
-
   verify-staging-merge:
     runs-on: ubuntu-latest
     steps:
@@ -80,10 +47,43 @@ jobs:
           fi
           
           echo "Pull request source branch is valid"
+  build-images:
+    needs: verify-staging-merge
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.verify-staging-merge.result == 'success' && (startsWith(github.ref, 'refs/heads/staging') || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/testing'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build backend -f backend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
+
+      - name: Build and push Frontend
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build frontend -f frontend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
   deploy:
-    needs: [test, verify-staging-merge]
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.verify-staging-merge.result == 'success' && needs.test.result == 'success' && (github.ref_name == 'kunal/cicd' || github.ref_name == 'testing' || github.ref_name == 'main')
+    needs: [build-images]
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-images.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

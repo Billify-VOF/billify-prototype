@@ -21,6 +21,13 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       # Security headers
       - "--entrypoints.websecure.http.middlewares=securityheaders@docker"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.sslredirect=true"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.stsincludesubdomains=true"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.stspreload=true"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.contenttypenosniff=true"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.browserxssfilter=true"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.referrerpolicy=strict-origin-when-cross-origin"
+      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.framedeny=true"
     ports:
       - "80:80"
       - "443:443"
@@ -42,19 +49,14 @@ services:
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=le"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-  traefik-security-headers:
-    image: traefik:v3.0
-    command:
-      - "--providers.docker=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.sslredirect=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.stsincludesubdomains=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.stspreload=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.contenttypenosniff=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.browserxssfilter=true"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.referrerpolicy=strict-origin-when-cross-origin"
-      - "--entrypoints.websecure.http.middlewares=securityheaders.headers.framedeny=true"
-    networks:
-      - billify_network
+      - "traefik.http.middlewares.securityheaders.headers.sslredirect=true"
+      - "traefik.http.middlewares.securityheaders.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.securityheaders.headers.stspreload=true"
+      - "traefik.http.middlewares.securityheaders.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.securityheaders.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.securityheaders.headers.referrerpolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.securityheaders.headers.framedeny=true"
+
   backend:
     image: $BACKEND_IMAGE
     restart: always
