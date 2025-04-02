@@ -32,7 +32,7 @@ services:
       - DATABASE_URL=postgres://billify:billify_local@db:5432/billify
     restart: always
     command: >
-      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+      sh -c "find . -path "*migrations*" -not -regex ".*__init__.py" -a -not -regex ".*migrations" | xargs rm -rf && python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.rule=Host(`api.localhost`)"
@@ -42,6 +42,8 @@ services:
       - db
       - redis
       - minio
+    links:
+      - db:db
     networks:
       - billify_network
   db:
