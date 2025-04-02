@@ -67,6 +67,12 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Nginx
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build nginx -f nginx/Dockerfile \
+            -t ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
 
       - name: Build and push Backend
         run: |
@@ -82,12 +88,6 @@ jobs:
             -t ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
   
-      - name: Build and push Nginx
-        run: |
-          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker build nginx -f infrastructure/nginx/Dockerfile \
-            -t ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
 
   deploy:
     needs: [build-images]
