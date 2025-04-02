@@ -33,6 +33,20 @@ services:
       - AWS_STORAGE_BUCKET_NAME=billify
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - REDIS_URL=redis://redis:6379/0
+      - PONTO_CLIENT_ID=development_client_id
+      - PONTO_CLIENT_SECRET=development_client_secret
+      - PONTO_AUTH_URL=https://sandbox.ibanity.com/ponto-connect/auth
+      - PONTO_TOKEN_URL=https://api.ibanity.com/ponto-connect/oauth2/token
+      - PONTO_REDIRECT_URI=http://localhost:8000/api/ponto/callback
+      - PONTO_CONNECT_BASE_URL=https://api.ibanity.com/ponto-connect
+      - IBANITY_API_HOST=api.ibanity.com
+      - PONTO_CERTIFICATE_PATH=ponto_certificate_path
+      - PONTO_PRIVATE_KEY_PATH=ponto_private_key_path
+
+      # Security (Generate these securely and share via secure channel)
+      - PONTO_PRIVATE_KEY_PASSWORD=development_password
+      - PONTO_SIGNATURE_KEY_ID=development_key_id
+      - FERNET_KEY="generatedFernetKeyWith44CharactersSecretsKey"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.rule=Host(`api.billify.be`)"
