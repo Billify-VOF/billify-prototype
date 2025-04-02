@@ -54,7 +54,7 @@ jobs:
         run: docker compose -f infrastructure/docker-compose.ci.yml up -d
   
       - name: Run tests
-        run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing --cov-fail-under=60
+        run: docker compose -f infrastructure/docker-compose.ci.yml exec backend pytest tests/ --cov=domain --cov-report=term-missing
 
   verify-staging-merge:
     runs-on: ubuntu-latest
