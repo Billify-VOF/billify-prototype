@@ -27,6 +27,8 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ../backend/.env.example
+    environment:
+      - FERNET_KEY=5DUeQJYi4i98AbN75RUF7UZVAXM959CwkYiyIU8mutk=
     restart: always
     command: >
       sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
