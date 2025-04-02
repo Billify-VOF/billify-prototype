@@ -2,22 +2,22 @@ version: '3.8'
 
 services:
   nginx:
-    image: $NGINX_IMAGE
+    image: nginx:alpine
+    restart: unless-stopped
     ports:
-        - "80:80"
-        - "443:443"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d/
+      # - ./ssl:/etc/nginx/ssl
     links:
         - backend:backend
         - frontend:frontend
     depends_on:
       - frontend
       - backend
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./letsencrypt:/letsencrypt"
     networks:
       - billify_network
-
   backend:
     image: $BACKEND_IMAGE
     restart: always
@@ -33,20 +33,20 @@ services:
       - AWS_STORAGE_BUCKET_NAME=billify
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - REDIS_URL=redis://redis:6379/0
-      - PONTO_CLIENT_ID=development_client_id
-      - PONTO_CLIENT_SECRET=development_client_secret
-      - PONTO_AUTH_URL=https://sandbox.ibanity.com/ponto-connect/auth
-      - PONTO_TOKEN_URL=https://api.ibanity.com/ponto-connect/oauth2/token
-      - PONTO_REDIRECT_URI=http://localhost:8000/api/ponto/callback
-      - PONTO_CONNECT_BASE_URL=https://api.ibanity.com/ponto-connect
-      - IBANITY_API_HOST=api.ibanity.com
-      - PONTO_CERTIFICATE_PATH=ponto_certificate_path
-      - PONTO_PRIVATE_KEY_PATH=ponto_private_key_path
+      - PONTO_CLIENT_ID=${PONTO_CLIENT_ID}
+      - PONTO_CLIENT_SECRET=${PONTO_CLIENT_ID}
+      - PONTO_AUTH_URL=${PONTO_AUTH_URL}
+      - PONTO_TOKEN_URL=${PONTO_TOKEN_URL}
+      - PONTO_REDIRECT_URI=${PONTO_REDIRECT_URI}
+      - PONTO_CONNECT_BASE_URL=${PONTO_CONNECT_BASE_URL}
+      - IBANITY_API_HOST=${IBANITY_API_HOST}
+      - PONTO_CERTIFICATE_PATH=${PONTO_CERTIFICATE_PATH}
+      - PONTO_PRIVATE_KEY_PATH=${PONTO_PRIVATE_KEY_PATH}
 
       # Security (Generate these securely and share via secure channel)
-      - PONTO_PRIVATE_KEY_PASSWORD=development_password
-      - PONTO_SIGNATURE_KEY_ID=development_key_id
-      - FERNET_KEY=generatedFernetKeyWith44CharactersSecretsKey
+      - PONTO_PRIVATE_KEY_PASSWORD=${PONTO_PRIVATE_KEY_PASSWORD}
+      - PONTO_SIGNATURE_KEY_ID=${PONTO_SIGNATURE_KEY_ID}
+      - FERNET_KEY=${FERNET_KEY}
     depends_on:
       - db
       - redis

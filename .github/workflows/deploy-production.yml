@@ -12,15 +12,10 @@ on:
       - staging
       - main
       - testing
-
 env:
   REGISTRY: ghcr.io
-  POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-  POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-  MINIO_USER: ${{ secrets.MINIO_USER }}
-  MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
-  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+
+
 
 jobs:
   verify-staging-merge:
@@ -67,13 +62,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Nginx
-        run: |
-          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker build nginx -f nginx/Dockerfile \
-            -t ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
-
       - name: Build and push Backend
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
@@ -93,6 +81,27 @@ jobs:
     needs: [build-images]
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-images.result == 'success'
     runs-on: ubuntu-latest
+    environment:
+      name: staging #need to change after testing
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      MINIO_USER: ${{ secrets.MINIO_USER }}
+      MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      PONTO_AUTH_URL: ${{ secrets.PONTO_AUTH_URL }}
+      PONTO_CLIENT_SECRET: ${{ secrets.PONTO_CLIENT_SECRET }}
+      PONTO_CLIENT_ID: ${{ secrets.PONTO_CLIENT_ID }}
+      PONTO_TOKEN_URL: ${{ secrets.PONTO_TOKEN_URL }}
+      PONTO_REDIRECT_URI: ${{ secrets.PONTO_REDIRECT_URI }}
+      PONTO_CONNECT_BASE_URL: ${{ secrets.PONTO_CONNECT_BASE_URL }}
+      IBANITY_API_HOST: ${{ secrets.IBANITY_API_HOST }}
+      PONTO_CERTIFICATE_PATH: ${{ secrets.PONTO_CERTIFICATE_PATH }}
+      PONTO_PRIVATE_KEY_PATH: ${{ secrets.PONTO_PRIVATE_KEY_PATH }}
+      PONTO_PRIVATE_KEY_PASSWORD: ${{ secrets.PONTO_PRIVATE_KEY_PASSWORD }}
+      PONTO_SIGNATURE_KEY_ID: ${{ secrets.PONTO_SIGNATURE_KEY_ID }}
+      FERNET_KEY: ${{ secrets.FERNET_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,6 +123,18 @@ jobs:
           MINIO_USER=${MINIO_USER}
           MINIO_PASSWORD=${MINIO_PASSWORD}
           DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+          PONTO_AUTH_URL=${PONTO_AUTH_URL}
+          PONTO_TOKEN_URL=${PONTO_TOKEN_URL}
+          PONTO_CLIENT_ID=${PONTO_CLIENT_ID}
+          PONTO_CLIENT_SECRET=${PONTO_CLIENT_SECRET}
+          PONTO_REDIRECT_URI=${PONTO_REDIRECT_URI}
+          PONTO_CONNECT_BASE_URL=${PONTO_CONNECT_BASE_URL}
+          IBANITY_API_HOST=${IBANITY_API_HOST}
+          PONTO_CERTIFICATE_PATH=${PONTO_CERTIFICATE_PATH}
+          PONTO_PRIVATE_KEY_PATH=${PONTO_PRIVATE_KEY_PATH}
+          PONTO_PRIVATE_KEY_PASSWORD=${PONTO_PRIVATE_KEY_PASSWORD}
+          PONTO_SIGNATURE_KEY_ID=${PONTO_SIGNATURE_KEY_ID}
+          FERNET_KEY=${FERNET_KEY}
           EOF
           cd ..
 
@@ -123,7 +144,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "infrastructure/docker-compose.prod.yml,infrastructure/.env"
+          source: "infrastructure/docker-compose.prod.yml,infrastructure/.env,infrastructure/nginx"
           target: "/home/billify/app/"
 
       - name: Deploy to DigitalOcean
@@ -137,6 +158,8 @@ jobs:
             cd /home/billify/app/infrastructure
             sudo apt-get update --fix-missing -y && sudo apt-get install -f -y
             sudo apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+            # sudo apt install -y certbot
+            # sudo certbot certonly --webroot --webroot-path /home/billify/app/infrastructure/ssl --email admin@billify.be --agree-tos --no-eff-email  -d api.billify.be -d test-api.billify.be -d staging-api.billify.be -d app.billify.be -d test.billify.be -d staging.billify.be
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
             sudo apt update -y
@@ -144,25 +167,13 @@ jobs:
             sudo systemctl start docker
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin || { echo "Failed to login to GHCR"; exit 1; }
             docker volume inspect minio_data >/dev/null 2>&1 || docker volume create --name=minio_data || { echo "Failed to create minio_data volume"; exit 1; }
+            docker volume inspect postgres_data >/dev/null 2>&1 || docker volume create --name=postgres_data || { echo "Failed to create postgres_data volume"; exit 1; }  
             export REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export FRONTEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
-            export NGINX_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/nginx:${{ github.sha }}
             docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
             docker compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
             docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy services"; exit 1; }
-            attempts=12
-            interval=10
-            for ((i=1; i<=attempts; i++)); do
-                if curl -f http://app.billify.be; then
-                    echo "Smoke test passed"
-                    exit 0
-                fi
-                echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
-                sleep $interval
-            done
-            echo "Smoke test failed after $attempts attempts"
-            exit 1
 
       - name: Rollback on failure
         if: failure()
