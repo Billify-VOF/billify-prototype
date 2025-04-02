@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - staging
+      - main
+      - testing
   pull_request:
     branches:
       - staging
+      - main
+      - testing
+
 env:
   REGISTRY: ghcr.io
   POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
@@ -27,30 +32,20 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install modules
+      - name: Install and Configure Frontend
         run: |
           cd frontend
           yarn
           yarn add eslint --dev
           echo "export default [{ rules: { 'no-unused-vars': 'warn', 'no-console': 'off' } }];" > eslint.config.js
           jq '.type = "module"' package.json > tmp.json && mv tmp.json package.json
-          cd ..
-      - name: Generate ESLint config
-        run: |
-          cd frontend
           npx eslint --init --no-interactive
-          cd ..
-      - name: Run ESLint
-        run: |
-          cd frontend
           npx eslint . --fix --ignore-pattern public/pdf.worker.min.js
           cd ..
-        
+
       - name: Frontend Tests
         working-directory: ./frontend
-        run: |
-          exit 0 
-          # npm run test
+        run: exit 0 # Placeholder for actual tests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -70,10 +65,8 @@ jobs:
               echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
               sleep $interval
           done
-          
           docker logs infrastructure-traefik-1
           docker logs infrastructure-backend-1
-          
           echo "Smoke test failed after $attempts attempts"
           exit 1
 
@@ -107,7 +100,7 @@ jobs:
 
   deploy:
     needs: [test, verify-staging-merge]
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-production.result == 'success'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.verify-staging-merge.result == 'success' && needs.test.result == 'success' && (github.ref_name == 'kunal/cicd' || github.ref_name == 'testing' || github.ref_name == 'main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -123,14 +116,17 @@ jobs:
       - name: Create .env in the local
         run: |
           cd infrastructure
-          echo "POSTGRES_USER=${POSTGRES_USER}" > .env
-          echo "POSTGRES_DB=${POSTGRES_DB}" >> .env
-          echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
-          echo "MINIO_USER=${MINIO_USER}" >> .env
-          echo "MINIO_PASSWORD=${MINIO_PASSWORD}" >> .env
-          echo "DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}" >> .env
+          cat <<EOF > .env
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_DB=${POSTGRES_DB}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          MINIO_USER=${MINIO_USER}
+          MINIO_PASSWORD=${MINIO_PASSWORD}
+          DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+          EOF
           cd ..
-      - name: Sync all files including hidden
+
+      - name: Sync files to server
         uses: appleboy/scp-action@v0.1.0
         with:
           host: ${{ secrets.DROPLET_IP }}
@@ -146,39 +142,19 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            set -x  # Enable debug mode to print each command before execution
+            set -x
             cd /home/billify/app/infrastructure
-            
-            # Fix held packages and update
-            sudo apt-get update --fix-missing
-            sudo apt-get install -f -y
-            
-            # Remove conflicting packages
+            sudo apt-get update --fix-missing && sudo apt-get install -f -y
             sudo apt-get remove -y containerd.io || true
-            
-            # Install Docker
-            sudo apt-get install -y docker.io || { echo "Failed to install Docker"; exit 1; }
-            
-            # Install Docker Compose
-            sudo apt-get install -y docker-compose || { echo "Failed to install Docker Compose"; exit 1; }
-            
-            # Login to GHCR
+            sudo apt-get install -y docker.io docker-compose || { echo "Failed to install dependencies"; exit 1; }
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin || { echo "Failed to login to GHCR"; exit 1; }
-            
-            # Ensure minio_data volume exists
             docker volume inspect minio_data >/dev/null 2>&1 || docker volume create --name=minio_data || { echo "Failed to create minio_data volume"; exit 1; }
-            
             export REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export FRONTEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
-            # Preserve previous state
             docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
-            
-            # Deploy
             docker compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
             docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy services"; exit 1; }
-
-            # Smoke test
             attempts=12
             interval=10
             for ((i=1; i<=attempts; i++)); do
@@ -189,7 +165,6 @@ jobs:
                 echo "Attempt $i/$attempts failed, retrying in $interval seconds..."
                 sleep $interval
             done
-            
             echo "Smoke test failed after $attempts attempts"
             exit 1
 
@@ -203,6 +178,5 @@ jobs:
           script: |
             cd /home/billify/app/infrastructure/
             echo "Rolling back to previous configuration..."
-            
             mv -f previous_config.yaml docker-compose.prod.yml
             docker compose -f docker-compose.prod.yml up -d --force-recreate
