@@ -1,61 +1,22 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: traefik:v3.0
-    restart: always
-    command:
-      # Uncomment to enable Traefik dashboard
-      #- "--api.dashboard=true"
-      #- "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      # Enable Let's Encrypt
-      - "--certificatesresolvers.le.acme.email=christian@billify.be"
-      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"
-      # Enable HTTPS redirection
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      # Security headers
-      - "--entrypoints.websecure.http.middlewares=securityheaders@docker"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.sslredirect=true"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.stsincludesubdomains=true"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.stspreload=true"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.contenttypenosniff=true"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.browserxssfilter=true"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.referrerpolicy=strict-origin-when-cross-origin"
-      - "--entrypoints.websecure.http.middlewares.securityheaders.headers.framedeny=true"
+  nginx:
+    image: $NGINX_IMAGE
     ports:
-      - "80:80"
-      - "443:443"
-      #- "8080:8080" # Traefik dashboard
+        - "80:80"
+        - "443:443"
+    links:
+        - backend:backend
+        - frontend:frontend
+    depends_on:
+      - frontend
+      - backend
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./letsencrypt:/letsencrypt"
-    depends_on:
-      - backend
     networks:
       - billify_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`app.billify.be`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=le"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-      - "traefik.http.routers.backend.rule=Host(`api.billify.be`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=le"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.securityheaders.headers.sslredirect=true"
-      - "traefik.http.middlewares.securityheaders.headers.stsincludesubdomains=true"
-      - "traefik.http.middlewares.securityheaders.headers.stspreload=true"
-      - "traefik.http.middlewares.securityheaders.headers.contenttypenosniff=true"
-      - "traefik.http.middlewares.securityheaders.headers.browserxssfilter=true"
-      - "traefik.http.middlewares.securityheaders.headers.referrerpolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.securityheaders.headers.framedeny=true"
 
   backend:
     image: $BACKEND_IMAGE
