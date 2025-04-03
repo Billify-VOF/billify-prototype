@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { authService } from "./authService";
-import { User } from "../definitions/auth";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { authService } from './authService';
+import { User } from '../definitions/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -16,7 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define public routes that don't require authentication
-const publicRoutes = ["/login", "/register", "/dashboard"];
+const publicRoutes = ['/login', '/register', '/dashboard'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userData = await authService.getCurrentUser();
       setUser(userData);
-    } catch (err) {
+    } catch {
       setUser(null);
     }
   };
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (publicRoutes.includes(pathname)) {
             if (!isRedirecting.current) {
               isRedirecting.current = true;
-              router.push("/dashboard");
+              router.push('/dashboard');
             }
           }
         } else {
@@ -52,11 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!publicRoutes.includes(pathname)) {
             if (!isRedirecting.current) {
               isRedirecting.current = true;
-              router.push("/login");
+              router.push('/login');
             }
           }
         }
-      } catch (err) {
+      } catch {
         setUser(null);
       }
     };
@@ -67,13 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (username: string, password: string) => {
     await authService.login({ username, password });
     await fetchUser();
-    router.push("/dashboard");
+    router.push('/dashboard');
   };
 
   const logout = async () => {
     await authService.logout();
     setUser(null);
-    router.push("/login");
+    router.push('/login');
   };
 
   const value = {
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

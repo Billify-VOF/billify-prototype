@@ -75,8 +75,9 @@ class AuthService {
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
         this.handleAuthError();
+      } else {
+        apiService.handleApiError(error, "Failed to fetch user data");
       }
-      apiService.handleApiError(error, "Failed to fetch user data");
       throw error;
     }
   }
