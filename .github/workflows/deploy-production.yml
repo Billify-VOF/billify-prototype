@@ -6,7 +6,6 @@ on:
       - staging
       - main
       - testing
-      - kunal/cicd
   pull_request:
     branches:
       - staging
@@ -82,7 +81,7 @@ jobs:
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-images.result == 'success'
     runs-on: ubuntu-latest
     environment:
-      name: staging #need to change after testing
+      name: ${{ github.base_ref }}
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
