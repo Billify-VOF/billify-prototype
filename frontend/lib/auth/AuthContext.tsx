@@ -1,11 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from './authService';
-
-interface User {
-    username: string;
-    // Add other user properties as needed
-}
+import { User } from '../definitions/auth';
 
 interface AuthContextType {
     user: User | null;
@@ -20,22 +16,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/register', '/forgot-password'];
+const publicRoutes = ['/login', '/register'];
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const isRedirecting = React.useRef(false);
 
     const fetchUser = async () => {
         try {
             const userData = await authService.getCurrentUser();
             setUser(userData);
+            setError(null);
         } catch (err) {
+            setError("Failed to fetch user data");
             setUser(null);
-            throw err;
         }
     };
 
@@ -48,12 +46,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                     // If user is authenticated and on a public route, redirect to dashboard
                     if (publicRoutes.includes(pathname)) {
-                        router.push('/dashboard');
+                        if (!isRedirecting.current) {
+                            isRedirecting.current = true;
+                            router.push('/dashboard');
+                        }
                     }
                 } else {
                     // If user is not authenticated and not on a public route, redirect to login
                     if (!publicRoutes.includes(pathname)) {
-                        router.push('/login');
+                        if (!isRedirecting.current) {
+                            isRedirecting.current = true;
+                            router.push('/login');
+                        }
                     }
                 }
             } catch (err) {
@@ -74,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await fetchUser();
             router.push('/dashboard');
         } catch (err) {
-            setError('Login failed. Please check your credentials.');
+            setError('Login failed');
             throw err;
         } finally {
             setIsLoading(false);
@@ -87,8 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setError(null);
             await authService.logout();
             setUser(null);
+            router.push('/login');
         } catch (err) {
-            setError('Logout failed. Please try again.');
+            setError('Logout failed');
             throw err;
         } finally {
             setIsLoading(false);
@@ -111,12 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-}; 
+} 

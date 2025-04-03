@@ -1,19 +1,6 @@
 import { apiService } from "../api/apiService";
 import { AxiosError } from "axios";
-
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface AuthResponse {
-  token: string;
-}
-
-interface User {
-  username: string;
-  // Add other user properties as needed
-}
+import { LoginCredentials, RegisterCredentials, AuthResponse, User } from "../definitions/auth";
 
 class AuthService {
   private setToken(token: string): void {
@@ -22,10 +9,6 @@ class AuthService {
 
   private removeToken(): void {
     localStorage.removeItem("token");
-  }
-
-  private redirectToLogin(): void {
-    window.location.href = "/login";
   }
 
   constructor() {
@@ -41,6 +24,20 @@ class AuthService {
     );
   }
 
+  async register(credentials: RegisterCredentials): Promise<AuthResponse> {
+    try {
+      const response = await apiService.post<AuthResponse>(
+        "/auth/register",
+        credentials
+      );
+      this.setToken(response.token);
+      return response;
+    } catch (error) {
+      apiService.handleApiError(error, "Registration failed");
+      throw error;
+    }
+  }
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await apiService.post<AuthResponse>(
@@ -50,7 +47,8 @@ class AuthService {
       this.setToken(response.token);
       return response;
     } catch (error) {
-      throw new Error("Login failed");
+      apiService.handleApiError(error, "Login failed");
+      throw error;
     }
   }
 
@@ -59,7 +57,8 @@ class AuthService {
       await apiService.post("/auth/logout");
     } finally {
       this.removeToken();
-      this.redirectToLogin();
+      // Let the component handle the redirect
+      this.handleAuthError();
     }
   }
 
@@ -70,7 +69,8 @@ class AuthService {
       if (error instanceof AxiosError && error.response?.status === 401) {
         this.handleAuthError();
       }
-      throw new Error("Failed to fetch user data");
+      apiService.handleApiError(error, "Failed to fetch user data");
+      throw error;
     }
   }
 
@@ -80,7 +80,10 @@ class AuthService {
 
   private handleAuthError(): void {
     this.removeToken();
-    this.redirectToLogin();
+    // Let the component handle the redirect
+    if (typeof window !== 'undefined') {
+      window.location.href = "/login";
+    }
   }
 }
 

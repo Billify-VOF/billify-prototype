@@ -21,6 +21,16 @@ class ApiService {
     });
   }
 
+  handleApiError(error: unknown, defaultMessage: string): never {
+    if (error instanceof AxiosError) {
+      const errorMessage = (error.response?.data as { error: string })?.error;
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+    }
+    throw new Error(defaultMessage);
+  }
+
   // Generic methods for API calls
   async get<T>(url: string, params?: any): Promise<T> {
     const response = await this.api.get<T>(url, { params });

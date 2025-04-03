@@ -1,7 +1,7 @@
 from typing import Optional
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from infrastructure.django.models.user import User
+from infrastructure.django.models.account import Account as User
 from domain.models.account import Account
 from domain.repositories.interfaces.account_repository import AccountRepository
 
