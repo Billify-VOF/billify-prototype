@@ -56,7 +56,7 @@ services:
   frontend:
     image: $FRONTEND_IMAGE
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=https://api.billify.be
+      - NEXT_PUBLIC_BACKEND_URL=https://staging-api.billify.be
       - NEXT_PUBLIC_DEBUG=false
       - NODE_ENV=production
     restart: always
