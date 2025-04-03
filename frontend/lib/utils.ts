@@ -9,9 +9,9 @@ export function base64_urlencode(str: string) {
   const encoder = new TextEncoder();
   const uint8Array = encoder.encode(str);
   const urlencoded = btoa(String.fromCharCode.apply(null, uint8Array))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 
   return urlencoded;
 }
@@ -29,8 +29,7 @@ export function getSecureRandomInt(min: number, max: number) {
 }
 
 export function generateCodeVerifier(): string {
-  const allowedChars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   // Random length between 43-128 because that is the CodeVerifier requirement
   const length = getSecureRandomInt(43, 128);
 
@@ -38,7 +37,7 @@ export function generateCodeVerifier(): string {
 
   crypto.getRandomValues(randomBytes);
 
-  let result = "";
+  let result = '';
 
   for (let i = 0; i < length; i++) {
     result += allowedChars.charAt(randomBytes[i] % allowedChars.length);
@@ -50,7 +49,7 @@ export function generateCodeVerifier(): string {
 export async function sha256Base64(input: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
 
   return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
 }

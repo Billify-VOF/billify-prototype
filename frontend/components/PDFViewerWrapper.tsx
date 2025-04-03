@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import React, { useState, useRef, useEffect } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
+import dynamic from 'next/dynamic';
+import React, { useState, useRef, useEffect } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-import { BACKEND_API_URL } from "@/constants/api";
+import { BACKEND_API_URL } from '@/constants/api';
 
 // Initialize PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -39,9 +39,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
       }
     };
 
-    container.addEventListener("wheel", handleWheelEvent, { passive: false });
+    container.addEventListener('wheel', handleWheelEvent, { passive: false });
 
-    return () => container.removeEventListener("wheel", handleWheelEvent);
+    return () => container.removeEventListener('wheel', handleWheelEvent);
   }, [scale]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
@@ -92,7 +92,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   // Use the Django backend URL (port 8000)
   const pdfUrl = `${BACKEND_API_URL}/api/invoices/preview/${filePath}/`;
 
-  console.log("Attempting to load PDF from:", pdfUrl);
+  console.log('Attempting to load PDF from:', pdfUrl);
 
   return (
     <div className="pdf-viewer flex h-full flex-col overflow-hidden rounded-lg border bg-gray-50 p-4">
@@ -156,7 +156,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
                   file={pdfUrl}
                   onLoadSuccess={onDocumentLoadSuccess}
                   onLoadError={(error) => {
-                    console.error("PDF Load Error:", error);
+                    console.error('PDF Load Error:', error);
                     setError(error.message);
                   }}
                   loading={<div className="text-gray-500">Loading PDF...</div>}
@@ -167,9 +167,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
                     scale={scale}
                     renderTextLayer={true}
                     renderAnnotationLayer={true}
-                    loading={
-                      <div className="text-gray-500">Loading page...</div>
-                    }
+                    loading={<div className="text-gray-500">Loading page...</div>}
                   />
                 </Document>
               </div>

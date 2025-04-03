@@ -3,6 +3,6 @@ export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 export const Ponto_Connect_2_Options = {
   CLIENT_ID: process.env.NEXT_PUBLIC_IBANITY_CLIENT_ID,
   REDIRECT_URI: process.env.NEXT_PUBLIC_REDIRECT_URI,
-  SCOPE: "ai pi",
-  CODE_CHALLENGE_METHOD: "S256",
+  SCOPE: 'ai pi',
+  CODE_CHALLENGE_METHOD: 'S256',
 };

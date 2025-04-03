@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2, Search, AlertCircle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface SearchComponentProps<T> {
   /**

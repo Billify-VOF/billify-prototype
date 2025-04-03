@@ -2,7 +2,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown } from 'lucide-react';
-import React, { useRef, useState , useId } from 'react';
+import React, { useRef, useState, useId } from 'react';
 import Switch from 'react-switch'; // Import react-switch
 import { Tooltip } from 'react-tooltip';
 
@@ -10,9 +10,7 @@ import { lightenColor } from '@/app/lib/utils';
 
 import { getDueDateMessage } from '../../lib/invoice';
 import { DEFAULT_URGENCY, URGENCY_LEVELS } from '../definitions/invoice';
-import type { Urgency} from '../definitions/invoice';
-
-
+import type { Urgency } from '../definitions/invoice';
 
 interface UrgencySelectorProps {
   urgency?: Urgency;

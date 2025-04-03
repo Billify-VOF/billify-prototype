@@ -1,10 +1,9 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(_: NextRequest, { params }: { params: { filePath: string } }) {
   try {
     const filePath = params.filePath;
-
 
     console.log('Fetching PDF preview for:', filePath);
 
