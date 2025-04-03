@@ -5,6 +5,7 @@ Next.js-based frontend for the Billify application, built with TypeScript and Ta
 ## Prerequisites
 
 Ensure you have the following installed:
+
 - Node.js 18.x or higher
 - npm 9.x or higher
 
@@ -13,15 +14,19 @@ For installation instructions, refer to the main README.md.
 ## Quick Start
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Set up environment variables:
+
    ```bash
    cp .env.example .env.local
    ```
+
    Required settings in `.env.local`:
+
    ```bash
    NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
    ```
@@ -56,18 +61,21 @@ frontend/
 ## Development Guidelines
 
 ### Code Standards
+
 - Use TypeScript for type safety
 - Follow ESLint and Prettier configurations
 - Use Tailwind CSS for styling
 - Follow React best practices and hooks
 
 ### Component Organization
+
 - Keep components focused and reusable
 - Use proper TypeScript types
 - Document props and functionality
 - Follow atomic design principles
 
 ### State Management
+
 - Use React Context for global state
 - Keep component state local when possible
 - Use React Query for API state
@@ -98,6 +106,7 @@ frontend/
 ### Test Categories
 
 1. **Unit Tests** (`__tests__/`)
+
    - Component testing with Jest and React Testing Library
    - Utility function testing
    - State management testing
@@ -125,6 +134,7 @@ npm run cypress:run  # Headless mode
 ```
 
 ### Best Practices
+
 1. Test user interactions, not implementation
 2. Use data-testid for test selectors
 3. Mock API calls and external services
@@ -162,11 +172,13 @@ NEXT_PUBLIC_DEBUG=true                        # Enable debug mode
 ## Troubleshooting
 
 1. **Build Issues**
+
    - Clear `.next` directory
    - Delete `node_modules` and reinstall
    - Verify Node.js version
 
 2. **API Connection**
+
    - Check backend URL in `.env.local`
    - Verify backend is running
    - Check CORS settings
@@ -174,4 +186,4 @@ NEXT_PUBLIC_DEBUG=true                        # Enable debug mode
 3. **Test Issues**
    - Clear Jest cache: `npm test -- --clearCache`
    - Update test snapshots: `npm test -- -u`
-   - Check Cypress configuration 
+   - Check Cypress configuration

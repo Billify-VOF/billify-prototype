@@ -54,12 +54,14 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
     status: 'pending',
     urgency: result?.invoice_data?.urgency || DEFAULT_URGENCY,
   });
-  const [autoCalculatedUrgency, setAutoCalculatedUrgency] = useState<Urgency | undefined>(undefined);
+  const [autoCalculatedUrgency, setAutoCalculatedUrgency] = useState<Urgency | undefined>(
+    undefined,
+  );
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [open, setOpen] = useState(false);
   // const [isManualSelected, setisManualSelected] = useState(false);
 
-  useEffect(() => {    
+  useEffect(() => {
     if (result?.invoice_data) {
       // Safely parse date and format it
       let formattedDate = '';
@@ -71,13 +73,13 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
             formattedDate = format(dateValue, 'yyyy-MM-dd');
             setDate(dateValue); // Set the date state only if valid
           } else {
-            console.warn("Invalid date received:", result.invoice_data.date);
+            console.warn('Invalid date received:', result.invoice_data.date);
           }
         } catch (error) {
-          console.error("Error formatting date:", error);
+          console.error('Error formatting date:', error);
         }
       }
-      
+
       setInvoiceData({
         invoice_id: result.invoice_data.invoice_id || 0,
         status: result.invoice_data.status || 'pending',
@@ -106,7 +108,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
   const handleAmountChange = (value: string) => {
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(value) || value === '') {
-      setInvoiceData(prev => ({ ...prev, amount: value }));
+      setInvoiceData((prev) => ({ ...prev, amount: value }));
     }
   };
 
@@ -115,7 +117,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
       // Log before updating state
       console.log('Selecting new date:', newDate);
       setDate(newDate);
-      setInvoiceData(prev => {
+      setInvoiceData((prev) => {
         const formattedDate = format(newDate, 'yyyy-MM-dd');
         // Log the formatted date
         console.log('Formatted date:', formattedDate);
@@ -125,7 +127,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
           const today = new Date();
           const diffDays = differenceInDays(newDate, today);
 
-          updatedUrgency = {...calculateUrgencyFromDays(diffDays), is_manual: false};
+          updatedUrgency = { ...calculateUrgencyFromDays(diffDays), is_manual: false };
         }
 
         return {
@@ -147,7 +149,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
       // Safely handle date when resetting to original date
       let formattedDate = '';
       let originalDate: Date | undefined = undefined;
-      
+
       if (result?.invoice_data?.date) {
         try {
           const dateValue = new Date(result.invoice_data.date);
@@ -156,13 +158,13 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
             formattedDate = format(dateValue, 'yyyy-MM-dd');
             originalDate = dateValue;
           } else {
-            console.warn("Invalid original date:", result.invoice_data.date);
+            console.warn('Invalid original date:', result.invoice_data.date);
           }
         } catch (error) {
-          console.error("Error handling original date:", error);
+          console.error('Error handling original date:', error);
         }
       }
-      
+
       setDate(originalDate);
       setInvoiceData((prev) => ({
         ...prev,
@@ -176,14 +178,14 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
     try {
       // Validate the date before formatting
       if (!selectedDate || isNaN(selectedDate.getTime())) {
-        return "Invalid date";
+        return 'Invalid date';
       }
-      return `${format(selectedDate, "dd/MM/yyyy")} ${invoiceData.urgency?.is_manual ? '' : getDueDateMessage(invoiceData.urgency?.level)}`;
+      return `${format(selectedDate, 'dd/MM/yyyy')} ${invoiceData.urgency?.is_manual ? '' : getDueDateMessage(invoiceData.urgency?.level)}`;
     } catch (error) {
-      console.error("Error in getUrgencyDateMessage:", error);
-      return "Error formatting date";
+      console.error('Error in getUrgencyDateMessage:', error);
+      return 'Error formatting date';
     }
-  }
+  };
 
   if (!result || !result.status) {
     return null;
@@ -191,7 +193,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
 
   if (result.status === 'success') {
     return (
-      <div className="flex w-full h-full gap-6">
+      <div className="flex h-full w-full gap-6">
         <div className="w-1/3 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Invoice Number:</label>
@@ -215,20 +217,20 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Date:</label>
-            <Popover 
-              open={open} 
+            <Popover
+              open={open}
               onOpenChange={(isOpen) => {
                 console.log('Popover state changing to:', isOpen);
                 setOpen(isOpen);
               }}
-              modal={true}  // Make it modal to prevent outside interference
+              modal={true} // Make it modal to prevent outside interference
             >
               <PopoverTrigger asChild>
                 <Button
-                  variant={"outline"}
+                  variant={'outline'}
                   className={cn(
-                    "w-full justify-start text-left font-normal border border-gray-300 hover:bg-gray-50 mt-1",
-                    !date && "text-muted-foreground"
+                    'mt-1 w-full justify-start border border-gray-300 text-left font-normal hover:bg-gray-50',
+                    !date && 'text-muted-foreground',
                   )}
                   onClick={() => {
                     console.log('Button clicked, setting open to true');
@@ -239,24 +241,24 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                   {date ? getUrgencyDateMessage(date) : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-0 bg-white" 
+              <PopoverContent
+                className="w-auto bg-white p-0"
                 align="start"
                 side="bottom"
                 sideOffset={5}
-                onEscapeKeyDown={(e) => {
+                onEscapeKeyDown={() => {
                   // Allow Escape to close
                   setOpen(false);
                 }}
-                onPointerDownOutside={(e) => {
+                onPointerDownOutside={() => {
                   // Allow clicking outside to close
                   setOpen(false);
                 }}
-                onFocusOutside={(e) => {
+                onFocusOutside={() => {
                   // Allow focus loss to close
                   setOpen(false);
                 }}
-                onInteractOutside={(e) => {
+                onInteractOutside={() => {
                   // Allow outside interaction to close
                   setOpen(false);
                 }}
@@ -269,7 +271,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                       console.log('DayPicker onSelect triggered', selectedDate);
                       if (selectedDate) {
                         handleDateSelect(selectedDate);
-                        setOpen(false);  // Close the popover after selection
+                        setOpen(false); // Close the popover after selection
                       }
                     }}
                     defaultMonth={date || new Date()}
@@ -279,11 +281,13 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                     captionLayout="dropdown"
                     disabled={{
                       before: new Date(1900, 0, 1),
-                      after: new Date(2100, 11, 31)
+                      after: new Date(2100, 11, 31),
                     }}
                     modifiersClassNames={{
-                      selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
-                      today: 'bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground'
+                      selected:
+                        'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                      today:
+                        'bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground',
                     }}
                     required
                   />
@@ -292,19 +296,16 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
             </Popover>
           </div>
 
-         {/* Urgency Selector */}
-         <div>
-            <label className='block text-sm font-medium text-gray-700'>Urgency:</label>
-            <div className='mt-1 block w-full rounded-md border border-gray-300'>
-              <UrgencySelector
-                urgency={invoiceData.urgency}
-                onChange={handleUrgencySelect}
-              />
+          {/* Urgency Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Urgency:</label>
+            <div className="mt-1 block w-full rounded-md border border-gray-300">
+              <UrgencySelector urgency={invoiceData.urgency} onChange={handleUrgencySelect} />
             </div>
           </div>
         </div>
 
-        <div className="w-2/3 h-full">
+        <div className="h-full w-2/3">
           <PDFViewerWrapper filePath={result.invoice?.file_path || ''} />
         </div>
       </div>
@@ -314,7 +315,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
   return (
     <div className="text-red-600">
       <p>Error: {result.error}</p>
-      {result.detail && <p className="text-sm mt-1">{result.detail}</p>}
+      {result.detail && <p className="mt-1 text-sm">{result.detail}</p>}
     </div>
   );
 }

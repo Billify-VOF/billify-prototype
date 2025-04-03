@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
@@ -7,25 +7,25 @@ export async function POST(request: Request) {
     const backendResponse = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/confirm/`,
       {
-        method: "POST",
+        method: 'POST',
         body: json,
-      }
+      },
     );
 
     const data = await backendResponse.json();
 
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: data,
     });
   } catch (error) {
-    console.error("Upload error details:", error);
+    console.error('Upload error details:', error);
     return NextResponse.json(
       {
-        status: "error",
-        error: "Failed to process data",
+        status: 'error',
+        error: 'Failed to process data',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

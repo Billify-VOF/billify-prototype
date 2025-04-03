@@ -9,7 +9,7 @@ const FileUpload: React.FC = () => {
     result: UploadResult | null;
   }>({
     status: 'idle',
-    result: null
+    result: null,
   });
 
   const handleUpload = async () => {
@@ -27,25 +27,25 @@ const FileUpload: React.FC = () => {
       });
 
       const data = await response.json();
-      
+
       setUploadState({
         status: 'complete',
-        result: data
+        result: data,
       });
 
       // If successful, clear the file selection
       if (data.status === 'success') {
         setFile(null);
       }
-
     } catch (error) {
+      console.log('Error: ', error);
       setUploadState({
         status: 'complete',
         result: {
           status: 'error',
           error: 'Upload failed',
-          detail: 'An unexpected error occurred'
-        }
+          detail: 'An unexpected error occurred',
+        },
       });
     }
   };
@@ -59,8 +59,8 @@ const FileUpload: React.FC = () => {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="file-input"
         />
-        
-        <button 
+
+        <button
           onClick={handleUpload}
           disabled={!file || uploadState.status === 'uploading'}
           className="btn btn-primary"
@@ -70,7 +70,7 @@ const FileUpload: React.FC = () => {
       </div>
 
       {uploadState.status === 'complete' && (
-        <InvoiceUploadResult 
+        <InvoiceUploadResult
           result={uploadState.result}
           onClose={() => setUploadState({ status: 'idle', result: null })}
         />

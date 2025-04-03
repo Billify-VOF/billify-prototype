@@ -8,7 +8,7 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import dynamic from 'next/dynamic';
 
 // Initialize PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const PDFViewer = ({ filePath }: { filePath: string }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -19,9 +19,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   console.log('TEST LOG - PDFViewerWrapper rendered with:', filePath);
-  
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -30,9 +30,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
       if (scale > 1) {
         e.preventDefault();
         e.stopPropagation();
-        setPosition(prev => ({
+        setPosition((prev) => ({
           x: prev.x - e.deltaX,
-          y: prev.y - e.deltaY
+          y: prev.y - e.deltaY,
         }));
       }
     };
@@ -46,19 +46,20 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
     setError(null);
   }
 
-  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 2));
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+  const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 2));
+  const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
   const resetZoom = () => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale > 1 && e.button === 0) { // Left click
+    if (scale > 1 && e.button === 0) {
+      // Left click
       setIsDragging(true);
       setStartPosition({
         x: e.clientX - position.x,
-        y: e.clientY - position.y
+        y: e.clientY - position.y,
       });
     }
   };
@@ -77,9 +78,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
 
   if (error) {
     return (
-      <div className="pdf-viewer border rounded-lg bg-red-50 p-4 text-red-600">
+      <div className="pdf-viewer rounded-lg border bg-red-50 p-4 text-red-600">
         <p>Failed to load PDF: {error}</p>
-        <p className="text-sm mt-2">File path: {filePath}</p>
+        <p className="mt-2 text-sm">File path: {filePath}</p>
       </div>
     );
   }
@@ -89,61 +90,61 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   console.log('Attempting to load PDF from:', pdfUrl);
 
   return (
-    <div className="pdf-viewer h-full flex flex-col border rounded-lg bg-gray-50 p-4 overflow-hidden">
+    <div className="pdf-viewer flex h-full flex-col overflow-hidden rounded-lg border bg-gray-50 p-4">
       {filePath && (
-        <div className="flex justify-end gap-2 mb-2">
+        <div className="mb-2 flex justify-end gap-2">
           <button
             onClick={zoomOut}
-            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            className="rounded bg-gray-200 px-2 py-1 text-gray-700 hover:bg-gray-300"
             title="Zoom Out"
           >
             -
           </button>
           <button
             onClick={resetZoom}
-            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            className="rounded bg-gray-200 px-2 py-1 text-gray-700 hover:bg-gray-300"
             title="Reset Zoom"
           >
             {Math.round(scale * 100)}%
           </button>
           <button
             onClick={zoomIn}
-            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            className="rounded bg-gray-200 px-2 py-1 text-gray-700 hover:bg-gray-300"
             title="Zoom In"
           >
             +
           </button>
         </div>
       )}
-      <div 
+      <div
         ref={containerRef}
-        className={`flex-1 relative overflow-hidden flex flex-col ${!filePath && 'border border-dashed border-gray-300 rounded-lg'}`}
+        className={`relative flex flex-1 flex-col overflow-hidden ${!filePath && 'rounded-lg border border-dashed border-gray-300'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ 
-          cursor: filePath ? (isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default')) : 'default',
+        style={{
+          cursor: filePath ? (isDragging ? 'grabbing' : scale > 1 ? 'grab' : 'default') : 'default',
           touchAction: 'none',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {!filePath ? (
-          <div className="text-gray-500 text-center p-4">
+          <div className="p-4 text-center text-gray-500">
             <p className="text-sm">Click to select a PDF file</p>
           </div>
         ) : (
           <>
             <div className="flex-1 overflow-auto">
-              <div 
-                style={{ 
+              <div
+                style={{
                   transform: `translate(${position.x}px, ${position.y}px)`,
                   transition: isDragging ? 'none' : 'transform 0.1s',
                   width: '100%',
                   height: '100%',
                   display: 'flex',
                   justifyContent: 'center',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 <Document
@@ -155,8 +156,8 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
                   }}
                   loading={<div className="text-gray-500">Loading PDF...</div>}
                 >
-                  <Page 
-                    pageNumber={pageNumber} 
+                  <Page
+                    pageNumber={pageNumber}
                     width={400}
                     scale={scale}
                     renderTextLayer={true}
@@ -167,11 +168,11 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
               </div>
             </div>
             {numPages && numPages > 1 && (
-              <div className="flex-shrink-0 flex justify-between items-center p-4 bg-white border-t border-gray-200">
+              <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-200 bg-white p-4">
                 <button
-                  onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
                   disabled={pageNumber <= 1}
-                  className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+                  className="rounded bg-blue-600 px-3 py-1 text-white disabled:opacity-50"
                 >
                   Previous
                 </button>
@@ -179,9 +180,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
                   Page {pageNumber} of {numPages}
                 </span>
                 <button
-                  onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
+                  onClick={() => setPageNumber((prev) => Math.min(prev + 1, numPages))}
                   disabled={pageNumber >= numPages}
-                  className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+                  className="rounded bg-blue-600 px-3 py-1 text-white disabled:opacity-50"
                 >
                   Next
                 </button>
@@ -194,10 +195,9 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   );
 };
 
-export const PDFViewerWrapper = dynamic(
-  () => Promise.resolve(PDFViewer),
-  {
-    ssr: false,
-    loading: () => <div className="pdf-viewer border rounded-lg bg-gray-50 p-4">Loading PDF viewer...</div>
-  }
-); 
+export const PDFViewerWrapper = dynamic(() => Promise.resolve(PDFViewer), {
+  ssr: false,
+  loading: () => (
+    <div className="pdf-viewer rounded-lg border bg-gray-50 p-4">Loading PDF viewer...</div>
+  ),
+});

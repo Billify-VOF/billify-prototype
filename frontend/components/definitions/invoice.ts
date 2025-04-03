@@ -8,15 +8,15 @@
  */
 
 export enum UrgencyLevel {
-  OVERDUE = "OVERDUE",
-  CRITICAL = "CRITICAL",
-  HIGH = "HIGH",
-  MEDIUM = "MEDIUM",
-  LOW = "LOW",
+  OVERDUE = 'OVERDUE',
+  CRITICAL = 'CRITICAL',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
 }
 
-export type UploadStatus = "idle" | "uploading" | "success" | "error";
-export type InvoiceStatus = "overdue" | "pending" | "paid";
+export type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+export type InvoiceStatus = 'overdue' | 'pending' | 'paid';
 
 export interface Urgency {
   level: UrgencyLevel;
@@ -26,53 +26,53 @@ export interface Urgency {
 }
 
 export const URGENCY_COLORS = {
-  overdue: "#8B0000",
-  critical: "#FF0000",
-  high: "#FFA500",
-  medium: "#FFD700",
-  low: "#008000",
-  default: "#D3D3D3",
+  overdue: '#8B0000',
+  critical: '#FF0000',
+  high: '#FFA500',
+  medium: '#FFD700',
+  low: '#008000',
+  default: '#D3D3D3',
 };
 
 export const URGENCY_LEVELS: Urgency[] = [
   {
     level: UrgencyLevel.OVERDUE,
-    display_name: "Overdue",
+    display_name: 'Overdue',
     color_code: URGENCY_COLORS.overdue,
   },
   {
     level: UrgencyLevel.CRITICAL,
-    display_name: "Critical",
+    display_name: 'Critical',
     color_code: URGENCY_COLORS.critical,
   },
   {
     level: UrgencyLevel.HIGH,
-    display_name: "High",
+    display_name: 'High',
     color_code: URGENCY_COLORS.high,
   },
   {
     level: UrgencyLevel.MEDIUM,
-    display_name: "Medium",
+    display_name: 'Medium',
     color_code: URGENCY_COLORS.medium,
   },
   {
     level: UrgencyLevel.LOW,
-    display_name: "Low",
+    display_name: 'Low',
     color_code: URGENCY_COLORS.low,
   },
 ];
 
 export const DEFAULT_URGENCY: Urgency = {
   level: UrgencyLevel.LOW,
-  display_name: "Not Available",
-  color_code: "#D3D3D3",
+  display_name: 'Not Available',
+  color_code: '#D3D3D3',
   is_manual: false,
 };
 
 export const STATUS_COLORS: Record<InvoiceStatus, string> = {
-  overdue: "bg-red-100 text-red-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-green-100 text-green-800",
+  overdue: 'bg-red-100 text-red-800',
+  pending: 'bg-yellow-100 text-yellow-800',
+  paid: 'bg-green-100 text-green-800',
 };
 
 export interface Invoice {
@@ -88,29 +88,29 @@ export interface Invoice {
 export const INVOICES_DATA: Invoice[] = [
   {
     invoice_id: 1,
-    invoice_number: "INV-001",
+    invoice_number: 'INV-001',
     amount: 1000.0,
-    date: "2025-03-10",
-    supplier_name: "Supplier A",
-    status: "pending",
+    date: '2025-03-10',
+    supplier_name: 'Supplier A',
+    status: 'pending',
     urgency: { ...URGENCY_LEVELS[0], is_manual: false },
   },
   {
     invoice_id: 2,
-    invoice_number: "INV-002",
+    invoice_number: 'INV-002',
     amount: 500.0,
-    date: "2025-03-15",
-    supplier_name: "Supplier B",
-    status: "paid",
+    date: '2025-03-15',
+    supplier_name: 'Supplier B',
+    status: 'paid',
     urgency: { ...URGENCY_LEVELS[1], is_manual: false },
   },
   {
     invoice_id: 3,
-    invoice_number: "INV-003",
+    invoice_number: 'INV-003',
     amount: 750.0,
-    date: "2025-03-20",
-    supplier_name: "Supplier C",
-    status: "overdue",
+    date: '2025-03-20',
+    supplier_name: 'Supplier C',
+    status: 'overdue',
     urgency: { ...URGENCY_LEVELS[2], is_manual: true },
   },
 ];
