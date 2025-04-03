@@ -1,6 +1,13 @@
 import { apiService } from "../api/apiService";
 import { AxiosError } from "axios";
-import { LoginCredentials, RegisterCredentials, AuthResponse, User } from "../definitions/auth";
+import {
+  LoginCredentials,
+  RegisterCredentials,
+  AuthResponse,
+  User,
+} from "../definitions/auth";
+
+const LOGIN_PATH = "/login";
 
 class AuthService {
   private setToken(token: string): void {
@@ -27,7 +34,7 @@ class AuthService {
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
     try {
       const response = await apiService.post<AuthResponse>(
-        "/auth/register",
+        "/auth/register/",
         credentials
       );
       this.setToken(response.token);
@@ -41,7 +48,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await apiService.post<AuthResponse>(
-        "/auth/login",
+        "/auth/login/",
         credentials
       );
       this.setToken(response.token);
@@ -54,7 +61,7 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await apiService.post("/auth/logout");
+      await apiService.post("/auth/logout/");
     } finally {
       this.removeToken();
       // Let the component handle the redirect
@@ -80,9 +87,12 @@ class AuthService {
 
   private handleAuthError(): void {
     this.removeToken();
-    // Let the component handle the redirect
-    if (typeof window !== 'undefined') {
-      window.location.href = "/login";
+    // Only redirect if we're not already on the login page
+    if (
+      typeof window !== "undefined" &&
+      !window.location.pathname.includes(LOGIN_PATH)
+    ) {
+      window.location.href = LOGIN_PATH;
     }
   }
 }
