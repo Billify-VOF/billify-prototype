@@ -56,8 +56,8 @@ export default function NotificationBell(props: { className?: string }) {
       }
     }
 
-      // TODO: Make API call to search for notifications
-      fetchNotifications();
+    // TODO: Make API call to search for notifications
+    fetchNotifications();
 
     return () => {
       isMounted = false;
@@ -72,10 +72,7 @@ export default function NotificationBell(props: { className?: string }) {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
@@ -85,25 +82,19 @@ export default function NotificationBell(props: { className?: string }) {
 
   // Mark notification as read/unread
   const toggleRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n)));
     setUnreadCount((prev) =>
-      notifications.find((n) => n.id === id)?.isRead ? prev + 1 : prev - 1
+      notifications.find((n) => n.id === id)?.isRead ? prev + 1 : prev - 1,
     );
   };
 
   return (
-    <div
-      className={`relative ${props.className}`}
-      ref={dropdownRef}>
+    <div className={`relative ${props.className}`} ref={dropdownRef}>
       {/* Notification Bell with Counter */}
-      <button
-        onClick={toggleDropdown}
-        className='relative pr-2 pt-2'>
-        <Bell className='w-6 h-6 text-gray-700' />
+      <button onClick={toggleDropdown} className="relative pr-2 pt-2">
+        <Bell className="h-6 w-6 text-gray-700" />
         {unreadCount > 0 && (
-          <span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full'>
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
             {unreadCount}
           </span>
         )}
@@ -111,27 +102,24 @@ export default function NotificationBell(props: { className?: string }) {
 
       {/* Floating Notification Dropdown */}
       {open && (
-        <div className='absolute right-0 mt-2 w-72 bg-white shadow-lg rounded-lg border z-50 max-h-60 overflow-y-auto'>
-          <div className='p-3 border-b text-gray-700 font-semibold'>
-            Notifications
-          </div>
+        <div className="absolute right-0 z-50 mt-2 max-h-60 w-72 overflow-y-auto rounded-lg border bg-white shadow-lg">
+          <div className="border-b p-3 font-semibold text-gray-700">Notifications</div>
           {notifications.length === 0 ? (
-            <p className='text-gray-500 text-center p-3'>No notifications</p>
+            <p className="p-3 text-center text-gray-500">No notifications</p>
           ) : (
             notifications.slice(0, 5).map((notification) => (
               <div
                 key={notification.id}
-                className={`flex items-center justify-between p-3 hover:bg-gray-100 cursor-pointer ${
-                  notification.isRead
-                    ? 'text-gray-500'
-                    : 'text-black font-medium'
+                className={`flex cursor-pointer items-center justify-between p-3 hover:bg-gray-100 ${
+                  notification.isRead ? 'text-gray-500' : 'font-medium text-black'
                 }`}
-                onClick={() => toggleRead(notification.id)}>
+                onClick={() => toggleRead(notification.id)}
+              >
                 <span>{notification.message}</span>
                 {notification.isRead ? (
-                  <CheckCircle className='w-4 h-4 text-green-500' />
+                  <CheckCircle className="h-4 w-4 text-green-500" />
                 ) : (
-                  <Circle className='w-4 h-4 text-gray-300' />
+                  <Circle className="h-4 w-4 text-gray-300" />
                 )}
               </div>
             ))

@@ -1,39 +1,39 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    console.log("API route hit - starting file upload process");
+    console.log('API route hit - starting file upload process');
 
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get('file') as File;
 
     const backendFormData = new FormData();
-    backendFormData.append("file", file);
+    backendFormData.append('file', file);
 
     const backendResponse = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/upload/`,
       {
-        method: "POST",
+        method: 'POST',
         body: backendFormData,
-      }
+      },
     );
 
     const data = await backendResponse.json();
-    
+
     if (!backendResponse.ok) {
       // Handle backend error response
       return NextResponse.json(
         {
-          status: "error",
-          message: data.message || "Backend processing failed",
-          detail: data.detail || "Unknown error",
+          status: 'error',
+          message: data.message || 'Backend processing failed',
+          detail: data.detail || 'Unknown error',
         },
-        { status: backendResponse.status }
+        { status: backendResponse.status },
       );
     }
 
     // Format date properly to ensure it's in ISO format
-    let formattedDate = "N/A";
+    let formattedDate = 'N/A';
     if (data.invoice_data?.date) {
       // Try to parse and format the date properly
       try {
@@ -52,21 +52,21 @@ export async function POST(request: Request) {
           }
         }
       } catch (error) {
-        console.warn("Error formatting date:", error);
+        console.warn('Error formatting date:', error);
       }
     }
 
     // Check if invoice_data exists to avoid TypeError
     if (!data.invoice_data) {
       return NextResponse.json({
-        status: "success",
+        status: 'success',
         message: data.message,
         invoice: data.invoice,
         invoice_data: {
-          invoice_number: "Unknown",
-          amount: "0.00",
-          date: "",
-          supplier_name: "Unknown",
+          invoice_number: 'Unknown',
+          amount: '0.00',
+          date: '',
+          supplier_name: 'Unknown',
           urgency: null,
         },
       });
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     // Format the response to match the expected structure
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       message: data.message,
       invoice: data.invoice,
       invoice_data: {
@@ -86,15 +86,15 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Upload error details:", error);
+    console.error('Upload error details:', error);
 
     return NextResponse.json(
       {
-        status: "error",
-        error: "Failed to process file",
-        detail: error instanceof Error ? error.message : "Unknown error",
+        status: 'error',
+        error: 'Failed to process file',
+        detail: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

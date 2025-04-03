@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 /**
  * A utility function that combines multiple className values and handles Tailwind class conflicts
@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge"
  * @returns A merged and optimized className string
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export const lightenColor = (hex?: string, percent: number = 0.7): string => {
