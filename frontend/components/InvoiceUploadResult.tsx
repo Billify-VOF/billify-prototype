@@ -253,6 +253,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                   )}
                   onClick={() => {
                     console.log("Button clicked, setting open to true");
+                    console.log("Button clicked, setting open to true");
                     setOpen(true);
                   }}
                 >
@@ -292,8 +293,10 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                     selected={date}
                     onSelect={(selectedDate) => {
                       console.log("DayPicker onSelect triggered", selectedDate);
+                      console.log("DayPicker onSelect triggered", selectedDate);
                       if (selectedDate) {
                         handleDateSelect(selectedDate);
+                        setOpen(false); // Close the popover after selection
                         setOpen(false); // Close the popover after selection
                       }
                     }}

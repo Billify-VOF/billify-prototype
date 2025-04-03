@@ -5,6 +5,7 @@ export async function GET(_: NextRequest, { params }: { params: { filePath: stri
   try {
     const filePath = params.filePath;
 
+
     console.log('Fetching PDF preview for:', filePath);
 
     // Forward the request to the Django backend
