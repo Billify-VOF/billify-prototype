@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 
 class ApiService {
-  private api: AxiosInstance;
+  public api: AxiosInstance;
 
   constructor() {
     this.api = axios.create({
@@ -19,18 +19,6 @@ class ApiService {
       }
       return config;
     });
-
-    // Handle 401 responses
-    this.api.interceptors.response.use(
-      (response) => response,
-      (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        }
-        return Promise.reject(error);
-      }
-    );
   }
 
   // Generic methods for API calls
