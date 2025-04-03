@@ -4,6 +4,7 @@ import '@/styles/globals.css';
 
 // Import for proper font handling in Next.js
 import { Inter } from 'next/font/google';
+import { AuthProvider } from '@/lib/auth/AuthContext';
 
 // Initialize the Inter font with Latin character subset
 // Using a subset helps with performance by loading only the characters we need
@@ -23,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`min-h-screen bg-background font-sans antialiased ${inter.variable}`}>
-        {/* The main element improves accessibility */}
-        <main>{children}</main>
+        <AuthProvider>
+          {/* The main element improves accessibility */}
+          <main>{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
