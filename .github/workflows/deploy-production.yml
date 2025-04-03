@@ -6,6 +6,7 @@ on:
       - staging
       - main
       - testing
+      - kunal/cicd
   pull_request:
     branches:
       - staging
