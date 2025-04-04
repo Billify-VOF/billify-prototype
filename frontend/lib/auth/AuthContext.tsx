@@ -3,12 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from './authService';
-import { User } from '../definitions/auth';
+import { User, RegisterCredentials } from '../definitions/auth';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
@@ -70,6 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/dashboard');
   };
 
+  const register = async (credentials: RegisterCredentials) => {
+    await authService.register(credentials);
+    await fetchUser();
+    router.push('/login');
+  };
+
   const logout = async () => {
     await authService.logout();
     setUser(null);
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
     fetchUser,
   };

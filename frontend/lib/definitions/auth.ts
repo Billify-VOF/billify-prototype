@@ -5,7 +5,7 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials extends LoginCredentials {
   email: string;
-  companyName: string;
+  company_name: string;
 }
 
 export interface AuthResponse {
