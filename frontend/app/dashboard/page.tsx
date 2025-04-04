@@ -146,11 +146,15 @@ const BillifyDashboard = () => {
     console.log('Query string: ', query);
   };
 
-  const onPontoConnect = async () => {
+  const generatePontoOAuthUrl = async () => {
     const state = base64_urlencode(generateCodeVerifier());
     const codeChallenge = await generateCodeChallenge();
-    const PONTO_CONNECT_OAUTH2_URL = `https://sandbox-authorization.myponto.com/oauth2/auth?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
-    window.open(PONTO_CONNECT_OAUTH2_URL);
+    return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
+  };
+
+  const onPontoConnect = async () => {
+    const oauthUrl = await generatePontoOAuthUrl();
+    window.open(oauthUrl);
   };
 
   return (

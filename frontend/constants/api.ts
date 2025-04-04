@@ -1,6 +1,7 @@
 export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export const Ponto_Connect_2_Options = {
+  OAUTH_URL: process.env.NEXT_PUBLIC_PONTO_CONNECT_OAUTH2_URL,
   CLIENT_ID: process.env.NEXT_PUBLIC_IBANITY_CLIENT_ID,
   REDIRECT_URI: process.env.NEXT_PUBLIC_REDIRECT_URI,
   SCOPE: 'ai pi',
