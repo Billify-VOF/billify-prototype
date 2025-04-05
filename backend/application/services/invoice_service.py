@@ -13,6 +13,7 @@ from datetime import datetime
 from domain.exceptions import ProcessingError, StorageError
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
 from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.account_repository import AccountRepository
 from domain.services.invoice_service import InvoiceService
 from integrations.transformers.pdf.transformer import (
     PDFTransformer,
@@ -44,6 +45,7 @@ class InvoiceProcessingService:
         invoice_service: InvoiceService,
         invoice_repository: InvoiceRepository,
         storage_repository: StorageRepository,
+        account_repository: AccountRepository,
     ) -> None:
         """Initialize service with required components.
 
@@ -51,6 +53,7 @@ class InvoiceProcessingService:
             invoice_service: Domain service for invoice business logic
             invoice_repository: Repository for invoice persistence
             storage_repository: Repository for file storage
+            account_repository: Repository for account validation
 
         These dependencies are stored as instance attributes, allowing each
         instance of InvoiceProcessingService to have its own set of dependencies.
@@ -59,6 +62,7 @@ class InvoiceProcessingService:
         self.invoice_service = invoice_service
         self.invoice_repository = invoice_repository
         self.storage_repository = storage_repository
+        self.account_repository = account_repository
         self.pdf_transformer = PDFTransformer()
         self.temp_storage = TemporaryStorageAdapter(storage_repository)
 
@@ -280,12 +284,33 @@ class InvoiceProcessingService:
             # Generate unique identifier for permanent file using both invoice_number and user_id
             # for consistency with process_invoice method
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            effective_user_id = user_id or invoice.uploaded_by or 1
-            # Validate that effective_user_id exists - in a production system,
-            # we would verify this user exists in the database
-            permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
-            logger.debug("Generated permanent identifier: %s", permanent_identifier)
+            # Determine effective user ID with proper validation
+            effective_user_id = user_id or invoice.uploaded_by
+
+            # Validate user exists in database
+            if effective_user_id:
+                valid_user = self.account_repository.find_by_id(effective_user_id)
+                if not valid_user:
+                    logger.warning(
+                        "User ID %s does not exist in database for invoice %s. "
+                        "Unable to finalize invoice without valid user attribution.",
+                        effective_user_id,
+                        invoice_id,
+                    )
+                    raise ProcessingError(
+                        f"Cannot finalize invoice: User ID {effective_user_id} not found in system"
+                    )
+            else:
+                logger.error(
+                    "No valid user ID provided for invoice finalization (invoice_id=%s). "
+                    "User attribution is required.",
+                    invoice_id,
+                )
+                raise ProcessingError("Cannot finalize invoice: Valid user ID is required")
+
+            logger.info("Invoice being finalized by user ID: %s", effective_user_id)
+            permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
             # Set urgency level if provided
             if urgency_level is not None:
