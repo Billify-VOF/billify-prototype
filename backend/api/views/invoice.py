@@ -4,11 +4,12 @@ from logging import getLogger
 from pathlib import Path
 from datetime import datetime, date
 from decimal import Decimal
-
+from typing import Any, Dict, Optional, List, Union
 from django.http import FileResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
+from rest_framework.request import Request
 
 from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
 from domain.services.invoice_service import InvoiceService
@@ -30,7 +31,7 @@ class InvoiceUploadView(APIView):
     # permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # Create repositories
         self.storage_repository = FileStorage()
@@ -46,11 +47,11 @@ class InvoiceUploadView(APIView):
         # Initialize transformer for additional data extraction
         self.transformer = PDFTransformer()
 
-    def _get_user_id(self, request):
+    def _get_user_id(self, request: Any) -> int:
         """Get the current user ID or default to 1."""
         return request.user.id if request.user.is_authenticated else 1
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         """
         Process uploaded invoice PDF and initiate invoice creation workflow.
 
@@ -85,16 +86,18 @@ class InvoiceUploadView(APIView):
             due_date = result.get("due_date")
             formatted_date = self._format_date(due_date)
 
+            # Get status safely
+            status = result.get("status")
+            status_value = (
+                str(status.value) if status is not None and hasattr(status, "value") else str(status or "")
+            )
+
             response_data = {
                 "status": "success",
                 "message": "Invoice processed successfully",
                 "invoice": {
                     "id": result["invoice_id"],
-                    "status": (
-                        str(result.get("status").value)
-                        if (result.get("status") and hasattr(result.get("status"), "value"))
-                        else str(result.get("status", ""))
-                    ),
+                    "status": status_value,
                     "file_path": result["file_path"],
                     "updated": result.get("updated", False),
                 },
@@ -182,18 +185,18 @@ class InvoiceUploadView(APIView):
             )
             return Response({"error": "Internal server error", "details": str(e)}, status=500)
 
-    def _convert_amount(self, amount_str):
+    def _convert_amount(self, amount_str: Optional[str]) -> Optional[Decimal]:
         """Convert string amount to Decimal or None."""
         return Decimal(amount_str) if amount_str else None
 
-    def process_extracted_data(self, extracted_data):
+    def process_extracted_data(self, extracted_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process extracted data and convert due_date to datetime object."""
         self.validate_extracted_data(extracted_data)
         raw_due_date = extracted_data.get("due_date")
 
         # If it's already a date object, use it directly
         if isinstance(raw_due_date, date):
-            due_date = raw_due_date
+            due_date: Optional[date] = raw_due_date
         else:
             due_date = self.normalize_date(raw_due_date) if raw_due_date else None
 
@@ -205,9 +208,9 @@ class InvoiceUploadView(APIView):
         }
         return processed_data
 
-    def validate_extracted_data(self, data):
+    def validate_extracted_data(self, data: Dict[str, Any]) -> None:
         """Validate extracted data to ensure correct format."""
-        errors = []
+        errors: List[str] = []
 
         # Validate invoice number
         if not data.get("invoice_number"):
@@ -249,11 +252,15 @@ class InvoiceUploadView(APIView):
             logger.error("Validation errors: %s", errors)
             raise ValueError(errors)
 
-    def normalize_date(self, raw_date):
+    def normalize_date(self, raw_date: Optional[str]) -> Optional[date]:
         """Normalize the date format for consistent internal representation."""
         # If it's already a date object, return it
         if isinstance(raw_date, date):
             return raw_date
+
+        # Early return if raw_date is None
+        if raw_date is None:
+            return None
 
         # Otherwise try to parse the string
         for fmt in ["%Y-%m-%d", "%b %d %Y"]:
@@ -272,7 +279,7 @@ class InvoiceUploadView(APIView):
 
         return None
 
-    def _format_date(self, date_value):
+    def _format_date(self, date_value: Optional[Union[date, datetime, str]]) -> Optional[str]:
         """Format date in a consistent format.
 
         Formats the date as 'MMM DD YYYY' if provided, else returns None.
@@ -292,11 +299,11 @@ class InvoiceUploadView(APIView):
 class InvoicePreviewView(APIView):
     """Handle serving PDF files for preview."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.storage_repository = FileStorage()
 
-    def get(self, _, file_path):
+    def get(self, _: Any, file_path: str) -> Union[FileResponse, Response]:
         """
         Serve a PDF file for preview.
 
@@ -328,12 +335,35 @@ class InvoicePreviewView(APIView):
 
 
 class InvoiceConfirmationView(APIView):
-    """Handle invoice confirmation and finalization."""
+    """
+    API endpoint for finalizing invoice processing and storage.
+
+    This view handles the second phase of the two-phase invoice processing workflow:
+    1. First phase: Invoice upload and temporary storage (handled by InvoiceUploadView)
+    2. Second phase: Invoice confirmation and permanent storage (handled by this view)
+
+    The view provides an endpoint that accepts invoice confirmation requests,
+    transfers files from temporary to permanent storage, and updates invoice
+    records with finalized data including urgency levels.
+
+    URLs:
+        POST /api/invoices/{invoice_id}/confirm/ - Finalize an invoice
+    """
 
     # Authentication is not required during development, for now.
     # permission_classes = [IsAuthenticated]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Initialize the view with required repositories and services.
+
+        Sets up storage and invoice repositories and initializes the domain
+        and application services needed to process invoice confirmation.
+
+        Args:
+            *args: Variable length argument list passed to parent constructor
+            **kwargs: Arbitrary keyword arguments passed to parent constructor
+        """
         super().__init__(*args, **kwargs)
         # Create repositories
         self.storage_repository = FileStorage()
@@ -347,20 +377,45 @@ class InvoiceConfirmationView(APIView):
             storage_repository=self.storage_repository,
         )
 
-    def _get_user_id(self, request):
-        """Get the current user ID or default to 1."""
+    def _get_user_id(self, request: Any) -> int:
+        """
+        Get the current user ID or default to system user.
+
+        Returns the authenticated user's ID if available, otherwise
+        falls back to a default user ID (1) for development purposes.
+
+        Args:
+            request: Django request object containing authentication info
+
+        Returns:
+            int: The authenticated user's ID or 1 if not authenticated
+        """
         return request.user.id if request.user.is_authenticated else 1
 
-    def post(self, request, invoice_id):
+    def post(self, request: Request, invoice_id: int) -> Response:
         """
         Finalize an invoice by transferring it from temporary to permanent storage.
 
-        This endpoint:
-        1. Validates the invoice data
-        2. Sets the urgency level if provided
-        3. Transfers the file from temporary to permanent storage
-        4. Updates the invoice record with the final storage path
-        5. Returns the finalized invoice information
+        This endpoint completes the invoice processing workflow by:
+        1. Validating the invoice data through the serializer
+        2. Setting the optional urgency level if provided
+        3. Transferring the file from temporary to permanent storage
+        4. Updating the invoice record with the final storage path
+        5. Returning detailed invoice information for frontend display
+
+        Args:
+            request: Django HTTP request object containing confirmation data
+            invoice_id (int): ID of the invoice to finalize
+
+        Returns:
+            Response: JSON response with finalized invoice data or error details
+
+        HTTP Status Codes:
+            200 OK: Invoice successfully finalized
+            400 Bad Request: Invalid input data
+            422 Unprocessable Entity: Business rule violations
+            503 Service Unavailable: Storage service errors
+            500 Internal Server Error: Unexpected errors
         """
         serializer = InvoiceConfirmationSerializer(data=request.data)
         if not serializer.is_valid():
@@ -380,6 +435,12 @@ class InvoiceConfirmationView(APIView):
                 user_id=self._get_user_id(request),
             )
 
+            # Get status safely
+            status = result.get("status")
+            status_value = (
+                str(status.value) if status is not None and hasattr(status, "value") else str(status or "")
+            )
+
             # Prepare response
             response_data = {
                 "status": "success",
@@ -387,11 +448,7 @@ class InvoiceConfirmationView(APIView):
                 "invoice": {
                     "id": result["invoice_id"],
                     "invoice_number": result["invoice_number"],
-                    "status": (
-                        str(result.get("status").value)
-                        if (result.get("status") and hasattr(result.get("status"), "value"))
-                        else str(result.get("status", ""))
-                    ),
+                    "status": status_value,
                     "file_path": result["file_path"],
                     "finalized": True,
                 },
