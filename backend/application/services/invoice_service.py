@@ -277,7 +277,7 @@ class InvoiceProcessingService:
             # for consistency with process_invoice method
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             effective_user_id = user_id or invoice.uploaded_by or 1
-            # Validate that effective_user_id exists - in a production system, 
+            # Validate that effective_user_id exists - in a production system,
             # we would verify this user exists in the database
             permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
@@ -331,7 +331,9 @@ class InvoiceProcessingService:
                     "finalized": True,
                     # Additional details
                     "amount": str(saved_invoice.amount) if hasattr(saved_invoice, "amount") else None,
-                    "due_date": saved_invoice.due_date.isoformat() if hasattr(saved_invoice, "due_date") else None,
+                    "due_date": saved_invoice.due_date.isoformat()
+                    if hasattr(saved_invoice, "due_date")
+                    else None,
                     "timestamps": {
                         "created_at": getattr(saved_invoice, "created_at", None),
                         "updated_at": getattr(saved_invoice, "updated_at", None),
@@ -349,7 +351,9 @@ class InvoiceProcessingService:
                     "file_metadata": {
                         "size": saved_invoice.file.size if hasattr(saved_invoice, "file") else None,
                         "type": saved_invoice.file.file_type if hasattr(saved_invoice, "file") else None,
-                        "original_name": saved_invoice.file.original_name if hasattr(saved_invoice, "file") else None,
+                        "original_name": saved_invoice.file.original_name
+                        if hasattr(saved_invoice, "file")
+                        else None,
                     },
                 }
 
