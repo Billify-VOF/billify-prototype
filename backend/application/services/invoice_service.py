@@ -60,7 +60,16 @@ class InvoiceProcessingService:
         self.invoice_repository = invoice_repository
         self.storage_repository = storage_repository
         self.pdf_transformer = PDFTransformer()
-        self.temp_storage: Optional[TemporaryStorageAdapter] = None
+        self.temp_storage = TemporaryStorageAdapter(storage_repository)
+
+    def _get_nested_attr(self, obj, attr_path, default=None):
+        """Safely get a nested attribute or return default if not found."""
+        current = obj
+        for attr in attr_path.split("."):
+            if not hasattr(current, attr):
+                return default
+            current = getattr(current, attr)
+        return current
 
     def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
@@ -252,11 +261,6 @@ class InvoiceProcessingService:
         )
 
         try:
-            # Check if we have a TemporaryStorageAdapter available
-            if not hasattr(self, "temp_storage") or self.temp_storage is None:
-                self.temp_storage = TemporaryStorageAdapter(self.storage_repository)
-                logger.debug("Created temporary storage adapter")
-
             # Get the invoice from the repository
             invoice = self.invoice_repository.get_by_id(invoice_id)
             if not invoice:
@@ -285,24 +289,23 @@ class InvoiceProcessingService:
 
             # Set urgency level if provided
             if urgency_level is not None:
+                # Validate urgency level first
                 try:
                     urgency = UrgencyLevel.from_db_value(urgency_level)
-                    invoice.set_urgency_manually(urgency)
-                    logger.info("Set manual urgency level: %s", urgency.display_name)
                 except (ValueError, TypeError) as e:
                     logger.warning("Invalid urgency level value: %s - %s", urgency_level, str(e))
                     # Continue with automatic urgency level
+                else:
+                    # Only set urgency if validation succeeded
+                    invoice.set_urgency_manually(urgency)
+                    logger.info("Set manual urgency level: %s", urgency.display_name)
 
             # Verify temporary file exists before attempting transfer
-            try:
-                temp_full_path = self.storage_repository.get_file_path(temp_file_path)
-                if not temp_full_path.exists():
-                    logger.error("Temporary file not found: %s", temp_file_path)
-                    raise ProcessingError(f"Temporary file not found: {temp_file_path}")
-                logger.debug("Verified temporary file exists: %s", temp_file_path)
-            except Exception as e:
-                logger.error("Failed to verify temporary file: %s", str(e))
-                raise ProcessingError(f"Failed to verify temporary file: {str(e)}") from e
+            temp_full_path = self.storage_repository.get_file_path(temp_file_path)
+            if not temp_full_path.exists():
+                logger.error("Temporary file not found: %s", temp_file_path)
+                raise ProcessingError(f"Temporary file not found: {temp_file_path}")
+            logger.debug("Verified temporary file exists: %s", temp_file_path)
 
             # Transfer the file to permanent storage
             try:
@@ -330,30 +333,34 @@ class InvoiceProcessingService:
                     "urgency": urgency_info,
                     "finalized": True,
                     # Additional details
-                    "amount": str(saved_invoice.amount) if hasattr(saved_invoice, "amount") else None,
-                    "due_date": saved_invoice.due_date.isoformat()
-                    if hasattr(saved_invoice, "due_date")
-                    else None,
+                    "amount": (
+                        str(self._get_nested_attr(saved_invoice, "amount"))
+                        if self._get_nested_attr(saved_invoice, "amount")
+                        else None
+                    ),
+                    "due_date": (
+                        saved_invoice.due_date.isoformat()
+                        if hasattr(saved_invoice, "due_date") and saved_invoice.due_date is not None
+                        else None
+                    ),
                     "timestamps": {
                         "created_at": getattr(saved_invoice, "created_at", None),
                         "updated_at": getattr(saved_invoice, "updated_at", None),
                     },
                     "buyer": {
-                        "name": saved_invoice.buyer.name if hasattr(saved_invoice, "buyer") else None,
-                        "address": saved_invoice.buyer.address if hasattr(saved_invoice, "buyer") else None,
-                        "email": saved_invoice.buyer.email if hasattr(saved_invoice, "buyer") else None,
-                        "vat": saved_invoice.buyer.vat if hasattr(saved_invoice, "buyer") else None,
+                        "name": self._get_nested_attr(saved_invoice, "buyer.name"),
+                        "address": self._get_nested_attr(saved_invoice, "buyer.address"),
+                        "email": self._get_nested_attr(saved_invoice, "buyer.email"),
+                        "vat": self._get_nested_attr(saved_invoice, "buyer.vat"),
                     },
                     "seller": {
-                        "name": saved_invoice.seller.name if hasattr(saved_invoice, "seller") else None,
-                        "vat": saved_invoice.seller.vat if hasattr(saved_invoice, "seller") else None,
+                        "name": self._get_nested_attr(saved_invoice, "seller.name"),
+                        "vat": self._get_nested_attr(saved_invoice, "seller.vat"),
                     },
                     "file_metadata": {
-                        "size": saved_invoice.file.size if hasattr(saved_invoice, "file") else None,
-                        "type": saved_invoice.file.file_type if hasattr(saved_invoice, "file") else None,
-                        "original_name": saved_invoice.file.original_name
-                        if hasattr(saved_invoice, "file")
-                        else None,
+                        "size": self._get_nested_attr(saved_invoice, "file.size"),
+                        "type": self._get_nested_attr(saved_invoice, "file.file_type"),
+                        "original_name": self._get_nested_attr(saved_invoice, "file.original_name"),
                     },
                 }
 
@@ -362,7 +369,13 @@ class InvoiceProcessingService:
                 raise ProcessingError(f"Failed to transfer file to permanent storage: {str(e)}") from e
 
         except Exception as e:
-            logger.error("Invoice finalization failed: %s", str(e), exc_info=True)
+            logger.error(
+                "Invoice finalization failed: %s - invoice_id=%s, user_id=%s",
+                str(e),
+                invoice_id,
+                user_id or "unknown",
+                exc_info=True,
+            )
             # Include more context about the error type
             error_type = type(e).__name__
             msg = f"Failed to finalize invoice ({error_type}): {str(e)}"
