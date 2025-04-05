@@ -19,7 +19,10 @@ from integrations.transformers.pdf.transformer import (
     PDFTransformationError,
 )
 from logging import getLogger
-from typing import BinaryIO, Dict, Any
+from typing import BinaryIO, Dict, Any, Optional
+from domain.models.value_objects import UrgencyLevel
+from infrastructure.storage.temporary_storage import TemporaryStorageAdapter
+from domain.exceptions import InvalidInvoiceError
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -57,6 +60,7 @@ class InvoiceProcessingService:
         self.invoice_repository = invoice_repository
         self.storage_repository = storage_repository
         self.pdf_transformer = PDFTransformer()
+        self.temp_storage: Optional[TemporaryStorageAdapter] = None
 
     def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
@@ -206,4 +210,123 @@ class InvoiceProcessingService:
             # Include more context about the error type
             error_type = type(e).__name__
             msg = f"Failed to process invoice ({error_type}): {str(e)}"
+            raise ProcessingError(msg) from e
+
+    def finalize_invoice(
+        self,
+        invoice_id: int,
+        temp_file_path: str,
+        urgency_level: Optional[int] = None,
+        user_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Finalize an invoice by transferring its file from temporary to permanent storage.
+        
+        This method:
+        1. Validates the invoice exists and can be finalized
+        2. Associates the specified urgency level with the invoice
+        3. Transfers the file from temporary to permanent storage
+        4. Updates the invoice record with the final storage path
+        
+        Args:
+            invoice_id: ID of the invoice to finalize
+            temp_file_path: Path to the temporary file
+            urgency_level: Optional manual urgency level to set (1-5)
+            user_id: ID of the user finalizing the invoice
+        
+        Returns:
+            Dict containing the finalized invoice information, including:
+            - invoice_id: Unique identifier of the finalized invoice
+            - invoice_number: Business identifier of the invoice
+            - status: Current status of the invoice
+            - file_path: New permanent file path
+            - urgency: Updated urgency information
+        
+        Raises:
+            ProcessingError: For failures during finalization
+            StorageError: For failures during file transfer
+        """
+        logger.info(
+            "Starting invoice finalization for invoice_id=%s, user_id=%s", 
+            invoice_id, 
+            user_id or "unknown"
+        )
+        
+        try:
+            # Check if we have a TemporaryStorageAdapter available
+            if not hasattr(self, "temp_storage") or self.temp_storage is None:
+                self.temp_storage = TemporaryStorageAdapter(self.storage_repository)
+                logger.debug("Created temporary storage adapter")
+            
+            # Get the invoice from the repository
+            invoice = self.invoice_repository.get_by_id(invoice_id)
+            if not invoice:
+                logger.error("Invoice not found with ID: %s", invoice_id)
+                raise ProcessingError(f"Invoice not found: {invoice_id}")
+            
+            logger.info("Retrieved invoice: %s", invoice.invoice_number)
+            
+            # Validate the invoice data before finalizing
+            try:
+                invoice.validate()
+                logger.debug("Invoice validation successful")
+            except InvalidInvoiceError as e:
+                logger.error("Invoice validation failed: %s", str(e))
+                raise ProcessingError(f"Invalid invoice data: {str(e)}")
+            
+            # Generate unique identifier for permanent file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            permanent_identifier = f"invoice_{invoice.invoice_number}_{timestamp}"
+            
+            logger.debug("Generated permanent identifier: %s", permanent_identifier)
+            
+            # Set urgency level if provided
+            if urgency_level is not None:
+                try:
+                    urgency = UrgencyLevel.from_db_value(urgency_level)
+                    invoice.set_urgency_manually(urgency)
+                    logger.info("Set manual urgency level: %s", urgency.display_name)
+                except (ValueError, TypeError) as e:
+                    logger.warning("Invalid urgency level value: %s - %s", urgency_level, str(e))
+                    # Continue with automatic urgency level
+            
+            # Transfer the file to permanent storage
+            try:
+                logger.info("Transferring file from temporary to permanent storage")
+                permanent_path = self.temp_storage.promote_to_permanent(
+                    temp_file_path,
+                    permanent_identifier
+                )
+                logger.info("File transferred successfully to: %s", permanent_path)
+                
+                # Update invoice with the permanent file path
+                invoice.file.path = permanent_path
+                logger.debug("Updated invoice file path to: %s", permanent_path)
+                
+                # Save the updated invoice
+                effective_user_id = user_id or invoice.uploaded_by or 1
+                saved_invoice = self.invoice_repository.save(invoice, effective_user_id)
+                logger.info("Invoice successfully finalized with ID: %s", saved_invoice.id)
+                
+                # Get urgency info
+                urgency_info = self.invoice_service.get_urgency_info(saved_invoice)
+                
+                # Return finalized invoice information
+                return {
+                    "invoice_id": saved_invoice.id,
+                    "invoice_number": saved_invoice.invoice_number,
+                    "status": saved_invoice.status,
+                    "file_path": permanent_path,
+                    "urgency": urgency_info,
+                    "finalized": True,
+                }
+                
+            except StorageError as e:
+                logger.error("Storage error during finalization: %s", str(e))
+                raise ProcessingError(f"Failed to transfer file to permanent storage: {str(e)}")
+        
+        except Exception as e:
+            logger.error("Invoice finalization failed: %s", str(e), exc_info=True)
+            # Include more context about the error type
+            error_type = type(e).__name__
+            msg = f"Failed to finalize invoice ({error_type}): {str(e)}"
             raise ProcessingError(msg) from e
