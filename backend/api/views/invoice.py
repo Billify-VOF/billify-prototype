@@ -10,7 +10,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
-from rest_framework.exceptions import PermissionDenied
+
+# PermissionDenied import needed when authentication code is uncommented for production
+# from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 
 from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
@@ -28,6 +30,30 @@ logger = getLogger(__name__)
 
 class BaseInvoiceView(APIView):
     """Base class for invoice-related views with common functionality."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Initialize common repositories and services for invoice-related views.
+
+        Sets up the storage repository, invoice repository, and services
+        needed by all invoice-related views.
+
+        Args:
+            *args: Variable length argument list passed to parent constructor
+            **kwargs: Arbitrary keyword arguments passed to parent constructor
+        """
+        super().__init__(*args, **kwargs)
+        # Create repositories
+        self.storage_repository = FileStorage()
+        self.invoice_repository = DjangoInvoiceRepository()
+        # Initialize domain service
+        self.invoice_service = InvoiceService()
+        # Initialize application service
+        self.invoice_processing_service = InvoiceProcessingService(
+            invoice_service=self.invoice_service,
+            invoice_repository=self.invoice_repository,
+            storage_repository=self.storage_repository,
+        )
 
     def _get_user_id(self, request: Any) -> int:
         """
@@ -84,18 +110,14 @@ class InvoiceUploadView(BaseInvoiceView):
     parser_classes = [MultiPartParser]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Initialize with base dependencies and the PDF transformer.
+
+        Args:
+            *args: Variable length argument list passed to parent constructor
+            **kwargs: Arbitrary keyword arguments passed to parent constructor
+        """
         super().__init__(*args, **kwargs)
-        # Create repositories
-        self.storage_repository = FileStorage()
-        self.invoice_repository = DjangoInvoiceRepository()
-        # Initialize domain service
-        self.invoice_service = InvoiceService()
-        # Initialize application service
-        self.invoice_processing_service = InvoiceProcessingService(
-            invoice_service=self.invoice_service,
-            invoice_repository=self.invoice_repository,
-            storage_repository=self.storage_repository,
-        )
         # Initialize transformer for additional data extraction
         self.transformer = PDFTransformer()
 
@@ -345,10 +367,6 @@ class InvoiceUploadView(BaseInvoiceView):
 class InvoicePreviewView(BaseInvoiceView):
     """Handle serving PDF files for preview."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.storage_repository = FileStorage()
-
     def get(self, _: Any, file_path: str) -> Union[FileResponse, Response]:
         """
         Serve a PDF file for preview.
@@ -398,30 +416,6 @@ class InvoiceConfirmationView(BaseInvoiceView):
 
     # Authentication is not required during development, for now.
     # permission_classes = [IsAuthenticated]
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Initialize the view with required repositories and services.
-
-        Sets up storage and invoice repositories and initializes the domain
-        and application services needed to process invoice confirmation.
-
-        Args:
-            *args: Variable length argument list passed to parent constructor
-            **kwargs: Arbitrary keyword arguments passed to parent constructor
-        """
-        super().__init__(*args, **kwargs)
-        # Create repositories
-        self.storage_repository = FileStorage()
-        self.invoice_repository = DjangoInvoiceRepository()
-        # Initialize domain service
-        self.invoice_service = InvoiceService()
-        # Initialize application service
-        self.invoice_processing_service = InvoiceProcessingService(
-            invoice_service=self.invoice_service,
-            invoice_repository=self.invoice_repository,
-            storage_repository=self.storage_repository,
-        )
 
     def post(self, request: Request, invoice_id: int) -> Response:
         """
