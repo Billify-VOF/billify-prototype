@@ -38,7 +38,7 @@ class InvoiceUploadSerializer(serializers.Serializer):
     def create(self, *_):
         """Not used - this serializer only validates file uploads."""
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice creation."
+            "InvoiceUploadSerializer is for validation only. Use InvoiceService for invoice creation."
         )
 
     def update(self, *_):
@@ -52,7 +52,7 @@ class InvoiceUploadSerializer(serializers.Serializer):
             NotImplementedError: This serializer doesn't update objects
         """
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice updates."
+            "InvoiceUploadSerializer is for validation only. Use InvoiceService for invoice updates."
         )
 
 
@@ -86,5 +86,32 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must contain at least one number")
         if not any(char.isalpha() for char in value):
             raise serializers.ValidationError("Password must contain at least one letter")
+
+        return value
+
+
+class InvoiceConfirmationSerializer(serializers.Serializer):
+    """
+    Serializer for handling invoice confirmation requests.
+
+    This serializer validates the data needed to finalize an invoice:
+    - The temporary file path where the invoice is stored
+    - The optional urgency level selected by the user
+
+    It doesn't handle database operations directly but provides validated
+    data to the InvoiceProcessingService for the finalization process.
+    """
+
+    temp_file_path = serializers.CharField(required=True)
+    urgency_level = serializers.IntegerField(required=False, min_value=1, max_value=5)
+
+    def validate_temp_file_path(self, value):
+        """Validate the temporary file path."""
+        if not value:
+            raise serializers.ValidationError("Temporary file path is required.")
+
+        # Basic path validation - could be extended with more specific rules
+        if not value.startswith("temp/"):
+            raise serializers.ValidationError("Invalid temporary file path format.")
 
         return value

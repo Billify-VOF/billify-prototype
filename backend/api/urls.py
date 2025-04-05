@@ -2,7 +2,7 @@
 
 from django.urls import path
 from api.views.auth import LoginView, LogoutView, RegisterView
-from api.views.invoice import InvoiceUploadView, InvoicePreviewView
+from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView
 from api.views.ponto import PontoView
 
 urlpatterns = [
@@ -10,6 +10,11 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("invoices/upload/", InvoiceUploadView.as_view(), name="invoice-upload"),
+    path(
+        "invoices/<int:invoice_id>/confirm/",
+        InvoiceConfirmationView.as_view(),
+        name="invoice-confirm",
+    ),
     path(
         "invoices/preview/<path:file_path>/",
         InvoicePreviewView.as_view(),

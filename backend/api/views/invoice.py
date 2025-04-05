@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 
-from api.serializers import InvoiceUploadSerializer
+from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
 from domain.services.invoice_service import InvoiceService
 from application.services.invoice_service import InvoiceProcessingService
 from domain.exceptions import StorageError, ProcessingError
@@ -325,3 +325,125 @@ class InvoicePreviewView(APIView):
         except (OSError, StorageError, ValueError) as e:
             logger.exception("Error serving PDF file: %s", str(e))
             return Response({"error": "Failed to serve file", "detail": str(e)}, status=500)
+
+
+class InvoiceConfirmationView(APIView):
+    """Handle invoice confirmation and finalization."""
+
+    # Authentication is not required during development, for now.
+    # permission_classes = [IsAuthenticated]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Create repositories
+        self.storage_repository = FileStorage()
+        self.invoice_repository = DjangoInvoiceRepository()
+        # Initialize domain service
+        self.invoice_service = InvoiceService()
+        # Initialize application service
+        self.invoice_processing_service = InvoiceProcessingService(
+            invoice_service=self.invoice_service,
+            invoice_repository=self.invoice_repository,
+            storage_repository=self.storage_repository,
+        )
+
+    def _get_user_id(self, request):
+        """Get the current user ID or default to 1."""
+        return request.user.id if request.user.is_authenticated else 1
+
+    def post(self, request, invoice_id):
+        """
+        Finalize an invoice by transferring it from temporary to permanent storage.
+
+        This endpoint:
+        1. Validates the invoice data
+        2. Sets the urgency level if provided
+        3. Transfers the file from temporary to permanent storage
+        4. Updates the invoice record with the final storage path
+        5. Returns the finalized invoice information
+        """
+        serializer = InvoiceConfirmationSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error("Serializer errors: %s", serializer.errors)
+            return Response(serializer.errors, status=400)
+
+        try:
+            # Extract validated data
+            temp_file_path = serializer.validated_data["temp_file_path"]
+            urgency_level = serializer.validated_data.get("urgency_level")
+
+            # Finalize the invoice using the application service
+            result = self.invoice_processing_service.finalize_invoice(
+                invoice_id=invoice_id,
+                temp_file_path=temp_file_path,
+                urgency_level=urgency_level,
+                user_id=self._get_user_id(request),
+            )
+
+            # Prepare response
+            response_data = {
+                "status": "success",
+                "message": "Invoice finalized successfully",
+                "invoice": {
+                    "id": result["invoice_id"],
+                    "invoice_number": result["invoice_number"],
+                    "status": (
+                        str(result.get("status").value)
+                        if (result.get("status") and hasattr(result.get("status"), "value"))
+                        else str(result.get("status", ""))
+                    ),
+                    "file_path": result["file_path"],
+                    "finalized": True,
+                },
+                "urgency": result.get("urgency"),
+                "timestamps": result.get("timestamps", {}),
+            }
+
+            logger.info(
+                "Successfully finalized invoice",
+                extra={
+                    "user_id": self._get_user_id(request),
+                    "invoice_id": result["invoice_id"],
+                },
+            )
+
+            return Response(response_data, status=200)
+
+        except StorageError as e:
+            logger.error(
+                "Storage error during invoice finalization: %s",
+                str(e),
+                extra={"user_id": self._get_user_id(request)},
+            )
+            return Response(
+                {
+                    "status": "error",
+                    "error": "Unable to store invoice",
+                    "detail": "Please try again later",
+                },
+                status=503,
+            )
+
+        except ProcessingError as e:
+            error_msg = str(e)
+            logger.error(
+                "Processing error during invoice finalization: %s",
+                error_msg,
+                extra={"user_id": self._get_user_id(request)},
+            )
+
+            return Response(
+                {
+                    "status": "error",
+                    "error": "Unable to finalize invoice",
+                    "detail": error_msg,
+                },
+                status=422,
+            )
+
+        except (ValueError, TypeError, OSError) as e:
+            logger.exception(
+                "Unexpected error occurred during invoice finalization",
+                extra={"user_id": self._get_user_id(request)},
+            )
+            return Response({"error": "Internal server error", "details": str(e)}, status=500)
