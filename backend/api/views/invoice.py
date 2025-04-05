@@ -478,7 +478,13 @@ class InvoiceConfirmationView(APIView):
         try:
             # Try to get the invoice to verify it exists
             self.invoice_repository.get_by_id(invoice_id)
-        except Exception as e:
+        except ValueError as e:
+            logger.warning(
+                "Invalid invoice ID format",
+                extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
+            )
+            return Response({"error": "Invalid invoice ID."}, status=400)
+        except Exception as e:  # Catch-all for other repository errors
             logger.warning(
                 "Attempt to finalize non-existent invoice",
                 extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
@@ -489,6 +495,12 @@ class InvoiceConfirmationView(APIView):
             # Extract validated data
             temp_file_path = serializer.validated_data["temp_file_path"]
             urgency_level = serializer.validated_data.get("urgency_level")
+
+            # Check if the temporary file exists
+            full_temp_path = self.storage_repository.get_file_path(temp_file_path)
+            if not Path(full_temp_path).exists():
+                logger.error("Temporary file not found at path: %s", full_temp_path)
+                return Response({"error": "Temporary file not found."}, status=404)
 
             # Finalize the invoice using the application service
             result = self.invoice_processing_service.finalize_invoice(

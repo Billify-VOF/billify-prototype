@@ -94,11 +94,15 @@ class RegisterSerializer(serializers.Serializer):
 
     def create(self, *_: Any) -> None:
         """Not used - creation is handled by the UserService."""
-        pass
+        raise NotImplementedError(
+            "RegisterSerializer is for validation only. Use UserService for user creation."
+        )
 
     def update(self, *_: Any) -> None:
         """Not used - updates are handled by the UserService."""
-        pass
+        raise NotImplementedError(
+            "RegisterSerializer is for validation only. Use UserService for user updates."
+        )
 
 
 class InvoiceConfirmationSerializer(serializers.Serializer):
