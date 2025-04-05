@@ -3,6 +3,8 @@
 from typing import Any, Optional
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+import os
+import re
 
 User = get_user_model()
 
@@ -120,9 +122,9 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
         Validate the temporary file path according to business rules.
 
         Ensures the path is non-empty and follows the expected format for
-        temporary files (currently must start with 'temp/'). This helps
-        prevent security issues like path traversal and ensures only files
-        from the designated temporary storage area are processed.
+        temporary files. Performs security validation to prevent path traversal
+        attacks and ensure only files from the designated temporary storage area
+        are processed.
 
         Args:
             value (str): The temporary file path to validate
@@ -131,15 +133,30 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
             str: The validated temporary file path
 
         Raises:
-            serializers.ValidationError: If the path is empty or doesn't follow
-                the expected format
+            serializers.ValidationError: If the path is empty, doesn't follow
+                the expected format, or contains potential security issues
         """
         if not value:
             raise serializers.ValidationError("Temporary file path is required.")
 
-        # Basic path validation - could be extended with more specific rules
-        if not value.startswith("temp/"):
-            raise serializers.ValidationError("Invalid temporary file path format.")
+        # Normalize path to handle different path representations
+        normalized_path = os.path.normpath(value)
+
+        # Check if path starts with temp/ after normalization
+        if not normalized_path.startswith("temp/"):
+            raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
+
+        # Prevent directory traversal attempts
+        if ".." in normalized_path or "//" in value:
+            raise serializers.ValidationError("Invalid path: potential directory traversal attempt.")
+
+        # Validate that the filename follows expected pattern (alphanumeric with common extensions)
+        # This helps prevent command injection via filenames
+        filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
+        if not re.match(filename_pattern, normalized_path):
+            raise serializers.ValidationError(
+                "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
+            )
 
         return value
 
@@ -152,19 +169,13 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
 
         Returns:
             The validated urgency level if valid
-
-        Raises:
-            ValidationError: If the value is not in the allowed range (1-5)
         """
         # If no urgency level is provided, that's fine
         if value is None:
             return None
 
-        # Check if the urgency level is within the allowed range
-        allowed_values = [1, 2, 3, 4, 5]
-        if value not in allowed_values:
-            raise serializers.ValidationError(f"Invalid urgency level. Must be one of {allowed_values}.")
-
+        # The field already has min_value=1, max_value=5 constraints that are
+        # automatically enforced by the serializer framework
         return value
 
     def create(self, *_: Any) -> None:

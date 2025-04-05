@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
+from rest_framework.exceptions import PermissionDenied
 
 from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
 from domain.services.invoice_service import InvoiceService
@@ -48,8 +49,24 @@ class InvoiceUploadView(APIView):
         self.transformer = PDFTransformer()
 
     def _get_user_id(self, request: Any) -> int:
-        """Get the current user ID or default to 1."""
-        return request.user.id if request.user.is_authenticated else 1
+        """
+        Get the current user ID or raise a permission error if not authenticated.
+
+        Ensures all invoice actions are properly attributed to authenticated users,
+        preventing misattribution of actions in production.
+
+        Args:
+            request: Django request object containing authentication info
+
+        Returns:
+            int: The authenticated user's ID
+
+        Raises:
+            PermissionDenied: If the user is not authenticated
+        """
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Authentication is required to upload invoices.")
+        return request.user.id
 
     def post(self, request: Request) -> Response:
         """
@@ -379,18 +396,23 @@ class InvoiceConfirmationView(APIView):
 
     def _get_user_id(self, request: Any) -> int:
         """
-        Get the current user ID or default to system user.
+        Get the current user ID or raise a permission error if not authenticated.
 
-        Returns the authenticated user's ID if available, otherwise
-        falls back to a default user ID (1) for development purposes.
+        Ensures all invoice finalization actions are properly attributed to
+        authenticated users, preventing misattribution of actions in production.
 
         Args:
             request: Django request object containing authentication info
 
         Returns:
-            int: The authenticated user's ID or 1 if not authenticated
+            int: The authenticated user's ID
+
+        Raises:
+            PermissionDenied: If the user is not authenticated
         """
-        return request.user.id if request.user.is_authenticated else 1
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Authentication is required to finalize invoices.")
+        return request.user.id
 
     def post(self, request: Request, invoice_id: int) -> Response:
         """
@@ -413,6 +435,7 @@ class InvoiceConfirmationView(APIView):
         HTTP Status Codes:
             200 OK: Invoice successfully finalized
             400 Bad Request: Invalid input data
+            404 Not Found: Invoice with the specified ID does not exist
             422 Unprocessable Entity: Business rule violations
             503 Service Unavailable: Storage service errors
             500 Internal Server Error: Unexpected errors
@@ -421,6 +444,17 @@ class InvoiceConfirmationView(APIView):
         if not serializer.is_valid():
             logger.error("Serializer errors: %s", serializer.errors)
             return Response(serializer.errors, status=400)
+
+        # Check if invoice exists before proceeding
+        try:
+            # Try to get the invoice to verify it exists
+            self.invoice_repository.get_by_id(invoice_id)
+        except Exception as e:
+            logger.warning(
+                "Attempt to finalize non-existent invoice",
+                extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
+            )
+            return Response({"error": "Invoice not found."}, status=404)
 
         try:
             # Extract validated data
