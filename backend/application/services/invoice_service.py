@@ -13,13 +13,17 @@ from datetime import datetime
 from domain.exceptions import ProcessingError, StorageError
 from domain.repositories.interfaces.invoice_repository import InvoiceRepository
 from domain.repositories.interfaces.storage_repository import StorageRepository
+from domain.repositories.interfaces.account_repository import AccountRepository
 from domain.services.invoice_service import InvoiceService
 from integrations.transformers.pdf.transformer import (
     PDFTransformer,
     PDFTransformationError,
 )
 from logging import getLogger
-from typing import BinaryIO, Dict, Any
+from typing import BinaryIO, Dict, Any, Optional
+from domain.models.value_objects import UrgencyLevel
+from infrastructure.storage.temporary_storage import TemporaryStorageAdapter
+from domain.exceptions import InvalidInvoiceError
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -41,6 +45,7 @@ class InvoiceProcessingService:
         invoice_service: InvoiceService,
         invoice_repository: InvoiceRepository,
         storage_repository: StorageRepository,
+        account_repository: Optional[AccountRepository] = None,
     ) -> None:
         """Initialize service with required components.
 
@@ -48,6 +53,7 @@ class InvoiceProcessingService:
             invoice_service: Domain service for invoice business logic
             invoice_repository: Repository for invoice persistence
             storage_repository: Repository for file storage
+            account_repository: Repository for account validation (optional)
 
         These dependencies are stored as instance attributes, allowing each
         instance of InvoiceProcessingService to have its own set of dependencies.
@@ -56,7 +62,18 @@ class InvoiceProcessingService:
         self.invoice_service = invoice_service
         self.invoice_repository = invoice_repository
         self.storage_repository = storage_repository
+        self.account_repository = account_repository
         self.pdf_transformer = PDFTransformer()
+        self.temp_storage = TemporaryStorageAdapter(storage_repository)
+
+    def _get_nested_attr(self, obj, attr_path, default=None):
+        """Safely get a nested attribute or return default if not found."""
+        current = obj
+        for attr in attr_path.split("."):
+            if not hasattr(current, attr):
+                return default
+            current = getattr(current, attr)
+        return current
 
     def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
@@ -206,4 +223,183 @@ class InvoiceProcessingService:
             # Include more context about the error type
             error_type = type(e).__name__
             msg = f"Failed to process invoice ({error_type}): {str(e)}"
+            raise ProcessingError(msg) from e
+
+    def finalize_invoice(
+        self,
+        invoice_id: int,
+        temp_file_path: str,
+        urgency_level: Optional[int] = None,
+        user_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Finalize an invoice by transferring its file from temporary to permanent storage.
+
+        This method:
+        1. Validates the invoice exists and can be finalized
+        2. Associates the specified urgency level with the invoice
+        3. Transfers the file from temporary to permanent storage
+        4. Updates the invoice record with the final storage path
+
+        Args:
+            invoice_id: ID of the invoice to finalize
+            temp_file_path: Path to the temporary file
+            urgency_level: Optional manual urgency level to set (1-5)
+            user_id: ID of the user finalizing the invoice
+
+        Returns:
+            Dict containing the finalized invoice information, including:
+            - invoice_id: Unique identifier of the finalized invoice
+            - invoice_number: Business identifier of the invoice
+            - status: Current status of the invoice
+            - file_path: New permanent file path
+            - urgency: Updated urgency information
+            - timestamps: Creation and modification dates
+            - metadata: Additional invoice details
+
+        Raises:
+            ProcessingError: For failures during finalization
+            StorageError: For failures during file transfer
+        """
+        logger.info(
+            "Starting invoice finalization for invoice_id=%s, user_id=%s", invoice_id, user_id or "unknown"
+        )
+
+        try:
+            # Get the invoice from the repository
+            invoice = self.invoice_repository.get_by_id(invoice_id)
+            if not invoice:
+                logger.error("Invoice not found with ID: %s", invoice_id)
+                raise ProcessingError(f"Invoice not found: {invoice_id}")
+
+            logger.info("Retrieved invoice: %s", invoice.invoice_number)
+
+            # Validate the invoice data before finalizing
+            try:
+                invoice.validate()
+                logger.debug("Invoice validation successful")
+            except InvalidInvoiceError as e:
+                logger.error("Invoice validation failed: %s", str(e))
+                raise ProcessingError(f"Invalid invoice data: {str(e)}") from e
+
+            # Generate unique identifier for permanent file using both invoice_number and user_id
+            # for consistency with process_invoice method
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            # Determine effective user ID with proper validation
+            effective_user_id = user_id or invoice.uploaded_by
+
+            # Validate user exists in database if possible
+            if effective_user_id and self.account_repository:
+                valid_user = self.account_repository.find_by_id(effective_user_id)
+                if not valid_user:
+                    logger.warning(
+                        "User ID %s does not exist in database for invoice %s. "
+                        "Using ID for attribution but validation failed.",
+                        effective_user_id,
+                        invoice_id,
+                    )
+            elif not effective_user_id:
+                # Default to system user if no ID provided
+                effective_user_id = 1
+                logger.warning(
+                    "No valid user ID provided for invoice finalization (invoice_id=%s). "
+                    "Using system user (ID=1) as fallback.",
+                    invoice_id,
+                )
+
+            logger.info("Invoice being finalized by user ID: %s", effective_user_id)
+            permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
+
+            # Set urgency level if provided
+            if urgency_level is not None:
+                # Validate urgency level first
+                try:
+                    urgency = UrgencyLevel.from_db_value(urgency_level)
+                except (ValueError, TypeError) as e:
+                    logger.warning("Invalid urgency level value: %s - %s", urgency_level, str(e))
+                    # Continue with automatic urgency level
+                else:
+                    # Only set urgency if validation succeeded
+                    invoice.set_urgency_manually(urgency)
+                    logger.info("Set manual urgency level: %s", urgency.display_name)
+
+            # Verify temporary file exists before attempting transfer
+            temp_full_path = self.storage_repository.get_file_path(temp_file_path)
+            if not temp_full_path.exists():
+                logger.error("Temporary file not found: %s", temp_file_path)
+                raise ProcessingError(f"Temporary file not found: {temp_file_path}")
+            logger.debug("Verified temporary file exists: %s", temp_file_path)
+
+            # Transfer the file to permanent storage
+            try:
+                logger.info("Transferring file from temporary to permanent storage")
+                permanent_path = self.temp_storage.promote_to_permanent(temp_file_path, permanent_identifier)
+                logger.info("File transferred successfully to: %s", permanent_path)
+
+                # Update invoice with the permanent file path
+                invoice.file.path = permanent_path
+                logger.debug("Updated invoice file path to: %s", permanent_path)
+
+                # Save the updated invoice
+                saved_invoice = self.invoice_repository.save(invoice, effective_user_id)
+                logger.info("Invoice successfully finalized with ID: %s", saved_invoice.id)
+
+                # Get urgency info
+                urgency_info = self.invoice_service.get_urgency_info(saved_invoice)
+
+                # Include comprehensive invoice details in the response
+                return {
+                    "invoice_id": saved_invoice.id,
+                    "invoice_number": saved_invoice.invoice_number,
+                    "status": saved_invoice.status,
+                    "file_path": permanent_path,
+                    "urgency": urgency_info,
+                    "finalized": True,
+                    # Additional details
+                    "amount": (
+                        str(self._get_nested_attr(saved_invoice, "amount"))
+                        if self._get_nested_attr(saved_invoice, "amount")
+                        else None
+                    ),
+                    "due_date": (
+                        saved_invoice.due_date.isoformat()
+                        if hasattr(saved_invoice, "due_date") and saved_invoice.due_date is not None
+                        else None
+                    ),
+                    "timestamps": {
+                        "created_at": getattr(saved_invoice, "created_at", None),
+                        "updated_at": getattr(saved_invoice, "updated_at", None),
+                    },
+                    "buyer": {
+                        "name": self._get_nested_attr(saved_invoice, "buyer.name"),
+                        "address": self._get_nested_attr(saved_invoice, "buyer.address"),
+                        "email": self._get_nested_attr(saved_invoice, "buyer.email"),
+                        "vat": self._get_nested_attr(saved_invoice, "buyer.vat"),
+                    },
+                    "seller": {
+                        "name": self._get_nested_attr(saved_invoice, "seller.name"),
+                        "vat": self._get_nested_attr(saved_invoice, "seller.vat"),
+                    },
+                    "file_metadata": {
+                        "size": self._get_nested_attr(saved_invoice, "file.size"),
+                        "type": self._get_nested_attr(saved_invoice, "file.file_type"),
+                        "original_name": self._get_nested_attr(saved_invoice, "file.original_name"),
+                    },
+                }
+
+            except StorageError as e:
+                logger.error("Storage error during finalization: %s", str(e))
+                raise ProcessingError(f"Failed to transfer file to permanent storage: {str(e)}") from e
+
+        except Exception as e:
+            logger.error(
+                "Invoice finalization failed: %s - invoice_id=%s, user_id=%s",
+                str(e),
+                invoice_id,
+                user_id or "unknown",
+                exc_info=True,
+            )
+            # Include more context about the error type
+            error_type = type(e).__name__
+            msg = f"Failed to finalize invoice ({error_type}): {str(e)}"
             raise ProcessingError(msg) from e
