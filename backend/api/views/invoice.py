@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.exceptions import PermissionDenied
+from django.db import transaction
 
 from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
 from domain.services.invoice_service import InvoiceService
@@ -25,36 +26,12 @@ from integrations.transformers.pdf.transformer import PDFTransformer
 logger = getLogger(__name__)
 
 
-class InvoiceUploadView(APIView):
-    """Handle invoice uploads and initiate invoice processing workflow."""
-
-    # Authentication is not required during development, for now.
-    # permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser]
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        # Create repositories
-        self.storage_repository = FileStorage()
-        self.invoice_repository = DjangoInvoiceRepository()
-        # Initialize domain service
-        self.invoice_service = InvoiceService()
-        # Initialize application service
-        self.invoice_processing_service = InvoiceProcessingService(
-            invoice_service=self.invoice_service,
-            invoice_repository=self.invoice_repository,
-            storage_repository=self.storage_repository,
-        )
-        # Initialize transformer for additional data extraction
-        self.transformer = PDFTransformer()
+class BaseInvoiceView(APIView):
+    """Base class for invoice-related views with common functionality."""
 
     def _get_user_id(self, request: Any) -> int:
         """
-        Get the current user ID or raise a permission error if not authenticated
-        or default to system user for development.
-
-        Ensures all invoice actions are properly attributed to authenticated users,
-        preventing misattribution of actions in production.
+        Get the current user ID or default to system user for development.
 
         DEVELOPMENT MODE ONLY: Currently allowing unauthenticated requests with a default
         user ID for easier testing and development. This should be replaced with proper
@@ -79,9 +56,48 @@ class InvoiceUploadView(APIView):
 
         # PRODUCTION CODE (uncomment when ready for production):
         # if not request.user.is_authenticated:
-        #     raise PermissionDenied("Authentication is required to upload invoices.")
+        #     raise PermissionDenied("Authentication is required.")
 
         return request.user.id
+
+    def _get_formatted_status(self, status: Any) -> str:
+        """
+        Extract and format status value safely.
+
+        Handles different status representations including enum values, strings,
+        and None values, ensuring a consistent string output.
+
+        Args:
+            status: The status value to format, may be an enum, string or None
+
+        Returns:
+            str: Formatted status string
+        """
+        return str(status.value) if status is not None and hasattr(status, "value") else str(status or "")
+
+
+class InvoiceUploadView(BaseInvoiceView):
+    """Handle invoice uploads and initiate invoice processing workflow."""
+
+    # Authentication is not required during development, for now.
+    # permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Create repositories
+        self.storage_repository = FileStorage()
+        self.invoice_repository = DjangoInvoiceRepository()
+        # Initialize domain service
+        self.invoice_service = InvoiceService()
+        # Initialize application service
+        self.invoice_processing_service = InvoiceProcessingService(
+            invoice_service=self.invoice_service,
+            invoice_repository=self.invoice_repository,
+            storage_repository=self.storage_repository,
+        )
+        # Initialize transformer for additional data extraction
+        self.transformer = PDFTransformer()
 
     def post(self, request: Request) -> Response:
         """
@@ -120,9 +136,7 @@ class InvoiceUploadView(APIView):
 
             # Get status safely
             status = result.get("status")
-            status_value = (
-                str(status.value) if status is not None and hasattr(status, "value") else str(status or "")
-            )
+            status_value = self._get_formatted_status(status)
 
             response_data = {
                 "status": "success",
@@ -328,7 +342,7 @@ class InvoiceUploadView(APIView):
         return str(date_value)
 
 
-class InvoicePreviewView(APIView):
+class InvoicePreviewView(BaseInvoiceView):
     """Handle serving PDF files for preview."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -366,7 +380,7 @@ class InvoicePreviewView(APIView):
             return Response({"error": "Failed to serve file", "detail": str(e)}, status=500)
 
 
-class InvoiceConfirmationView(APIView):
+class InvoiceConfirmationView(BaseInvoiceView):
     """
     API endpoint for finalizing invoice processing and storage.
 
@@ -409,40 +423,6 @@ class InvoiceConfirmationView(APIView):
             storage_repository=self.storage_repository,
         )
 
-    def _get_user_id(self, request: Any) -> int:
-        """
-        Get the current user ID or default to system user for development.
-
-        Ensures all invoice finalization actions are properly attributed to
-        authenticated users, preventing misattribution of actions in production.
-
-        DEVELOPMENT MODE ONLY: Currently allowing unauthenticated requests with a default
-        user ID for easier testing and development. This should be replaced with proper
-        authentication checks before production deployment.
-
-        Args:
-            request: Django request object containing authentication info
-
-        Returns:
-            int: The authenticated user's ID or 1 if not authenticated (dev only)
-
-        Raises:
-            PermissionDenied: If the user is not authenticated (when in production mode)
-        """
-        # TEMPORARY: Allow unauthenticated requests during development
-        if not request.user.is_authenticated:
-            logger.warning(
-                "DEV MODE: Unauthenticated request allowed with default user ID 1. "
-                "This should be secured before production deployment."
-            )
-            return 1  # Default user ID for development
-
-        # PRODUCTION CODE (uncomment when ready for production):
-        # if not request.user.is_authenticated:
-        #     raise PermissionDenied("Authentication is required to finalize invoices.")
-
-        return request.user.id
-
     def post(self, request: Request, invoice_id: int) -> Response:
         """
         Finalize an invoice by transferring it from temporary to permanent storage.
@@ -478,18 +458,18 @@ class InvoiceConfirmationView(APIView):
         try:
             # Try to get the invoice to verify it exists
             self.invoice_repository.get_by_id(invoice_id)
-        except ValueError as e:
+        except (ValueError, TypeError, KeyError) as e:
             logger.warning(
-                "Invalid invoice ID format",
-                extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
-            )
-            return Response({"error": "Invalid invoice ID."}, status=400)
-        except Exception as e:  # Catch-all for other repository errors
-            logger.warning(
-                "Attempt to finalize non-existent invoice",
+                "Invalid invoice ID or invoice not found",
                 extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
             )
             return Response({"error": "Invoice not found."}, status=404)
+        except Exception as e:
+            logger.error(
+                "Error when checking invoice existence",
+                extra={"invoice_id": invoice_id, "user_id": self._get_user_id(request), "error": str(e)},
+            )
+            return Response({"error": "Failed to verify invoice existence."}, status=500)
 
         try:
             # Extract validated data
@@ -502,80 +482,83 @@ class InvoiceConfirmationView(APIView):
                 logger.error("Temporary file not found at path: %s", full_temp_path)
                 return Response({"error": "Temporary file not found."}, status=404)
 
-            # Finalize the invoice using the application service
-            result = self.invoice_processing_service.finalize_invoice(
-                invoice_id=invoice_id,
-                temp_file_path=temp_file_path,
-                urgency_level=urgency_level,
-                user_id=self._get_user_id(request),
-            )
+            # Wrap the finalization process in a transaction to ensure atomicity
+            with transaction.atomic():
+                try:
+                    # Finalize the invoice using the application service
+                    result = self.invoice_processing_service.finalize_invoice(
+                        invoice_id=invoice_id,
+                        temp_file_path=temp_file_path,
+                        urgency_level=urgency_level,
+                        user_id=self._get_user_id(request),
+                    )
 
-            # Get status safely
-            status = result.get("status")
-            status_value = (
-                str(status.value) if status is not None and hasattr(status, "value") else str(status or "")
-            )
+                    # Get status safely
+                    status_value = self._get_formatted_status(result.get("status"))
 
-            # Prepare response
-            response_data = {
-                "status": "success",
-                "message": "Invoice finalized successfully",
-                "invoice": {
-                    "id": result["invoice_id"],
-                    "invoice_number": result["invoice_number"],
-                    "status": status_value,
-                    "file_path": result["file_path"],
-                    "finalized": True,
-                },
-                "urgency": result.get("urgency"),
-                "timestamps": result.get("timestamps", {}),
-            }
+                    # Prepare response
+                    response_data = {
+                        "status": "success",
+                        "message": "Invoice finalized successfully",
+                        "invoice": {
+                            "id": result["invoice_id"],
+                            "invoice_number": result["invoice_number"],
+                            "status": status_value,
+                            "file_path": result["file_path"],
+                            "finalized": True,
+                        },
+                        "urgency": result.get("urgency"),
+                        "timestamps": result.get("timestamps", {}),
+                    }
 
-            logger.info(
-                "Successfully finalized invoice",
-                extra={
-                    "user_id": self._get_user_id(request),
-                    "invoice_id": result["invoice_id"],
-                },
-            )
+                    logger.info(
+                        "Successfully finalized invoice",
+                        extra={
+                            "user_id": self._get_user_id(request),
+                            "invoice_id": result["invoice_id"],
+                        },
+                    )
 
-            return Response(response_data, status=200)
+                    return Response(response_data, status=200)
 
-        except StorageError as e:
-            logger.error(
-                "Storage error during invoice finalization: %s",
-                str(e),
-                extra={"user_id": self._get_user_id(request)},
-            )
-            return Response(
-                {
-                    "status": "error",
-                    "error": "Unable to store invoice",
-                    "detail": "Please try again later",
-                },
-                status=503,
-            )
+                except StorageError as e:
+                    # Transaction will be rolled back
+                    logger.error(
+                        "Storage error during invoice finalization: %s",
+                        str(e),
+                        extra={"user_id": self._get_user_id(request), "invoice_id": invoice_id},
+                    )
+                    return Response(
+                        {
+                            "status": "error",
+                            "error": "Unable to store invoice",
+                            "detail": "Please try again later",
+                        },
+                        status=503,
+                    )
 
-        except ProcessingError as e:
-            error_msg = str(e)
-            logger.error(
-                "Processing error during invoice finalization: %s",
-                error_msg,
-                extra={"user_id": self._get_user_id(request)},
-            )
+                except ProcessingError as e:
+                    # Transaction will be rolled back
+                    error_msg = str(e)
+                    logger.error(
+                        "Processing error during invoice finalization: %s",
+                        error_msg,
+                        extra={"user_id": self._get_user_id(request), "invoice_id": invoice_id},
+                    )
 
-            return Response(
-                {
-                    "status": "error",
-                    "error": "Unable to finalize invoice",
-                    "detail": error_msg,
-                },
-                status=422,
-            )
+                    return Response(
+                        {
+                            "status": "error",
+                            "error": "Unable to finalize invoice",
+                            "detail": error_msg,
+                        },
+                        status=422,
+                    )
 
         except (ValueError, TypeError, OSError) as e:
+            # Catch any other errors outside the transaction
             logger.exception(
                 "Unexpected error occurred during invoice finalization",
-                extra={"user_id": self._get_user_id(request)},
+                extra={"user_id": self._get_user_id(request), "invoice_id": invoice_id},
             )
             return Response({"error": "Internal server error", "details": str(e)}, status=500)
