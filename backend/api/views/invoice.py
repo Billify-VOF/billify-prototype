@@ -471,6 +471,11 @@ class InvoiceConfirmationView(BaseInvoiceView):
             urgency_level = serializer.validated_data.get("urgency_level")
 
             # Check if the temporary file exists
+            # Validate that the path is within the temporary storage area
+            if not temp_file_path.startswith("temp/"):
+                logger.error("Invalid temporary file path: %s", temp_file_path)
+                return Response({"error": "Invalid temporary file path."}, status=400)
+
             full_temp_path = self.storage_repository.get_file_path(temp_file_path)
             if not Path(full_temp_path).exists():
                 logger.error("Temporary file not found at path: %s", full_temp_path)
