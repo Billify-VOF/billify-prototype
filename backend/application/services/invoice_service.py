@@ -240,6 +240,8 @@ class InvoiceProcessingService:
             - status: Current status of the invoice
             - file_path: New permanent file path
             - urgency: Updated urgency information
+            - timestamps: Creation and modification dates
+            - metadata: Additional invoice details
 
         Raises:
             ProcessingError: For failures during finalization
@@ -269,11 +271,15 @@ class InvoiceProcessingService:
                 logger.debug("Invoice validation successful")
             except InvalidInvoiceError as e:
                 logger.error("Invoice validation failed: %s", str(e))
-                raise ProcessingError(f"Invalid invoice data: {str(e)}")
+                raise ProcessingError(f"Invalid invoice data: {str(e)}") from e
 
-            # Generate unique identifier for permanent file
+            # Generate unique identifier for permanent file using both invoice_number and user_id
+            # for consistency with process_invoice method
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            permanent_identifier = f"invoice_{invoice.invoice_number}_{timestamp}"
+            effective_user_id = user_id or invoice.uploaded_by or 1
+            # Validate that effective_user_id exists - in a production system, 
+            # we would verify this user exists in the database
+            permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
             logger.debug("Generated permanent identifier: %s", permanent_identifier)
 
@@ -287,6 +293,17 @@ class InvoiceProcessingService:
                     logger.warning("Invalid urgency level value: %s - %s", urgency_level, str(e))
                     # Continue with automatic urgency level
 
+            # Verify temporary file exists before attempting transfer
+            try:
+                temp_full_path = self.storage_repository.get_file_path(temp_file_path)
+                if not temp_full_path.exists():
+                    logger.error("Temporary file not found: %s", temp_file_path)
+                    raise ProcessingError(f"Temporary file not found: {temp_file_path}")
+                logger.debug("Verified temporary file exists: %s", temp_file_path)
+            except Exception as e:
+                logger.error("Failed to verify temporary file: %s", str(e))
+                raise ProcessingError(f"Failed to verify temporary file: {str(e)}") from e
+
             # Transfer the file to permanent storage
             try:
                 logger.info("Transferring file from temporary to permanent storage")
@@ -298,14 +315,13 @@ class InvoiceProcessingService:
                 logger.debug("Updated invoice file path to: %s", permanent_path)
 
                 # Save the updated invoice
-                effective_user_id = user_id or invoice.uploaded_by or 1
                 saved_invoice = self.invoice_repository.save(invoice, effective_user_id)
                 logger.info("Invoice successfully finalized with ID: %s", saved_invoice.id)
 
                 # Get urgency info
                 urgency_info = self.invoice_service.get_urgency_info(saved_invoice)
 
-                # Return finalized invoice information
+                # Include comprehensive invoice details in the response
                 return {
                     "invoice_id": saved_invoice.id,
                     "invoice_number": saved_invoice.invoice_number,
@@ -313,11 +329,33 @@ class InvoiceProcessingService:
                     "file_path": permanent_path,
                     "urgency": urgency_info,
                     "finalized": True,
+                    # Additional details
+                    "amount": str(saved_invoice.amount) if hasattr(saved_invoice, "amount") else None,
+                    "due_date": saved_invoice.due_date.isoformat() if hasattr(saved_invoice, "due_date") else None,
+                    "timestamps": {
+                        "created_at": getattr(saved_invoice, "created_at", None),
+                        "updated_at": getattr(saved_invoice, "updated_at", None),
+                    },
+                    "buyer": {
+                        "name": saved_invoice.buyer.name if hasattr(saved_invoice, "buyer") else None,
+                        "address": saved_invoice.buyer.address if hasattr(saved_invoice, "buyer") else None,
+                        "email": saved_invoice.buyer.email if hasattr(saved_invoice, "buyer") else None,
+                        "vat": saved_invoice.buyer.vat if hasattr(saved_invoice, "buyer") else None,
+                    },
+                    "seller": {
+                        "name": saved_invoice.seller.name if hasattr(saved_invoice, "seller") else None,
+                        "vat": saved_invoice.seller.vat if hasattr(saved_invoice, "seller") else None,
+                    },
+                    "file_metadata": {
+                        "size": saved_invoice.file.size if hasattr(saved_invoice, "file") else None,
+                        "type": saved_invoice.file.file_type if hasattr(saved_invoice, "file") else None,
+                        "original_name": saved_invoice.file.original_name if hasattr(saved_invoice, "file") else None,
+                    },
                 }
 
             except StorageError as e:
                 logger.error("Storage error during finalization: %s", str(e))
-                raise ProcessingError(f"Failed to transfer file to permanent storage: {str(e)}")
+                raise ProcessingError(f"Failed to transfer file to permanent storage: {str(e)}") from e
 
         except Exception as e:
             logger.error("Invoice finalization failed: %s", str(e), exc_info=True)
