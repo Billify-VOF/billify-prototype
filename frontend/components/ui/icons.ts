@@ -7,4 +7,5 @@ export {
   Wallet,
   TrendingUp,
   // Add any other icons you need here
+  Unlock,
 } from 'lucide-react';
