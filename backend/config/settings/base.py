@@ -443,10 +443,10 @@ VALID_ISO_CURRENCY_CODES = {
 
 # Celery-Related Settings
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost:5672//")
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = None
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP=True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # CELERY BEAT SETTINGS
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
