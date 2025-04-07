@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Menu, Upload, Settings, Receipt, Wallet } from '@/components/ui/icons';
+import { Menu, Upload, Settings, Receipt, Wallet, Unlock } from '@/components/ui/icons';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { InvoiceData, InvoiceUploadResult } from '@/components/InvoiceUploadResult';
@@ -9,6 +9,7 @@ import { dummySearchResults, SearchItemResult } from '@/components/types';
 import SearchResultItem from '@/components/SearchResultItem';
 import NotificationBell from '@/components/NotificationBell';
 import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
+import { generatePontoOAuthUrl } from '@/lib/utils';
 
 const BillifyDashboard = () => {
   // Add state for file upload
@@ -139,6 +140,11 @@ const BillifyDashboard = () => {
     console.log('Search query: ', query);
   };
 
+  const onPontoConnect = async () => {
+    const oauthUrl = await generatePontoOAuthUrl();
+    window.open(oauthUrl);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Left Sidebar */}
@@ -153,6 +159,7 @@ const BillifyDashboard = () => {
           <Receipt className="h-6 w-6 text-gray-400" />
           <Wallet className="h-6 w-6 text-gray-400" />
           <Settings className="h-6 w-6 text-gray-400" />
+          <Unlock className="h-6 w-6 text-gray-400" onClick={onPontoConnect} />
         </div>
       </div>
 
