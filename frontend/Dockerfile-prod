@@ -11,11 +11,14 @@ RUN npm ci
 
 FROM node:18-alpine
 
+# Ensure ARG is accessible in this stage
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+
 WORKDIR /app
 
 COPY --from=builder /app/node_modules/ ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 ENV NEXT_PUBLIC_DEBUG=false
 ENV NODE_ENV=production
 
