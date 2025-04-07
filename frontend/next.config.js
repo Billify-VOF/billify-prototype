@@ -11,7 +11,6 @@ const nextConfig = {
         }, ];
     },
     webpack: (config) => {
-        // Tell webpack to ignore these binary modules
         config.resolve.alias.canvas = false;
         config.resolve.alias.encoding = false;
 
