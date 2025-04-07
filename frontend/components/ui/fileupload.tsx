@@ -72,7 +72,7 @@ const FileUpload: React.FC = () => {
       {uploadState.status === 'complete' && (
         <InvoiceUploadResult
           result={uploadState.result}
-          onClose={() => setUploadState({ status: 'idle', result: null })}
+          onChange={() => setUploadState({ status: 'idle', result: null })}
         />
       )}
     </div>

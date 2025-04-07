@@ -1,0 +1,33 @@
+ARG NEXT_PUBLIC_BACKEND_URL
+FROM node:18-alpine as builder
+
+RUN apk add --no-cache libc6-compat make g++ pixman-dev cairo-dev pango-dev
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+
+FROM node:18-alpine
+
+# Ensure ARG is accessible in this stage
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules/ ./node_modules
+COPY . .
+ENV NEXT_PUBLIC_DEBUG=false
+ENV NODE_ENV=production
+
+RUN npm run build 
+
+EXPOSE 3000
+
+ENV PORT=3000
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
+ENV HOSTNAME="0.0.0.0"
+CMD ["npm","run","start"]

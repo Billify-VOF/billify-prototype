@@ -3,49 +3,21 @@ name: Deploy to Production
 on:
   push:
     branches:
+      - staging
       - main
+      - testing
   pull_request:
     branches:
+      - staging
       - main
+      - testing
+env:
+  REGISTRY: ghcr.io
+  
+
+
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend
-        run: npm ci
-        
-      - name: Frontend Lint
-        working-directory: ./frontend
-        run: npm run lint
-        
-      - name: Frontend Tests
-        working-directory: ./frontend
-        run: npm test
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          
-      - name: Install Backend Dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: Backend Tests
-        working-directory: ./backend
-        run: python -m pytest
-
   verify-staging-merge:
     runs-on: ubuntu-latest
     steps:
@@ -53,35 +25,170 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Verify PR is from staging
+      - name: Verify PR source branch
         if: github.event_name == 'pull_request'
         run: |
+          TARGET_BRANCH=${{ github.base_ref }}
           SOURCE_BRANCH=${{ github.head_ref }}
-          if [ "$SOURCE_BRANCH" != "staging" ]; then
-            echo "Error: Pull requests to main must come from the staging branch"
+          
+          if [ "$TARGET_BRANCH" == "main" ] && [ "$SOURCE_BRANCH" != "testing" ]; then
+            echo "Error: Pull requests to main must come from the testing branch"
             exit 1
           fi
-          echo "Pull request is correctly sourced from staging branch"
-
-  deploy-production:
-    needs: [test, verify-staging-merge]
+          
+          if [ "$TARGET_BRANCH" == "testing" ] && [ "$SOURCE_BRANCH" != "staging" ]; then
+            echo "Error: Pull requests to testing must come from the staging branch"
+            exit 1
+          fi
+          
+          echo "Pull request source branch is valid"
+  build-images:
+    needs: verify-staging-merge
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.verify-staging-merge.result == 'success' && (startsWith(github.ref, 'refs/heads/kunal/cicd')||startsWith(github.ref, 'refs/heads/staging') || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/testing'))
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: staging #need to change github.base_ref
+    env:
+      NEXT_PUBLIC_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Deploy to Production Environment
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Backend
         run: |
-          echo "Deploying to production environment"
-          # Add your production deployment steps here
-          # This could be deploying to a cloud provider, updating a container, etc.
-          # Example for AWS:
-          # - name: Configure AWS credentials
-          #   uses: aws-actions/configure-aws-credentials@v1
-          #   with:
-          #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          #     aws-region: eu-west-1
-          #
-          # - name: Deploy to production
-          #   run: aws s3 sync ./build s3://production-bucket/ 
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build backend -f backend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
+
+      - name: Build and push Frontend
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build --build-arg NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL} frontend -f frontend/Dockerfile-prod \
+            -t ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
+  
+
+  deploy:
+    needs: [build-images]
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.build-images.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging #need to change github.base_ref
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      MINIO_USER: ${{ secrets.MINIO_USER }}
+      MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      PONTO_AUTH_URL: ${{ secrets.PONTO_AUTH_URL }}
+      PONTO_CLIENT_SECRET: ${{ secrets.PONTO_CLIENT_SECRET }}
+      PONTO_CLIENT_ID: ${{ secrets.PONTO_CLIENT_ID }}
+      PONTO_TOKEN_URL: ${{ secrets.PONTO_TOKEN_URL }}
+      PONTO_REDIRECT_URI: ${{ secrets.PONTO_REDIRECT_URI }}
+      PONTO_CONNECT_BASE_URL: ${{ secrets.PONTO_CONNECT_BASE_URL }}
+      IBANITY_API_HOST: ${{ secrets.IBANITY_API_HOST }}
+      PONTO_CERTIFICATE_PATH: ${{ secrets.PONTO_CERTIFICATE_PATH }}
+      PONTO_PRIVATE_KEY_PATH: ${{ secrets.PONTO_PRIVATE_KEY_PATH }}
+      PONTO_PRIVATE_KEY_PASSWORD: ${{ secrets.PONTO_PRIVATE_KEY_PASSWORD }}
+      PONTO_SIGNATURE_KEY_ID: ${{ secrets.PONTO_SIGNATURE_KEY_ID }}
+      FERNET_KEY: ${{ secrets.FERNET_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create .env in the local
+        run: |
+          cd infrastructure
+          cat <<EOF > .env
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_DB=${POSTGRES_DB}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          MINIO_USER=${MINIO_USER}
+          MINIO_PASSWORD=${MINIO_PASSWORD}
+          DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+          PONTO_AUTH_URL=${PONTO_AUTH_URL}
+          PONTO_TOKEN_URL=${PONTO_TOKEN_URL}
+          PONTO_CLIENT_ID=${PONTO_CLIENT_ID}
+          PONTO_CLIENT_SECRET=${PONTO_CLIENT_SECRET}
+          PONTO_REDIRECT_URI=${PONTO_REDIRECT_URI}
+          PONTO_CONNECT_BASE_URL=${PONTO_CONNECT_BASE_URL}
+          IBANITY_API_HOST=${IBANITY_API_HOST}
+          PONTO_CERTIFICATE_PATH=${PONTO_CERTIFICATE_PATH}
+          PONTO_PRIVATE_KEY_PATH=${PONTO_PRIVATE_KEY_PATH}
+          PONTO_PRIVATE_KEY_PASSWORD=${PONTO_PRIVATE_KEY_PASSWORD}
+          PONTO_SIGNATURE_KEY_ID=${PONTO_SIGNATURE_KEY_ID}
+          FERNET_KEY=${FERNET_KEY}
+          EOF
+          cd ..
+
+      - name: Sync files to server
+        uses: appleboy/scp-action@v0.1.0
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "infrastructure/docker-compose.prod.yml,infrastructure/.env,infrastructure/nginx"
+          target: "/home/billify/app/"
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1   
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            set -x
+            cd /home/billify/app/infrastructure
+            sudo apt-get update --fix-missing -y && sudo apt-get install -f -y
+            sudo apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+            # sudo apt install -y certbot
+            # sudo certbot certonly --webroot --webroot-path /home/billify/app/infrastructure/ssl --email admin@billify.be --agree-tos --no-eff-email  -d api.billify.be -d test-api.billify.be -d staging-api.billify.be -d app.billify.be -d test.billify.be -d staging.billify.be
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt update -y
+            sudo apt install -y docker-ce docker-ce-cli containerd.io
+            sudo systemctl start docker
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin || { echo "Failed to login to GHCR"; exit 1; }
+            docker volume inspect minio_data >/dev/null 2>&1 || docker volume create --name=minio_data || { echo "Failed to create minio_data volume"; exit 1; }
+            docker volume inspect postgres_data >/dev/null 2>&1 || docker volume create --name=postgres_data || { echo "Failed to create postgres_data volume"; exit 1; }  
+            export REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export FRONTEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
+            export BACKEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
+            docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy services"; exit 1; }
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /home/billify/app/infrastructure/
+            echo "Rolling back to previous configuration..."
+            mv -f previous_config.yaml docker-compose.prod.yml
+            docker compose -f docker-compose.prod.yml up -d --force-recreate

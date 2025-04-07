@@ -77,6 +77,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   };
 
   if (error) {
+    console.error('Error loading PDF:', error);
     return (
       <div className="pdf-viewer rounded-lg border bg-red-50 p-4 text-red-600">
         <p>Failed to load PDF: {error}</p>
@@ -86,7 +87,7 @@ const PDFViewer = ({ filePath }: { filePath: string }) => {
   }
 
   // Use the Django backend URL (port 8000)
-  const pdfUrl = `http://localhost:8000/api/invoices/preview/${filePath}/`;
+  const pdfUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/preview/${filePath}/`;
   console.log('Attempting to load PDF from:', pdfUrl);
 
   return (
