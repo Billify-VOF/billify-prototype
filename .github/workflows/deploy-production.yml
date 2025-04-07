@@ -14,6 +14,7 @@ on:
       - testing
 env:
   REGISTRY: ghcr.io
+  NEXT_PUBLIC_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
 
 
 
@@ -72,7 +73,7 @@ jobs:
       - name: Build and push Frontend
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker build frontend -f frontend/Dockerfile-prod \
+          docker build --build-arg NEXT_PUBLIC_BACKEND_URL=${{env.NEXT_PUBLIC_BACKEND_URL}} frontend -f frontend/Dockerfile-prod \
             -t ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
   

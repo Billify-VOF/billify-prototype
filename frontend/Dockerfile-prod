@@ -1,3 +1,4 @@
+ARG NEXT_PUBLIC_BACKEND_URL
 FROM node:18-alpine as builder
 
 RUN apk add --no-cache libc6-compat make g++ pixman-dev cairo-dev pango-dev
@@ -14,7 +15,7 @@ WORKDIR /app
 
 COPY --from=builder /app/node_modules/ ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_BACKEND_URL=http://staging-api.billify.be
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 ENV NEXT_PUBLIC_DEBUG=false
 ENV NODE_ENV=production
 
