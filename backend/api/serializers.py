@@ -1,7 +1,10 @@
 """Serializers for invoice-related API endpoints."""
 
+from typing import Any, Optional
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+import os
+import re
 
 User = get_user_model()
 
@@ -17,7 +20,7 @@ class InvoiceUploadSerializer(serializers.Serializer):
 
     file = serializers.FileField()
 
-    def validate_file(self, value):
+    def validate_file(self, value: Any) -> Any:
         """
         Ensure uploaded invoice meets business requirements:
         - Must be PDF format
@@ -35,13 +38,13 @@ class InvoiceUploadSerializer(serializers.Serializer):
 
         return value
 
-    def create(self, *_):
+    def create(self, *_: Any) -> None:
         """Not used - this serializer only validates file uploads."""
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice creation."
+            "InvoiceUploadSerializer is for validation only. Use InvoiceService for invoice creation."
         )
 
-    def update(self, *_):
+    def update(self, *_: Any) -> None:
         """
         Not used - this serializer only validates file uploads.
 
@@ -52,7 +55,7 @@ class InvoiceUploadSerializer(serializers.Serializer):
             NotImplementedError: This serializer doesn't update objects
         """
         raise NotImplementedError(
-            "InvoiceUploadSerializer is for validation only. " "Use InvoiceService for invoice updates."
+            "InvoiceUploadSerializer is for validation only. Use InvoiceService for invoice updates."
         )
 
 
@@ -76,7 +79,7 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, min_length=8, write_only=True)
     company_name = serializers.CharField(required=False, min_length=2, max_length=255, default="")
 
-    def validate_password(self, value):
+    def validate_password(self, value: str) -> str:
         """Validate password strength."""
         if value.isdigit():
             raise serializers.ValidationError("Password cannot be entirely numeric")
@@ -88,3 +91,107 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must contain at least one letter")
 
         return value
+
+    def create(self, *_: Any) -> None:
+        """Not used - creation is handled by the UserService."""
+        raise NotImplementedError(
+            "RegisterSerializer is for validation only. Use UserService for user creation."
+        )
+
+    def update(self, *_: Any) -> None:
+        """Not used - updates are handled by the UserService."""
+        raise NotImplementedError(
+            "RegisterSerializer is for validation only. Use UserService for user updates."
+        )
+
+
+class InvoiceConfirmationSerializer(serializers.Serializer):
+    """
+    Serializer for handling invoice confirmation requests.
+
+    This serializer validates the data needed to finalize an invoice by transferring
+    it from temporary to permanent storage. It enforces business rules around
+    temporary file paths and urgency levels before processing.
+
+    Attributes:
+        temp_file_path (CharField): Path to the temporary file, must start with 'temp/'
+        urgency_level (IntegerField): Optional priority level (1-5) to assign to the invoice
+    """
+
+    temp_file_path = serializers.CharField(required=True)
+    urgency_level = serializers.IntegerField(required=False, min_value=1, max_value=5)
+
+    def validate_temp_file_path(self, value: str) -> str:
+        """
+        Validate the temporary file path according to business rules.
+
+        Ensures the path is non-empty and follows the expected format for
+        temporary files. Performs security validation to prevent path traversal
+        attacks and ensure only files from the designated temporary storage area
+        are processed.
+
+        Args:
+            value (str): The temporary file path to validate
+
+        Returns:
+            str: The validated temporary file path
+
+        Raises:
+            serializers.ValidationError: If the path is empty, doesn't follow
+                the expected format, or contains potential security issues
+        """
+        if not value:
+            raise serializers.ValidationError("Temporary file path is required.")
+
+        # Normalize path to handle different path representations
+        normalized_path = os.path.normpath(value)
+
+        # Check if path starts with temp/ after normalization
+        if not normalized_path.startswith("temp/"):
+            raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
+
+        # Prevent directory traversal attempts
+        if ".." in normalized_path or "//" in value:
+            raise serializers.ValidationError("Invalid path: potential directory traversal attempt.")
+
+        # Validate that the filename follows expected pattern (alphanumeric with common extensions)
+        # This helps prevent command injection via filenames
+        filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
+        if not re.match(filename_pattern, normalized_path):
+            raise serializers.ValidationError(
+                "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
+            )
+
+        return value
+
+    def validate_urgency_level(self, value: Optional[int]) -> Optional[int]:
+        """
+        Validate the urgency level is within the allowed range.
+
+        Args:
+            value: Integer urgency level or None
+
+        Returns:
+            The validated urgency level if valid
+        """
+        # If no urgency level is provided, that's fine
+        if value is None:
+            return None
+
+        # The field already has min_value=1, max_value=5 constraints that are
+        # automatically enforced by the serializer framework
+        return value
+
+    def create(self, *_: Any) -> None:
+        """Not used - this serializer only validates confirmation data."""
+        raise NotImplementedError(
+            "InvoiceConfirmationSerializer is for validation only. "
+            "Use InvoiceProcessingService for invoice finalization."
+        )
+
+    def update(self, *_: Any) -> None:
+        """Not used - this serializer only validates confirmation data."""
+        raise NotImplementedError(
+            "InvoiceConfirmationSerializer is for validation only. "
+            "Use InvoiceProcessingService for invoice finalization."
+        )
