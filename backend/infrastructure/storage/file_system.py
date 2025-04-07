@@ -4,6 +4,7 @@ This module provides concrete implementation for storing invoice
 files in the local file system, following DDD principles with
 clear separation of concerns.
 """
+
 from pathlib import Path
 from datetime import datetime
 from django.conf import settings
@@ -13,8 +14,9 @@ from domain.repositories.interfaces.storage_repository import (
 )
 from django.core.files.uploadedfile import UploadedFile
 from logging import getLogger
-from typing import BinaryIO, Union, Optional, Tuple
+from typing import BinaryIO, Union, Optional, Tuple, Dict, Any
 import shutil
+import json
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -179,7 +181,9 @@ class FileStorage(StorageRepository):
         self.storage_service = FileStorageService()
         logger.debug("FileStorage repository initialized")
 
-    def save_file(self, file: Union[BinaryIO, UploadedFile], identifier: str) -> str:
+    def save_file(
+        self, file: Union[BinaryIO, UploadedFile], identifier: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         Save an invoice file to the storage system.
 
@@ -189,6 +193,7 @@ class FileStorage(StorageRepository):
         Args:
             file: The invoice file to store
             identifier: The identifier for the file
+            metadata: Optional metadata to associate with the file
 
         Returns:
             str: The relative path where the file was stored (for db storage)
@@ -205,6 +210,21 @@ class FileStorage(StorageRepository):
 
             # Delegate file writing to service (infrastructure concern)
             self.storage_service.write_file(file, full_path)
+
+            # Store metadata if provided
+            if metadata:
+                try:
+                    # Create metadata file path (same path but with .meta extension)
+                    metadata_path = full_path.with_suffix(full_path.suffix + ".meta")
+                    with metadata_path.open("w") as f:
+                        json.dump(metadata, f, indent=2)
+                    logger.debug("Metadata saved for %s at %s", relative_path, metadata_path)
+                except Exception as meta_error:
+                    logger.warning(
+                        "Non-critical error: Failed to save metadata for %s: %s",
+                        relative_path,
+                        str(meta_error),
+                    )
 
             # Return metadata (relative path) for database storage
             return relative_path
@@ -249,8 +269,25 @@ class FileStorage(StorageRepository):
                 target_full_path,
             ) = self.storage_service.generate_storage_path(target_identifier, file_name)
 
+            # Check for metadata file
+            metadata_path = source_full_path.with_suffix(source_full_path.suffix + ".meta")
+            has_metadata = metadata_path.exists()
+
             # Delegate file moving to service (infrastructure concern)
             self.storage_service.move_file(source_full_path, target_full_path)
+
+            # Move metadata file if it exists
+            if has_metadata:
+                try:
+                    target_metadata_path = target_full_path.with_suffix(target_full_path.suffix + ".meta")
+                    self.storage_service.move_file(metadata_path, target_metadata_path)
+                    logger.debug("Moved metadata file from %s to %s", metadata_path, target_metadata_path)
+                except Exception as meta_error:
+                    logger.warning(
+                        "Non-critical error: Failed to move metadata file for %s: %s",
+                        source_identifier,
+                        str(meta_error),
+                    )
 
             # Return new relative path for database storage
             return target_relative_path
@@ -267,13 +304,92 @@ class FileStorage(StorageRepository):
         to a concrete file location.
 
         Args:
-            relative_path: The path relative to base_dir (as stored in db)
+            relative_path: The path relative to base directory
 
         Returns:
             Path: Full system path to the file
         """
         logger.debug("Getting file path for: %s", relative_path)
         return self.storage_service.get_full_path(relative_path)
+
+    def get_file_metadata(self, relative_path: str) -> Dict[str, Any]:
+        """
+        Retrieve metadata associated with a stored file.
+
+        Args:
+            relative_path: Path to the file relative to storage base directory
+
+        Returns:
+            Dict containing the file's metadata
+
+        Raises:
+            StorageError: If metadata retrieval fails
+        """
+        try:
+            # Get full path to the file
+            full_path = self.storage_service.get_full_path(relative_path)
+
+            # Construct metadata file path
+            metadata_path = full_path.with_suffix(full_path.suffix + ".meta")
+
+            # Check if metadata file exists
+            if not metadata_path.exists():
+                logger.debug("No metadata file found for %s", relative_path)
+                return {}
+
+            # Read and parse metadata
+            with metadata_path.open("r") as f:
+                metadata = json.load(f)
+
+            logger.debug("Retrieved metadata for %s", relative_path)
+            return metadata
+
+        except json.JSONDecodeError as e:
+            logger.warning("Invalid metadata file format for %s: %s", relative_path, str(e))
+            return {}
+        except Exception as e:
+            logger.error("Failed to retrieve metadata for %s: %s", relative_path, str(e))
+            raise StorageError(f"Failed to retrieve metadata: {str(e)}") from e
+
+    def update_metadata(self, relative_path: str, metadata: Dict[str, Any]) -> None:
+        """
+        Update metadata for an existing file.
+
+        Args:
+            relative_path: Path to the file relative to storage base directory
+            metadata: New metadata to associate with the file
+
+        Raises:
+            StorageError: If metadata update fails
+        """
+        try:
+            # Get full path to the file
+            full_path = self.storage_service.get_full_path(relative_path)
+
+            # Construct metadata file path
+            metadata_path = full_path.with_suffix(full_path.suffix + ".meta")
+
+            # Get existing metadata if any
+            existing_metadata = {}
+            if metadata_path.exists():
+                try:
+                    with metadata_path.open("r") as f:
+                        existing_metadata = json.load(f)
+                except json.JSONDecodeError:
+                    logger.warning("Invalid metadata file format for %s, will overwrite", relative_path)
+
+            # Merge with new metadata
+            updated_metadata = {**existing_metadata, **metadata}
+
+            # Write updated metadata
+            with metadata_path.open("w") as f:
+                json.dump(updated_metadata, f, indent=2)
+
+            logger.debug("Updated metadata for %s", relative_path)
+
+        except Exception as e:
+            logger.error("Failed to update metadata for %s: %s", relative_path, str(e))
+            raise StorageError(f"Failed to update metadata: {str(e)}") from e
 
     def delete_file(self, file_path: str) -> None:
         """
@@ -291,6 +407,15 @@ class FileStorage(StorageRepository):
         try:
             # Get full path from metadata (repository responsibility)
             full_path = self.storage_service.get_full_path(file_path)
+
+            # Try to delete metadata file if it exists
+            metadata_path = full_path.with_suffix(full_path.suffix + ".meta")
+            if metadata_path.exists():
+                try:
+                    metadata_path.unlink()
+                    logger.debug("Deleted metadata file: %s", metadata_path)
+                except Exception as meta_error:
+                    logger.warning("Failed to delete metadata file: %s", str(meta_error))
 
             # Delegate deletion to service (infrastructure concern)
             self.storage_service.delete_file(full_path)

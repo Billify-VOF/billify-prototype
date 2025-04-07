@@ -24,6 +24,9 @@ from typing import BinaryIO, Dict, Any, Optional
 from domain.models.value_objects import UrgencyLevel
 from infrastructure.storage.temporary_storage import TemporaryStorageAdapter
 from domain.exceptions import InvalidInvoiceError
+import inspect
+from io import BytesIO
+import json
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -311,6 +314,7 @@ class InvoiceProcessingService:
             permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
             # Set urgency level if provided
+            urgency = None
             if urgency_level is not None:
                 # Validate urgency level first
                 try:
@@ -333,7 +337,95 @@ class InvoiceProcessingService:
             # Transfer the file to permanent storage
             try:
                 logger.info("Transferring file from temporary to permanent storage")
-                permanent_path = self.temp_storage.promote_to_permanent(temp_file_path, permanent_identifier)
+
+                # Prepare metadata to associate with the stored file
+                file_metadata = {
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "uploaded_by": str(effective_user_id),
+                    "finalized_at": timestamp,
+                }
+
+                # Add urgency information to metadata if available
+                if urgency:
+                    file_metadata["urgency_level"] = str(urgency.value)
+                    file_metadata["urgency_name"] = urgency.display_name
+
+                # Add additional metadata from the invoice if available
+                if hasattr(invoice, "amount") and invoice.amount is not None:
+                    file_metadata["amount"] = str(invoice.amount)
+                if hasattr(invoice, "due_date") and invoice.due_date is not None:
+                    file_metadata["due_date"] = invoice.due_date.isoformat()
+                if hasattr(invoice, "currency") and invoice.currency is not None:
+                    file_metadata["currency"] = invoice.currency
+
+                # Add buyer and seller information
+                buyer_info = {}
+                if self._get_nested_attr(invoice, "buyer.name"):
+                    buyer_info["name"] = self._get_nested_attr(invoice, "buyer.name")
+                if self._get_nested_attr(invoice, "buyer.vat"):
+                    buyer_info["vat"] = self._get_nested_attr(invoice, "buyer.vat")
+
+                seller_info = {}
+                if self._get_nested_attr(invoice, "seller.name"):
+                    seller_info["name"] = self._get_nested_attr(invoice, "seller.name")
+                if self._get_nested_attr(invoice, "seller.vat"):
+                    seller_info["vat"] = self._get_nested_attr(invoice, "seller.vat")
+
+                # Convert dict values to strings for metadata compatibility
+                if buyer_info:
+                    buyer_info_str = {k: str(v) if v is not None else "" for k, v in buyer_info.items()}
+                    file_metadata["buyer_info"] = json.dumps(buyer_info_str)
+                if seller_info:
+                    seller_info_str = {k: str(v) if v is not None else "" for k, v in seller_info.items()}
+                    file_metadata["seller_info"] = json.dumps(seller_info_str)
+
+                # Check if the storage repository is ObjectStorage and supports metadata
+                if (
+                    hasattr(self.storage_repository, "save_file")
+                    and "metadata" in inspect.signature(self.storage_repository.save_file).parameters
+                ):
+                    logger.info("Storage repository supports metadata, using enhanced promotion")
+                    # For repositories that support metadata (like ObjectStorage)
+                    # We need to handle this differently as TemporaryStorageAdapter might not pass metadata through
+
+                    # First read the file content
+                    with open(temp_full_path, "rb") as file:
+                        content = file.read()
+
+                    # Save to permanent storage with metadata
+                    file_obj = BytesIO(content)
+                    # Add original filename to the file object
+                    file_obj.name = Path(temp_file_path).name
+
+                    # Save directly to permanent storage with metadata
+                    permanent_path = self.storage_repository.save_file(
+                        file_obj, permanent_identifier, metadata=file_metadata
+                    )
+
+                    # Delete the temporary file
+                    self.temp_storage._untrack_temporary_file(temp_file_path)
+                    self.storage_repository.delete_file(temp_file_path)
+                else:
+                    # Fall back to standard promotion if metadata not supported
+                    logger.info("Using standard promotion mechanism")
+                    permanent_path = self.temp_storage.promote_to_permanent(
+                        temp_file_path, permanent_identifier
+                    )
+
+                    # If the storage repository is ObjectStorage but didn't have metadata in the signature,
+                    # try to update metadata after promotion if the update_metadata method exists
+                    if hasattr(self.storage_repository, "update_metadata"):
+                        try:
+                            logger.info("Updating metadata after promotion")
+                            self.storage_repository.update_metadata(permanent_path, file_metadata)
+                        except Exception as metadata_error:
+                            logger.warning(
+                                "Non-critical error: Failed to update metadata for %s: %s",
+                                permanent_path,
+                                str(metadata_error),
+                            )
+
                 logger.info("File transferred successfully to: %s", permanent_path)
 
                 # Update invoice with the permanent file path

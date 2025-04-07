@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import BinaryIO
+from typing import BinaryIO, Dict, Any, Optional
 from pathlib import Path
 
 
@@ -17,13 +17,14 @@ class StorageRepository(ABC):
     """
 
     @abstractmethod
-    def save_file(self, file: BinaryIO, identifier: str) -> str:
+    def save_file(self, file: BinaryIO, identifier: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """
         Save a file to storage and return its path/identifier.
 
         Args:
             file: The file object to store
             identifier: Unique identifier for the file (e.g., 'invoice_123')
+            metadata: Optional metadata to associate with the file
 
         Returns:
             str: Storage path or identifier for future retrieval
