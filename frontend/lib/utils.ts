@@ -64,7 +64,12 @@ export async function generateCodeChallenge(): Promise<string> {
 }
 
 export const generatePontoOAuthUrl = async () => {
-  const state = base64_urlencode(generateCodeVerifier());
-  const codeChallenge = await generateCodeChallenge();
-  return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
+  try {
+    const state = base64_urlencode(generateCodeVerifier());
+    const codeChallenge = await generateCodeChallenge();
+    return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
+  } catch (error) {
+    console.log("Failed to generate Ponto OAuth URL");
+    throw error;
+  }
 };
