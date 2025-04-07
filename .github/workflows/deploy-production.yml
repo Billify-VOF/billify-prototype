@@ -14,7 +14,7 @@ on:
       - testing
 env:
   REGISTRY: ghcr.io
-  NEXT_PUBLIC_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
+  
 
 
 
@@ -47,6 +47,10 @@ jobs:
     needs: verify-staging-merge
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.verify-staging-merge.result == 'success' && (startsWith(github.ref, 'refs/heads/kunal/cicd')||startsWith(github.ref, 'refs/heads/staging') || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/testing'))
     runs-on: ubuntu-latest
+    environment:
+      name: staging #need to change github.base_ref
+    env:
+      NEXT_PUBLIC_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
     permissions:
       contents: read
       packages: write
@@ -63,6 +67,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Build and push Backend
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
@@ -73,7 +78,7 @@ jobs:
       - name: Build and push Frontend
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker build --build-arg NEXT_PUBLIC_BACKEND_URL=${{env.NEXT_PUBLIC_BACKEND_URL}} frontend -f frontend/Dockerfile-prod \
+          docker build --build-arg NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL} frontend -f frontend/Dockerfile-prod \
             -t ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${REPO_NAME}/frontend:${{ github.sha }}
   
