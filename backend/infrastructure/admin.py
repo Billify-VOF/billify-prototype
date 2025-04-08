@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.admin.exceptions import NotRegistered
 from django.contrib.auth.admin import UserAdmin
 from infrastructure.django.models.account import Account
+from infrastructure.django.models.invoice import Invoice
 import logging
 
 # Configure logger
@@ -16,6 +17,16 @@ class AccountAdmin(UserAdmin):
 
     list_display = ("username", "email", "is_staff", "is_active")
     search_fields = ("username", "email")
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    """
+    Register Invoice model in the Django admin.
+    """
+
+    list_display = ("invoice_number", "amount", "status", "due_date")
+    search_fields = ("invoice_number", "original_file_name")
 
 
 # Check if the default User model is registered before trying to unregister it
