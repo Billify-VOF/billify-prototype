@@ -77,7 +77,9 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True, min_length=3, max_length=150)
     password = serializers.CharField(required=True, min_length=8, write_only=True)
-    company_name = serializers.CharField(required=False, min_length=2, max_length=255, default="")
+    company_name = serializers.CharField(
+        required=False, min_length=2, max_length=255, allow_blank=True, allow_null=True
+    )
 
     def validate_password(self, value: str) -> str:
         """Validate password strength."""

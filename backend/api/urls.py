@@ -11,14 +11,15 @@ URL patterns are organized by feature:
 """
 
 from django.urls import path
-from api.views.auth import LoginView, LogoutView, RegisterView
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView
+from api.views.auth import LoginView, LogoutView, RegisterView, get_user_profile
 from api.views.ponto import PontoView
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/me/", get_user_profile, name="user-profile"),
     path("invoices/upload/", InvoiceUploadView.as_view(), name="invoice-upload"),
     # Invoice confirmation endpoint - handles the second phase of the two-phase storage approach
     # Transfers files from temporary to permanent storage after user review
