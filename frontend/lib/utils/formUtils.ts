@@ -21,14 +21,14 @@ export function parseFormValidationError(error: unknown): FormErrors {
       const errorData = JSON.parse(error.message) as ApiError;
       if (errorData.error) {
         const formErrors: FormErrors = {};
-        
+
         // Process each field error
         Object.entries(errorData.error).forEach(([field, messages]) => {
           if (Array.isArray(messages) && messages.length > 0) {
             formErrors[field] = messages[0];
           }
         });
-        
+
         return formErrors;
       }
     } catch {
@@ -36,6 +36,6 @@ export function parseFormValidationError(error: unknown): FormErrors {
       return { general: error.message };
     }
   }
-  
-  return { general: "An unexpected error occurred" };
-} 
+
+  return { general: 'An unexpected error occurred' };
+}

@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance } from 'axios';
 
 class ApiService {
   public api: AxiosInstance;
@@ -7,13 +7,13 @@ class ApiService {
     this.api = axios.create({
       baseURL: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api`,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
     // Add token to requests if it exists
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
