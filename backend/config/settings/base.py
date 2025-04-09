@@ -439,3 +439,17 @@ VALID_ISO_CURRENCY_CODES = {
     "ZMW",
     "ZWL",
 }
+
+
+# Cache settings using Redis
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": [
+            env.str("REDIS_PRIMARY_URL", default="redis://127.0.0.1:6379/"),
+            env.str("REDIS_REPLICA_URL", default="redis://127.0.0.1:6379/"),
+        ],
+        "KEY_PREFIX": "billify",
+        "TIMEOUT": 60 * 60 * 24,  # 24 hours
+    }
+}

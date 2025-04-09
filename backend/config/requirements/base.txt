@@ -46,3 +46,4 @@ typing_extensions==4.12.2
 urllib3==2.2.3
 packaging==24.2
 filelock==3.13.1
+redis==5.2.1
