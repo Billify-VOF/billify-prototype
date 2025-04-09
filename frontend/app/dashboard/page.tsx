@@ -24,6 +24,7 @@ const BillifyDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>();
+  const [pontoStatus, setPontoStatus] = useState<boolean>(false);
 
   // Reset all states when dialog is closed
   const handleDialogOpenChange = (open: boolean) => {
@@ -57,8 +58,13 @@ const BillifyDashboard = () => {
           method: 'POST',
           body: payload,
         });
-        console.log('Access token response:', response);
+        if (response.ok) {
+          setPontoStatus(true);
+        } else {
+          setPontoStatus(false);
+        }
       } catch (error) {
+          setPontoStatus(false);
         console.log('Error while requesting access token: ', error);
       }
     }
