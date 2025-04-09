@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "drf_spectacular",
+    "django_celery_beat",
     # Local apps
     # 'api' is not included here as it's not a Django app -> it actually could
     # be a Django app, but it's not a real app, it's just a collection of views
@@ -439,3 +440,13 @@ VALID_ISO_CURRENCY_CODES = {
     "ZMW",
     "ZWL",
 }
+
+# Celery-Related Settings
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost:5672//")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_BACKEND = None
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# CELERY BEAT SETTINGS
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
