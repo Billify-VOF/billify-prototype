@@ -48,11 +48,11 @@ const BillifyDashboard = () => {
   const requestAccessToken = useCallback(async () => {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
-    if (code && state) {
+    if (code && state && Ponto_Connect_2_Options.REDIRECT_URI) {
       const payload = new FormData();
       payload.append('code', code);
       payload.append('state', state);
-      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI);
+      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI!);
       try {
         const response = await fetch('/api/ponto/auth', {
           method: 'POST',
