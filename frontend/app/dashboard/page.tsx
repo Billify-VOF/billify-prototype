@@ -52,7 +52,7 @@ const BillifyDashboard = () => {
       const payload = new FormData();
       payload.append('code', code);
       payload.append('state', state);
-      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI!);
+      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI);
       try {
         const response = await fetch('/api/ponto/auth', {
           method: 'POST',
