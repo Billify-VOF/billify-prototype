@@ -10,10 +10,14 @@ URL patterns are organized by feature:
 - Ponto integration endpoints (/ponto/*)
 """
 
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from api.views.auth import LoginView, LogoutView, RegisterView
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView
-from api.views.ponto import PontoView
+from api.views.ponto import PontoViewSet
+
+router = DefaultRouter()
+router.register(r'ponto', PontoViewSet, basename='ponto')
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
@@ -32,28 +36,5 @@ urlpatterns = [
         InvoicePreviewView.as_view(),
         name="invoice-preview",
     ),
-    path(
-        "ponto/transactions-history/",
-        PontoView.as_view(),
-        {"action": "get_transaction_history"},
-        name="transaction_history",
-    ),
-    path(
-        "ponto/login/",
-        PontoView.as_view(),
-        {"action": "ponto_login"},
-        name="ponto_login",
-    ),
-    path(
-        "ponto/login/refresh/",
-        PontoView.as_view(),
-        {"action": "refresh_access_token"},
-        name="ponto_login_refresh",
-    ),
-    path(
-        "ponto/accounts/",
-        PontoView.as_view(),
-        {"action": "fetch_account_details"},
-        name="accounts",
-    ),
+    path("", include(router.urls)),
 ]

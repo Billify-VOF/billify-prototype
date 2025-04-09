@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Menu, Upload, Settings, Receipt, Wallet, Unlock } from '@/components/ui/icons';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,8 +11,10 @@ import SearchResultItem from '@/components/SearchResultItem';
 import NotificationBell from '@/components/NotificationBell';
 import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
+import { Ponto_Connect_2_Options } from '@/constants/api';
 
 const BillifyDashboard = () => {
+  const searchParams = useSearchParams();
   // Add state for file upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -40,6 +43,35 @@ const BillifyDashboard = () => {
       setUploadedInvoiceData(null);
     }
   }, [isDialogOpen]);
+  
+  const requestAccessToken = useCallback(async () => {
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+    if (code && state) {
+      const payload = new FormData();
+      payload.append('code', code);
+      payload.append('state', state);
+      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI!);
+      try {
+        const response = await fetch('/api/ponto/auth', {
+          method: 'POST',
+          body: payload
+        });
+        console.log("Access token response:", response);
+      } catch (error) {
+        console.log("Error while requesting access token: ", error);
+      }
+    }
+  }, [searchParams]);
+  
+  const hasFetched = useRef(false);
+
+  useEffect(() => {
+    if (!hasFetched.current) {
+      requestAccessToken();
+      hasFetched.current = true; // Prevents duplicate execution
+    }
+  }, [requestAccessToken]);
 
   //Add file handling functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

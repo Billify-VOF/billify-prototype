@@ -536,6 +536,26 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         except Exception as e:
             logger.error(f"Error retrieving PontoToken: {str(e)}")
             raise InvalidPontoTokenError("Invalid PontoToken error")
+        
+    def get_by_user(self, user) -> DomainPontoToken:
+        """Get a token by user.
+
+        Args:
+            user: The user who owns the token
+
+        Returns:
+            DomainPontoToken: The token data
+
+        Raises:
+            PontoTokenNotFoundError: If no token exists for the user
+        """
+        try:
+            db_ponto_token = DjangoPontoToken.objects.filter(user=user).first()
+            if db_ponto_token is None:
+                raise ObjectDoesNotExist("PontoToken not found")
+            return self._to_domain(db_ponto_token)
+        except ObjectDoesNotExist as exc:
+            raise PontoTokenNotFoundError(f"PontoToken not found with User {user}") from exc
 
     def update_by_user(self, user, data) -> DomainPontoToken:
         """Update an existing PontoToken.
