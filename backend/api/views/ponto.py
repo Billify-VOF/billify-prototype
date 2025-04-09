@@ -7,7 +7,6 @@ import urllib3
 from urllib.parse import urlencode
 
 # Django imports
-from django.shortcuts import redirect
 from django.http import HttpRequest
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
@@ -168,7 +167,7 @@ class PontoViewSet(ViewSet):
             code = request.POST.get("code")
             redirect_uri = request.POST.get("redirect_uri")
             code_verifier = request.POST.get("state")
-            
+
             if code is None:
                 raise BadRequest("Code is missing")
             if redirect_uri is None:
@@ -190,11 +189,11 @@ class PontoViewSet(ViewSet):
                 "code": code,
                 "client_id": PONTO_CLIENT_ID,
                 "redirect_uri": redirect_uri,
-                "code_verifier": code_verifier
+                "code_verifier": code_verifier,
             }
 
             encoded_data = urlencode(data).encode("utf-8")
-            
+
             # Create a PoolManager with the SSL context
             http = PontoProvider.create_http_instance()
 

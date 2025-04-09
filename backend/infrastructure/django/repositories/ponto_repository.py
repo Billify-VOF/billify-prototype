@@ -536,7 +536,7 @@ class DjangoPontoTokenRepository(PontoTokenRepository):
         except Exception as e:
             logger.error(f"Error retrieving PontoToken: {str(e)}")
             raise InvalidPontoTokenError("Invalid PontoToken error")
-        
+
     def get_by_user(self, user) -> DomainPontoToken:
         """Get a token by user.
 

@@ -17,7 +17,7 @@ from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConf
 from api.views.ponto import PontoViewSet
 
 router = DefaultRouter()
-router.register(r'ponto', PontoViewSet, basename='ponto')
+router.register(r"ponto", PontoViewSet, basename="ponto")
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
