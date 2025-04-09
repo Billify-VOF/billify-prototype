@@ -3,16 +3,12 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-
     const formData = await request.formData();
 
-    const backendResponse = await fetch(
-      `${BACKEND_API_URL}/api/ponto/login/`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-    );
+    const backendResponse = await fetch(`${BACKEND_API_URL}/api/ponto/login/`, {
+      method: 'POST',
+      body: formData,
+    });
 
     const data = await backendResponse.json();
 

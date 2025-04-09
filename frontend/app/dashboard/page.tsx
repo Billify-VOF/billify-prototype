@@ -43,10 +43,10 @@ const BillifyDashboard = () => {
       setUploadedInvoiceData(null);
     }
   }, [isDialogOpen]);
-  
+
   const requestAccessToken = useCallback(async () => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
     if (code && state) {
       const payload = new FormData();
       payload.append('code', code);
@@ -55,15 +55,15 @@ const BillifyDashboard = () => {
       try {
         const response = await fetch('/api/ponto/auth', {
           method: 'POST',
-          body: payload
+          body: payload,
         });
-        console.log("Access token response:", response);
+        console.log('Access token response:', response);
       } catch (error) {
-        console.log("Error while requesting access token: ", error);
+        console.log('Error while requesting access token: ', error);
       }
     }
   }, [searchParams]);
-  
+
   const hasFetched = useRef(false);
 
   useEffect(() => {
