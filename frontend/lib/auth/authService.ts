@@ -60,14 +60,14 @@ class AuthService {
 
   async getCurrentUser(): Promise<User> {
     try {
-      return await apiService.get<User>('/me');
+      const response = await apiService.get<User>('/auth/me/');
+      return response;
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 401) {
+      if (error instanceof AxiosError && [401, 403].includes(error.response?.status || 0)) {
+        console.log('Unauthorized or forbidden error');
         this.handleAuthError();
-      } else {
-        apiService.handleApiError(error, 'Failed to fetch user data');
       }
-      throw error;
+      throw apiService.handleApiError(error, 'Failed to fetch user data');
     }
   }
 
