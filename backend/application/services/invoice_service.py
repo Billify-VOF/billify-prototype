@@ -69,7 +69,7 @@ class InvoiceProcessingService:
         self.pdf_transformer = PDFTransformer()
         self.temp_storage = TemporaryStorageAdapter(storage_repository)
 
-    def _get_nested_attr(self, obj, attr_path, default=None):
+    def _get_nested_attr(self, obj: Any, attr_path: str, default: Any = None) -> Any:
         """Safely get a nested attribute or return default if not found."""
         current = obj
         for attr in attr_path.split("."):
@@ -77,6 +77,31 @@ class InvoiceProcessingService:
                 return default
             current = getattr(current, attr)
         return current
+
+    def _get_entity_info(self, invoice: Any, entity_type: str) -> Dict[str, Any]:
+        """Extract entity information (buyer or seller) from invoice.
+
+        Args:
+            invoice: The invoice object to extract information from
+            entity_type: Either "buyer" or "seller"
+
+        Returns:
+            Dictionary containing the entity information
+        """
+        entity_info = {}
+        if name := self._get_nested_attr(invoice, f"{entity_type}.name"):
+            entity_info["name"] = name
+        if vat := self._get_nested_attr(invoice, f"{entity_type}.vat"):
+            entity_info["vat"] = vat
+
+        # For buyer, also get address and email if available
+        if entity_type == "buyer":
+            if address := self._get_nested_attr(invoice, f"{entity_type}.address"):
+                entity_info["address"] = address
+            if email := self._get_nested_attr(invoice, f"{entity_type}.email"):
+                entity_info["email"] = email
+
+        return entity_info
 
     def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
@@ -352,25 +377,16 @@ class InvoiceProcessingService:
                     file_metadata["urgency_name"] = urgency.display_name
 
                 # Add additional metadata from the invoice if available
-                if hasattr(invoice, "amount") and invoice.amount is not None:
-                    file_metadata["amount"] = str(invoice.amount)
-                if hasattr(invoice, "due_date") and invoice.due_date is not None:
-                    file_metadata["due_date"] = invoice.due_date.isoformat()
-                if hasattr(invoice, "currency") and invoice.currency is not None:
-                    file_metadata["currency"] = invoice.currency
+                if amount := getattr(invoice, "amount", None):
+                    file_metadata["amount"] = str(amount)
+                if due_date := getattr(invoice, "due_date", None):
+                    file_metadata["due_date"] = due_date.isoformat()
+                if currency := getattr(invoice, "currency", None):
+                    file_metadata["currency"] = currency
 
                 # Add buyer and seller information
-                buyer_info = {}
-                if self._get_nested_attr(invoice, "buyer.name"):
-                    buyer_info["name"] = self._get_nested_attr(invoice, "buyer.name")
-                if self._get_nested_attr(invoice, "buyer.vat"):
-                    buyer_info["vat"] = self._get_nested_attr(invoice, "buyer.vat")
-
-                seller_info = {}
-                if self._get_nested_attr(invoice, "seller.name"):
-                    seller_info["name"] = self._get_nested_attr(invoice, "seller.name")
-                if self._get_nested_attr(invoice, "seller.vat"):
-                    seller_info["vat"] = self._get_nested_attr(invoice, "seller.vat")
+                buyer_info = self._get_entity_info(invoice, "buyer")
+                seller_info = self._get_entity_info(invoice, "seller")
 
                 # Convert dict values to strings for metadata compatibility
                 if buyer_info:
