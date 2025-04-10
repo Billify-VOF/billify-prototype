@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export function base64_urlencode(str: string) {
   const encoder = new TextEncoder();
   const uint8Array = encoder.encode(str);
-  const urlencoded = btoa(String.fromCharCode.apply(null, uint8Array))
+  const urlencoded = btoa(String.fromCharCode(...Array.from(uint8Array))) // Convert Uint8Array to number[]
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
@@ -52,7 +52,7 @@ export async function sha256Base64(input: string): Promise<string> {
   const data = encoder.encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
 
-  return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+  return btoa(String.fromCharCode(...Array.from(new Uint8Array(hashBuffer)))); // Convert Uint8Array to number[]
 }
 
 export async function generateCodeChallenge(): Promise<string> {
