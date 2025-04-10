@@ -322,7 +322,8 @@ class InvoiceProcessingService:
                 if not valid_user:
                     logger.warning(
                         "User ID %s does not exist in database for invoice %s. "
-                        "Using ID for attribution but validation failed.",
+                        "Using ID for attribution but validation "
+                        "failed.",
                         effective_user_id,
                         invoice_id,
                     )
@@ -403,8 +404,8 @@ class InvoiceProcessingService:
                 ):
                     logger.info("Storage repository supports metadata, using enhanced promotion")
                     # For repositories that support metadata (like ObjectStorage)
-                    # We need to handle this differently as TemporaryStorageAdapter might not pass metadata through
-
+                    # We need to handle this differently as TemporaryStorageAdapter
+                    # metadata through
                     # First read the file content
                     with open(temp_full_path, "rb") as file:
                         content = file.read()
