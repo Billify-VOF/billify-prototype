@@ -188,7 +188,7 @@ jobs:
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${REPO_NAME}/backend:${{ github.sha }}
             docker compose --env-file .env -f docker-compose.prod.yml config > previous_config.yaml || { echo "Failed to preserve previous state"; exit 1; }
             docker compose --env-file .env -f docker-compose.prod.yml pull || { echo "Failed to pull images"; exit 1; }
-            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate stable || { echo "Failed to deploy stable services"; exit 1; }
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate || { echo "Failed to deploy stable services"; exit 1; }
 
       - name: Rollback on failure
         if: failure()
@@ -201,4 +201,4 @@ jobs:
             cd /home/billify/app/infrastructure/
             echo "Rolling back to previous configuration..."
             mv -f previous_config.yaml docker-compose.prod.yml
-            docker compose -f docker-compose.prod.yml up -d --force-recreate stable
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
