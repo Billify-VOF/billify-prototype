@@ -86,3 +86,27 @@ class AuthenticationService:
         """Log out a user."""
         account = self.account_repository.find_by_id(account_id)
         return account is not None
+
+    def get_current_user(self, user_id: int) -> Tuple[bool, Optional[Account], str]:
+        """Get the current authenticated user's account information.
+
+        Args:
+            user_id: ID of the authenticated user
+
+        Returns:
+            Tuple containing:
+            - bool: Success status
+            - Optional[Account]: User's account if found, None otherwise
+            - str: Error message if unsuccessful, empty string otherwise
+        """
+        try:
+            account = self.account_repository.find_by_id(user_id)
+            if not account:
+                return False, None, "User not found"
+            return True, account, ""
+        except RepositoryError as e:
+            logger.error("Repository error while fetching user profile: %s", str(e))
+            return False, None, "Unable to fetch user profile at this time"
+        except Exception:
+            logger.exception("Unexpected error while fetching user profile")
+            return False, None, "An unexpected error occurred"

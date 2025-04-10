@@ -75,7 +75,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <h2 className="text-3xl font-bold text-foreground">Create your account</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Join Billify to start managing your invoices
+            Join Billify to start managing your cashflow
           </p>
         </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import Link from "next/link";
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -76,6 +77,13 @@ export default function LoginPage() {
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
+
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Don&apos;t have an account? </span>
+            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign up
+            </Link>
+          </div>
         </form>
       </div>
     </div>
