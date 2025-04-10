@@ -175,12 +175,12 @@ AUTH_USER_MODEL = "infrastructure.Account"
 if not DEBUG:
     # Production storage settings (S3/MinIO)
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    AWS_ACCESS_KEY_ID = env("DIGITAL_OCEAN_SPACES_KEY") 
-    AWS_SECRET_ACCESS_KEY = env("DIGITAL_OCEAN_SPACES_SECRET") 
-    AWS_STORAGE_BUCKET_NAME = env("DIGITAL_OCEAN_SPACES_NAME") 
-    AWS_S3_ENDPOINT_URL ='https://billify-staging.sfo3.digitaloceanspaces.com'
+    AWS_ACCESS_KEY_ID = env("DIGITAL_OCEAN_SPACES_KEY")
+    AWS_SECRET_ACCESS_KEY = env("DIGITAL_OCEAN_SPACES_SECRET")
+    AWS_STORAGE_BUCKET_NAME = env("DIGITAL_OCEAN_SPACES_NAME")
+    AWS_S3_ENDPOINT_URL = "https://billify-staging.sfo3.digitaloceanspaces.com"
     AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400',
+        "CacheControl": "max-age=86400",
     }
     AWS_DEFAULT_ACL = None
     AWS_S3_FILE_OVERWRITE = False
