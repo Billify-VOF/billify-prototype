@@ -24,6 +24,9 @@ from typing import BinaryIO, Dict, Any, Optional
 from domain.models.value_objects import UrgencyLevel
 from infrastructure.storage.temporary_storage import TemporaryStorageAdapter
 from domain.exceptions import InvalidInvoiceError
+import inspect
+from io import BytesIO
+import json
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -66,7 +69,7 @@ class InvoiceProcessingService:
         self.pdf_transformer = PDFTransformer()
         self.temp_storage = TemporaryStorageAdapter(storage_repository)
 
-    def _get_nested_attr(self, obj, attr_path, default=None):
+    def _get_nested_attr(self, obj: Any, attr_path: str, default: Any = None) -> Any:
         """Safely get a nested attribute or return default if not found."""
         current = obj
         for attr in attr_path.split("."):
@@ -74,6 +77,31 @@ class InvoiceProcessingService:
                 return default
             current = getattr(current, attr)
         return current
+
+    def _get_entity_info(self, invoice: Any, entity_type: str) -> Dict[str, Any]:
+        """Extract entity information (buyer or seller) from invoice.
+
+        Args:
+            invoice: The invoice object to extract information from
+            entity_type: Either "buyer" or "seller"
+
+        Returns:
+            Dictionary containing the entity information
+        """
+        entity_info = {}
+        if name := self._get_nested_attr(invoice, f"{entity_type}.name"):
+            entity_info["name"] = name
+        if vat := self._get_nested_attr(invoice, f"{entity_type}.vat"):
+            entity_info["vat"] = vat
+
+        # For buyer, also get address and email if available
+        if entity_type == "buyer":
+            if address := self._get_nested_attr(invoice, f"{entity_type}.address"):
+                entity_info["address"] = address
+            if email := self._get_nested_attr(invoice, f"{entity_type}.email"):
+                entity_info["email"] = email
+
+        return entity_info
 
     def process_invoice(self, file: BinaryIO, user_id: int) -> Dict[str, Any]:
         """Process a new invoice file through the complete workflow.
@@ -294,7 +322,8 @@ class InvoiceProcessingService:
                 if not valid_user:
                     logger.warning(
                         "User ID %s does not exist in database for invoice %s. "
-                        "Using ID for attribution but validation failed.",
+                        "Using ID for attribution but validation "
+                        "failed.",
                         effective_user_id,
                         invoice_id,
                     )
@@ -311,6 +340,7 @@ class InvoiceProcessingService:
             permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
             # Set urgency level if provided
+            urgency = None
             if urgency_level is not None:
                 # Validate urgency level first
                 try:
@@ -333,7 +363,86 @@ class InvoiceProcessingService:
             # Transfer the file to permanent storage
             try:
                 logger.info("Transferring file from temporary to permanent storage")
-                permanent_path = self.temp_storage.promote_to_permanent(temp_file_path, permanent_identifier)
+
+                # Prepare metadata to associate with the stored file
+                file_metadata = {
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "uploaded_by": str(effective_user_id),
+                    "finalized_at": timestamp,
+                }
+
+                # Add urgency information to metadata if available
+                if urgency:
+                    file_metadata["urgency_level"] = str(urgency.value)
+                    file_metadata["urgency_name"] = urgency.display_name
+
+                # Add additional metadata from the invoice if available
+                if amount := getattr(invoice, "amount", None):
+                    file_metadata["amount"] = str(amount)
+                if due_date := getattr(invoice, "due_date", None):
+                    file_metadata["due_date"] = due_date.isoformat()
+                if currency := getattr(invoice, "currency", None):
+                    file_metadata["currency"] = currency
+
+                # Add buyer and seller information
+                buyer_info = self._get_entity_info(invoice, "buyer")
+                seller_info = self._get_entity_info(invoice, "seller")
+
+                # Convert dict values to strings for metadata compatibility
+                if buyer_info:
+                    buyer_info_str = {k: str(v) if v is not None else "" for k, v in buyer_info.items()}
+                    file_metadata["buyer_info"] = json.dumps(buyer_info_str)
+                if seller_info:
+                    seller_info_str = {k: str(v) if v is not None else "" for k, v in seller_info.items()}
+                    file_metadata["seller_info"] = json.dumps(seller_info_str)
+
+                # Check if the storage repository is ObjectStorage and supports metadata
+                if (
+                    hasattr(self.storage_repository, "save_file")
+                    and "metadata" in inspect.signature(self.storage_repository.save_file).parameters
+                ):
+                    logger.info("Storage repository supports metadata, using enhanced promotion")
+                    # For repositories that support metadata (like ObjectStorage)
+                    # We need to handle this differently as TemporaryStorageAdapter
+                    # metadata through
+                    # First read the file content
+                    with open(temp_full_path, "rb") as file:
+                        content = file.read()
+
+                    # Save to permanent storage with metadata
+                    file_obj = BytesIO(content)
+                    # Add original filename to the file object
+                    file_obj.name = Path(temp_file_path).name
+
+                    # Save directly to permanent storage with metadata
+                    permanent_path = self.storage_repository.save_file(
+                        file_obj, permanent_identifier, metadata=file_metadata
+                    )
+
+                    # Delete the temporary file
+                    self.temp_storage._untrack_temporary_file(temp_file_path)
+                    self.storage_repository.delete_file(temp_file_path)
+                else:
+                    # Fall back to standard promotion if metadata not supported
+                    logger.info("Using standard promotion mechanism")
+                    permanent_path = self.temp_storage.promote_to_permanent(
+                        temp_file_path, permanent_identifier
+                    )
+
+                    # If the storage repository is ObjectStorage but didn't have metadata in the signature,
+                    # try to update metadata after promotion if the update_metadata method exists
+                    if hasattr(self.storage_repository, "update_metadata"):
+                        try:
+                            logger.info("Updating metadata after promotion")
+                            self.storage_repository.update_metadata(permanent_path, file_metadata)
+                        except Exception as metadata_error:
+                            logger.warning(
+                                "Non-critical error: Failed to update metadata for %s: %s",
+                                permanent_path,
+                                str(metadata_error),
+                            )
+
                 logger.info("File transferred successfully to: %s", permanent_path)
 
                 # Update invoice with the permanent file path
