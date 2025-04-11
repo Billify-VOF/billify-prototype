@@ -32,28 +32,35 @@ const TopBar = ({ onSearch, searchResult }: TopBarProps) => {
         <AlertCircle size={20} className="cursor-pointer text-gray-500" />
         <NotificationBell />
         <div className="relative">
-          <div
-            className="flex cursor-pointer flex-row items-center gap-x-3"
+          <button 
+            className="flex flex-row items-center gap-x-3"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
+            aria-expanded={isProfileOpen}
+            aria-haspopup="menu"
+            aria-controls="user-menu"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
               <User className="h-6 w-6 text-gray-500" />
             </div>
             <div className="flex flex-col">
-              <span className="font-semibold">
-                {getDisplayName(user)}
-              </span>
+              <span className="font-semibold">{getDisplayName(user)}</span>
             </div>
-          </div>
+          </button>
           {isProfileOpen && (
-            <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border bg-white py-2 shadow-lg">
-              <div
-                className="flex cursor-pointer items-center gap-x-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+            <div 
+              id="user-menu"
+              className="absolute right-0 z-10 mt-2 w-48 rounded-lg border bg-white py-2 shadow-lg"
+              role="menu"
+              aria-orientation="vertical"
+            >
+              <button 
+                className="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                 onClick={handleLogout}
+                role="menuitem"
               >
                 <LogOut size={16} />
                 <span>Log out</span>
-              </div>
+              </button>
             </div>
           )}
         </div>
