@@ -248,4 +248,5 @@ class InvoiceService:
 
         # Save the Django model instance
         django_invoice.save()
-        return django_invoice
+        invoice.id = django_invoice.id
+        return invoice

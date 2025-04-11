@@ -92,12 +92,13 @@ class DjangoInvoiceRepository(InvoiceRepository):
             "seller": seller_info,
             "payment": payment_info,
             "file": file_info,
+            "invoice_id": db_invoice.id,
         }
         logger.debug("Created invoice args: %s", invoice_args)
         # if db_invoice.manual_urgency is not None:
         #     invoice_args["manual_urgency"] = UrgencyLevel.from_db_value(db_invoice.manual_urgency)
 
-        return DomainInvoice.objects.filter(id=db_invoice.id).update(**invoice_args)
+        return DomainInvoice(**invoice_args)
 
     def _to_django(
         self,

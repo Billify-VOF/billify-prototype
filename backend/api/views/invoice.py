@@ -12,6 +12,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from django.urls import resolve
 
+from rest_framework.permissions import AllowAny, IsAuthenticated
 # PermissionDenied import needed when authentication code is uncommented for production
 # from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
@@ -24,6 +25,8 @@ from infrastructure.storage.file_system import FileStorage
 from infrastructure.django.repositories.invoice_repository import (
     DjangoInvoiceRepository,
 )
+from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
+
 from integrations.transformers.pdf.transformer import PDFTransformer
 
 logger = getLogger(__name__)
@@ -107,7 +110,7 @@ class InvoiceUploadView(BaseInvoiceView):
     """Handle invoice uploads and initiate invoice processing workflow."""
 
     # Authentication is not required during development, for now.
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -133,7 +136,6 @@ class InvoiceUploadView(BaseInvoiceView):
         4. Creates an invoice record with the extracted data
         5. Returns both the invoice record and extracted information
         """
-
         logger.debug("Request data: %s", request.data)
         logger.debug("Received file: %s", request.FILES.get("file"))
         serializer = InvoiceUploadSerializer(data=request.data)
@@ -416,7 +418,7 @@ class InvoiceConfirmationView(BaseInvoiceView):
     """
 
     # Authentication is not required during development, for now.
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """

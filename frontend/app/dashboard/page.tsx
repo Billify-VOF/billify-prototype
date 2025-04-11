@@ -71,6 +71,7 @@ const BillifyDashboard = () => {
     setUploadStatus('uploading');
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
       const response = await fetch('/api/invoices/upload', {
@@ -110,7 +111,8 @@ const BillifyDashboard = () => {
         body: JSON.stringify(invoiceData),
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
         },
       });
 
