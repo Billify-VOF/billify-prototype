@@ -5,6 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 import os
 import re
+from infrastructure.django.models.invoice import Invoice
 
 User = get_user_model()
 
@@ -197,3 +198,12 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
             "InvoiceConfirmationSerializer is for validation only. "
             "Use InvoiceProcessingService for invoice finalization."
         )
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Invoice model.
+    """
+    class Meta:
+        model = Invoice
+        fields = '__all__'

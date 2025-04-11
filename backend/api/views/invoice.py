@@ -13,11 +13,12 @@ from rest_framework.request import Request
 from django.urls import resolve
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 # PermissionDenied import needed when authentication code is uncommented for production
 # from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 
-from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
+from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer, InvoiceSerializer
 from domain.services.invoice_service import InvoiceService
 from application.services.invoice_service import InvoiceProcessingService
 from domain.exceptions import StorageError, ProcessingError
@@ -26,6 +27,7 @@ from infrastructure.django.repositories.invoice_repository import (
     DjangoInvoiceRepository,
 )
 from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
+from infrastructure.django.models.invoice import Invoice
 
 from integrations.transformers.pdf.transformer import PDFTransformer
 
@@ -573,3 +575,12 @@ class InvoiceConfirmationView(BaseInvoiceView):
                 extra={"user_id": self._get_user_id(request), "invoice_id": invoice_id},
             )
             return Response({"error": "Internal server error", "details": str(e)}, status=500)
+
+
+class InvoiceViewSet(ModelViewSet):
+    """
+    A viewset for viewing and editing invoice instances.
+    """
+    queryset = Invoice.objects.all()
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]

@@ -11,9 +11,13 @@ URL patterns are organized by feature:
 """
 
 from django.urls import path
-from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView
+from rest_framework.routers import DefaultRouter
+from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView, InvoiceViewSet
 from api.views.auth import LoginView, LogoutView, RegisterView, get_user_profile
 from api.views.ponto import PontoView
+
+router = DefaultRouter()
+router.register(r'invoices', InvoiceViewSet, basename='invoice')
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
@@ -58,3 +62,5 @@ urlpatterns = [
         name="accounts",
     ),
 ]
+
+urlpatterns += router.urls
