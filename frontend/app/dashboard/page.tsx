@@ -11,6 +11,10 @@ import NotificationBell from '@/components/NotificationBell';
 import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
 
+interface ExtendedInvoiceData extends InvoiceData {
+  temp_file_path?: string;
+}
+
 const BillifyDashboard = () => {
   // Add state for file upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -20,7 +24,7 @@ const BillifyDashboard = () => {
   const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
-  const [invoiceData, setInvoiceData] = useState<InvoiceData>();
+  const [invoiceData, setInvoiceData] = useState<ExtendedInvoiceData>();
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
@@ -154,7 +158,7 @@ const BillifyDashboard = () => {
     setUploadStatus('uploading');
     setErrorMessage('');
     invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
-    invoiceData["temp_file_path"]= uploadedInvoiceData["invoice"]["file_path"];
+    invoiceData["temp_file_path"] = uploadedInvoiceData["invoice"]["file_path"]; // No type error now
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
         method: 'POST',
@@ -422,8 +426,8 @@ const BillifyDashboard = () => {
                         <div className="text-sm text-gray-500">Due: {invoice.due_date}</div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className={`rounded-full px-3 py-1 ${STATUS_COLORS[invoice.status]}`}>
-                          €{invoice.amount}
+                        <span className={`rounded-full px-3 py-1 `}>
+                          €{invoice.amount} 
                         </span>
                         <input type="checkbox" className="h-5 w-5 rounded border-gray-300" />
                       </div>
