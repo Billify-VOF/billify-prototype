@@ -10,10 +10,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
-from django.urls import resolve
 
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
+
 # PermissionDenied import needed when authentication code is uncommented for production
 # from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
@@ -26,7 +26,6 @@ from infrastructure.storage.file_system import FileStorage
 from infrastructure.django.repositories.invoice_repository import (
     DjangoInvoiceRepository,
 )
-from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
 from infrastructure.django.models.invoice import Invoice
 
 from integrations.transformers.pdf.transformer import PDFTransformer
@@ -480,7 +479,6 @@ class InvoiceConfirmationView(BaseInvoiceView):
             return Response({"error": "Failed to verify invoice existence."}, status=500)
 
         try:
-
             # Extract validated data
             temp_file_path = serializer["temp_file_path"]
             urgency_level = serializer.validated_data.get("urgency_level")
@@ -504,9 +502,8 @@ class InvoiceConfirmationView(BaseInvoiceView):
                         temp_file_path=full_temp_path,
                         urgency_level=urgency_level,
                         user_id=self._get_user_id(request),
-                        invoice_data = request.data
+                        invoice_data=request.data,
                     )
-
 
                     # Get status safely
                     status_value = self._get_formatted_status(result.get("status"))
@@ -583,8 +580,9 @@ class InvoiceViewSet(ModelViewSet):
     """
     A viewset for viewing and editing invoice instances.
     """
+
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['status', 'due_date']
+    filterset_fields = ["status", "due_date"]

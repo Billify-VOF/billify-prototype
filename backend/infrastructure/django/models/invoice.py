@@ -264,4 +264,3 @@ class Invoice(models.Model):
         This method ensures that the model instance is persisted in the database.
         """
         super().save(*args, **kwargs)
-

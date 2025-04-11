@@ -17,7 +17,7 @@ from api.views.auth import LoginView, LogoutView, RegisterView, get_user_profile
 from api.views.ponto import PontoViewSet
 
 router = DefaultRouter()
-router.register(r'invoices', InvoiceViewSet, basename='invoice')
+router.register(r"invoices", InvoiceViewSet, basename="invoice")
 router.register(r"ponto", PontoViewSet, basename="ponto")
 
 urlpatterns = [

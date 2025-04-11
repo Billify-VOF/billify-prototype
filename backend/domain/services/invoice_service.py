@@ -118,7 +118,9 @@ class InvoiceService:
         urgency_level = getattr(invoice, "urgency", None)
 
         # Check if urgency was manually set
-        is_manually_set = invoice.is_urgency_manually_set() if hasattr(invoice, "is_urgency_manually_set") else False
+        is_manually_set = (
+            invoice.is_urgency_manually_set() if hasattr(invoice, "is_urgency_manually_set") else False
+        )
 
         # Return a dictionary with all relevant information
         return {

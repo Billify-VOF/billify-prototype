@@ -16,8 +16,7 @@ from domain.exceptions import StorageError
 from domain.repositories.interfaces.storage_repository import (
     StorageRepository,
 )
-from django.core.files.uploadedfile import UploadedFile
-from typing import Union, BinaryIO, Dict, Any, Optional
+from typing import Dict, Any, Optional
 import json
 import logging
 
@@ -81,9 +80,7 @@ class ObjectStorage(StorageRepository):
 
         return s3_metadata
 
-    def save_file(
-        self, file: str, identifier: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
+    def save_file(self, file: str, identifier: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """
         Save a file to Digital Ocean Spaces with associated metadata.
 
@@ -99,7 +96,6 @@ class ObjectStorage(StorageRepository):
             StorageError: If file cannot be saved
         """
         try:
-            
             year_month = datetime.now().strftime("%Y/%m")
             # Get filename safely with fallback
             file_name = getattr(file, "name", None)
