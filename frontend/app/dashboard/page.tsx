@@ -1,16 +1,20 @@
 'use client';
 import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Menu, Upload, Settings, Receipt, Wallet, Unlock } from '@/components/ui/icons';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { InvoiceData, InvoiceUploadResult } from '@/components/InvoiceUploadResult';
-import SearchComponent from '@/components/SearchComponent';
 import { dummySearchResults, SearchItemResult } from '@/components/types';
-import SearchResultItem from '@/components/SearchResultItem';
-import NotificationBell from '@/components/NotificationBell';
 import { STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
+import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Filter, Upload } from 'lucide-react';
+
+//import components
+import LeftBar from '../../components/layout/LeftBar';
+import TopBar from '../../components/layout/TopBar';
+import CashFlowChart from '../../components/dashboard/CashFlowChart';
+import AnalysisSection from '../../components/dashboard/AnalysisSection';
 import { Ponto_Connect_2_Options } from '@/constants/api';
 
 interface ExtendedInvoiceData extends InvoiceData {
@@ -125,7 +129,9 @@ const DashboardContent = () => {
 
   // Ensure NEXT_PUBLIC_BACKEND_URL is defined during build
   if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
-    console.error('Error: NEXT_PUBLIC_BACKEND_URL is not defined. Please set it in your environment variables.');
+    console.error(
+      'Error: NEXT_PUBLIC_BACKEND_URL is not defined. Please set it in your environment variables.',
+    );
   }
 
   // Load more invoices when scrolling
@@ -254,6 +260,13 @@ const DashboardContent = () => {
     btwSaldo: 3500,
   };
 
+  const percentData = {
+    cashSaldo: 5.25,
+    incomingInvoices: 1.25,
+    outgoingInvoices: 5.25,
+    btwSaldo: 1.25,
+  };
+
   const onSearch = async (query: string) => {
     // TODO: Implement search functionality
     setSearchResult([...dummySearchResults]);
@@ -268,249 +281,249 @@ const DashboardContent = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Left Sidebar */}
-      <div className="flex w-20 flex-col items-center border-r border-gray-200 bg-white py-6">
-        {/* Logo */}
-        <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600 text-xl font-bold text-white">
-          B
-        </div>
-        {/* Navigation Icons */}
-        <div className="space-y-6">
-          <Menu className="h-6 w-6 text-gray-400" />
-          <Receipt className="h-6 w-6 text-gray-400" />
-          <Wallet className="h-6 w-6 text-gray-400" />
-          <Settings className="h-6 w-6 text-gray-400" />
-          <Unlock className="h-6 w-6 text-gray-400" onClick={onPontoConnect} />
+      <LeftBar onPontoConnect={onPontoConnect} />
+      <div className="flex w-full flex-col">
+        <TopBar onSearch={onSearch} searchResult={searchResult} />
+
+        <div className="flex-1 p-5">
+          <h1 className="text-2xl font-bold">Hi, Sophia!</h1>
+          <h6 className="mt-3 text-gray-500">
+            Here is the finance analysis for your store since January 2024
+          </h6>
+
+          {/* Top Metrics Grid */}
+          <div className="my-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Cash Saldo"
+              value={financialData.cashSaldo}
+              percent={percentData.cashSaldo}
+            />
+            <MetricCard
+              title="Incoming Invoices"
+              value={financialData.incomingInvoices}
+              percent={percentData.incomingInvoices}
+            />
+            <MetricCard
+              title="Outgoing Invoices"
+              value={financialData.outgoingInvoices}
+              percent={percentData.outgoingInvoices}
+            />
+            <MetricCard
+              title="BTW Saldo"
+              value={financialData.btwSaldo}
+              percent={percentData.btwSaldo}
+            />
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Cash Flow Analysis */}
+            <Card>
+              <CashFlowChart />
+            </Card>
+
+            {/* Outstanding Invoices */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-xl font-bold">Outstanding Invoices</h2>
+                  <div className="flex gap-3">
+                    {/* Combined Dialog */}
+                    <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                      <DialogTrigger asChild>
+                        <div className="flex cursor-pointer items-center justify-center rounded-full bg-gray-200 p-2">
+                          <Upload size={20} />
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent
+                        className={`border bg-white shadow-xl ${
+                          !uploadedInvoiceData
+                            ? selectedFile
+                              ? 'h-[180px] w-[300px] p-3'
+                              : 'h-[140px] w-[300px] p-3'
+                            : 'h-[600px] w-[1000px] p-6'
+                        } resize-none overflow-auto`}
+                        onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside clicks
+                      >
+                        {!uploadedInvoiceData && (
+                          <div className="space-y-4">
+                            <h2 className="mb-2 text-lg font-semibold">Upload Invoice</h2>
+                            <div
+                              className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-4 text-center`}
+                            >
+                              <input
+                                type="file"
+                                accept=".pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                id="file-upload"
+                              />
+                              <label
+                                htmlFor="file-upload"
+                                className="mx-auto block max-w-[250px] cursor-pointer truncate text-blue-600 hover:text-blue-700"
+                              >
+                                {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
+                              </label>
+                            </div>
+
+                            {/* Progress Bar */}
+                            {uploadStatus === 'uploading' && (
+                              <div className="h-2 w-full rounded-full bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full bg-blue-600 transition-all duration-300"
+                                  style={{
+                                    width: '100%',
+                                    animation: 'progress 1s ease-in-out infinite',
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {selectedFile && uploadStatus === 'idle' && (
+                              <button
+                                onClick={handleUpload}
+                                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                                disabled={(uploadStatus as UploadStatus) === 'uploading'}
+                                type="button"
+                                aria-label="Upload Invoice"
+                              >
+                                Upload Invoice
+                              </button>
+                            )}
+                            {uploadStatus === 'error' && errorMessage && (
+                              <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
+                            )}
+                          </div>
+                        )}
+                        {uploadedInvoiceData && (
+                          <div className="flex h-full flex-col">
+                            <h2 className="mb-4 text-lg font-semibold">Invoice Preview</h2>
+                            <div className="flex flex-1 gap-6 overflow-hidden">
+                              <InvoiceUploadResult
+                                result={uploadedInvoiceData}
+                                onChange={(invoiceData) => {
+                                  setInvoiceData(invoiceData);
+                                }}
+                              />
+                            </div>
+                            <button
+                              className="mt-4 w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                              disabled={uploadStatus === 'uploading' || !invoiceData}
+                              type="button"
+                              aria-label="Confirm Upload"
+                              onClick={confirmUpload}
+                            >
+                              Confirm Upload
+                            </button>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                    <div className="relative">
+                      <div
+                        className="flex cursor-pointer items-center justify-center rounded-full bg-gray-200 p-2"
+                        onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                      >
+                        <Filter size={20} />
+                      </div>
+                      {isFilterDropdownOpen && (
+                        <div className="absolute right-0 z-10 mt-2 w-64 rounded-lg border bg-white p-4 shadow-lg">
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Due Date
+                            </label>
+                            <input
+                              type="date"
+                              className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                              value={filters.dueDate || ''}
+                              onChange={(e) =>
+                                setFilters((prev) => ({ ...prev, dueDate: e.target.value }))
+                              }
+                            />
+                          </div>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Status
+                            </label>
+                            <select
+                              className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                              value={filters.status || ''}
+                              onChange={(e) =>
+                                setFilters((prev) => ({ ...prev, status: e.target.value }))
+                              }
+                            >
+                              <option value="">All Statuses</option>
+                              <option value="pending">Pending</option>
+                              <option value="paid">Paid</option>
+                              <option value="overdue">Overdue</option>
+                            </select>
+                          </div>
+                          <div className="flex justify-between">
+                            <button
+                              className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
+                              onClick={() => {
+                                setFilters({});
+                                setIsFilterDropdownOpen(false);
+                              }}
+                            >
+                              Clear
+                            </button>
+                            <button
+                              className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
+                              onClick={() => setIsFilterDropdownOpen(false)}
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="space-y-4 overflow-auto" // Ensure the container is scrollable
+                  onScroll={handleScroll}
+                >
+                  {invoices.map((invoice) => {
+                    return (
+                      <div
+                        key={invoice.id}
+                        className="flex items-center justify-between rounded-lg bg-gray-100 p-4"
+                      >
+                        <div className="flex flex-row items-center gap-x-5">
+                          <input type="checkbox" className="h-5 w-5 rounded border-gray-300" />
+                          <div className="flex flex-col">
+                            <div className="font-semibold">Invoice #{invoice.invoice_number}</div>
+                            <div className="text-sm text-gray-500">Due: {invoice.date}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span
+                            className={`rounded-full px-3 py-1 font-medium ${
+                              STATUS_COLORS[invoice.status as keyof typeof STATUS_COLORS]
+                            }`}
+                          >
+                            ${invoice.amount}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-5">
+            <Card>
+              <AnalysisSection />
+            </Card>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-gray-50 p-8">
-        <div className="my-2 flex items-center justify-between bg-gray-50">
-          {/* Top Search Bar */}
-          <SearchComponent
-            onSearch={onSearch}
-            renderItem={(item) => {
-              return <SearchResultItem item={item} onClick={() => {}} />;
-            }}
-            results={searchResult}
-          />
-          {/* Notification Widget */}
-          <NotificationBell className="w-fit" />
-        </div>
-
-        {/* Top Metrics Grid */}
-        <div className="mb-6 grid grid-cols-4 gap-6">
-          <MetricCard title="Cash Saldo" value={financialData.cashSaldo} />
-          <MetricCard title="Incoming Invoices" value={financialData.incomingInvoices} />
-          <MetricCard title="Outgoing Invoices" value={financialData.outgoingInvoices} />
-          <MetricCard title="BTW Saldo" value={financialData.btwSaldo} />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Cash Flow Analysis */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold">Cash Flow Analysis</h2>
-                <div className="text-blue-600">↗</div>
-              </div>
-              <div className="flex h-64 items-center justify-center text-gray-400">Chart Area</div>
-            </CardContent>
-          </Card>
-
-          {/* Outstanding Invoices */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold">Outstanding Invoices</h2>
-                <div className="flex items-center gap-3">
-                  {/* Filter Button with Dropdown */}
-                  <div className="relative">
-                    <button
-                      className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
-                      onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-                    >
-                      Filter
-                    </button>
-                    {isFilterDropdownOpen && (
-                      <div className="absolute right-0 z-10 mt-2 w-64 rounded-lg border bg-white p-4 shadow-lg">
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Due Date
-                          </label>
-                          <input
-                            type="date"
-                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
-                            value={filters.dueDate || ''}
-                            onChange={(e) =>
-                              setFilters((prev) => ({ ...prev, dueDate: e.target.value }))
-                            }
-                          />
-                        </div>
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700">Status</label>
-                          <select
-                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
-                            value={filters.status || ''}
-                            onChange={(e) =>
-                              setFilters((prev) => ({ ...prev, status: e.target.value }))
-                            }
-                          >
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="overdue">Overdue</option>
-                          </select>
-                        </div>
-                        <div className="flex justify-between">
-                          <button
-                            className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
-                            onClick={() => setFilters({})}
-                          >
-                            Clear
-                          </button>
-                          <button
-                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
-                            onClick={() => setIsFilterDropdownOpen(false)}
-                          >
-                            Apply
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Upload Button */}
-                  <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-                    <DialogTrigger asChild>
-                      <button
-                        className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
-                        disabled={isDialogOpen}
-                      >
-                        <Upload className="h-4 w-4" />
-                        Upload
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent
-                      className={`border bg-white shadow-xl ${
-                        !uploadedInvoiceData
-                          ? selectedFile
-                            ? 'h-[180px] w-[300px] p-3'
-                            : 'h-[140px] w-[300px] p-3'
-                          : 'h-[600px] w-[1000px] p-6'
-                      } resize-none overflow-auto`}
-                      onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside clicks
-                    >
-                      {!uploadedInvoiceData && (
-                        <div className="space-y-4">
-                          <h2 className="mb-2 text-lg font-semibold">Upload Invoice</h2>
-                          <div
-                            className={`border-2 ${isFileTypeInvalid ? 'border-red-500' : 'border-dashed border-gray-200'} rounded-lg p-4 text-center`}
-                          >
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                              id="file-upload"
-                            />
-                            <label
-                              htmlFor="file-upload"
-                              className="mx-auto block max-w-[250px] cursor-pointer truncate text-blue-600 hover:text-blue-700"
-                            >
-                              {selectedFile ? selectedFile.name : 'Click to select a PDF file'}
-                            </label>
-                          </div>
-
-                          {/* Progress Bar */}
-                          {uploadStatus === 'uploading' && (
-                            <div className="h-2 w-full rounded-full bg-gray-200">
-                              <div
-                                className="h-2 rounded-full bg-blue-600 transition-all duration-300"
-                                style={{
-                                  width: '100%',
-                                  animation: 'progress 1s ease-in-out infinite',
-                                }}
-                              />
-                            </div>
-                          )}
-
-                          {selectedFile && uploadStatus === 'idle' && (
-                            <button
-                              onClick={handleUpload}
-                              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                              disabled={(uploadStatus as UploadStatus) === 'uploading'}
-                              type="button"
-                              aria-label="Upload Invoice"
-                            >
-                              Upload Invoice
-                            </button>
-                          )}
-                          {uploadStatus === 'error' && errorMessage && (
-                            <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
-                          )}
-                        </div>
-                      )}
-                      {uploadedInvoiceData && (
-                        <div className="flex h-full flex-col">
-                          <h2 className="mb-4 text-lg font-semibold">Invoice Preview</h2>
-                          <div className="flex flex-1 gap-6 overflow-hidden">
-                            <InvoiceUploadResult
-                              result={uploadedInvoiceData}
-                              onChange={(invoiceData) => {
-                                setInvoiceData(invoiceData);
-                              }}
-                            />
-                          </div>
-                          <button
-                            className="mt-4 w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-                            disabled={uploadStatus === 'uploading' || !invoiceData}
-                            type="button"
-                            aria-label="Confirm Upload"
-                            onClick={confirmUpload}
-                          >
-                            Confirm Upload
-                          </button>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-              <div
-                className="h-[500px] space-y-4 overflow-auto" // Ensure the container is scrollable
-                onScroll={handleScroll}
-              >
-                {invoices.map((invoice) => {
-                  return (
-                    <div
-                      key={invoice.id}
-                      className="flex items-center justify-between rounded-lg bg-white p-4"
-                    >
-                      <div>
-                        <div className="font-semibold">Invoice #{invoice.invoice_number}</div>
-                        <div className="text-sm text-gray-500">Due: {invoice.due_date}</div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span
-                          className={`rounded-full px-3 py-1 ${
-                            STATUS_COLORS[invoice.status as keyof typeof STATUS_COLORS]
-                          }`}
-                        >
-                          €{invoice.amount}
-                        </span>
-                        <input type="checkbox" className="h-5 w-5 rounded border-gray-300" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     </div>
   );
 };
@@ -518,15 +531,26 @@ const DashboardContent = () => {
 interface MetricCardProps {
   title: string;
   value: number;
+  percent: number;
 }
 
-const MetricCard = ({ title, value }: MetricCardProps) => (
-  <Card>
-    <CardContent className="p-6">
-      <h3 className="mb-2 text-sm text-gray-500">{title}</h3>
-      <p className="text-2xl font-bold">€{value.toLocaleString('en-US')}</p>
-    </CardContent>
-  </Card>
-);
+const MetricCard = ({ title, value, percent }: MetricCardProps) => {
+  const isPositive = title === 'Cash Saldo' || title === 'Outgoing Invoices';
+  const ArrowIcon = isPositive ? ArrowUpRight : ArrowDownLeft;
+  const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+
+  return (
+    <Card>
+      <CardContent className="px-6 py-3">
+        <h3 className="text-sm text-gray-500">{title}</h3>
+        <p className="text-2xl font-bold">€{value.toLocaleString('en-US')}</p>
+        <div className="mt-3 flex flex-row items-center gap-x-2">
+          <ArrowIcon size={20} className={colorClass} />
+          <p className="text-gray-500">{percent}% since last month</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default BillifyDashboard;
