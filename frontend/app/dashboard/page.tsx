@@ -9,6 +9,8 @@ import { STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { Filter, Upload } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { getDisplayName } from '@/lib/utils/userUtils';
 
 //import components
 import LeftBar from '../../components/layout/LeftBar';
@@ -31,6 +33,7 @@ const BillifyDashboard = () => {
 
 const DashboardContent = () => {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   // Add state for file upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -286,7 +289,9 @@ const DashboardContent = () => {
         <TopBar onSearch={onSearch} searchResult={searchResult} />
 
         <div className="flex-1 p-5">
-          <h1 className="text-2xl font-bold">Hi, Sophia!</h1>
+          <h1 className="text-2xl font-bold">
+            {`Hi${getDisplayName(user) !== 'User' ? `, ${getDisplayName(user)}` : ''}!`}
+          </h1>
           <h6 className="mt-3 text-gray-500">
             Here is the finance analysis for your store since January 2024
           </h6>

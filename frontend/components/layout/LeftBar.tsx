@@ -6,7 +6,7 @@ import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { HiOutlineSupport, HiOutlineChartPie } from 'react-icons/hi';
 import { Unlock } from '@/components/ui/icons';
 import Image from 'next/image';
-import logo from '../../assets/images/logo.png';
+import logo from '../../assets/images/logo.svg';
 
 interface LeftBarProps {
   onPontoConnect: () => void;
