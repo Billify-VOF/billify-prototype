@@ -9,19 +9,55 @@ import {
     Area,
   } from 'recharts';
   
-  const data = [
-    { day: 'Mon', thisWeek: 20000, lastWeek: 50000 },
-    { day: 'Tue', thisWeek: 50000, lastWeek: 35000 },
-    { day: 'Wed', thisWeek: 40000, lastWeek: 30000 },
-    { day: 'Thu', thisWeek: 100000, lastWeek: 40000 },
-    { day: 'Fri', thisWeek: 50000, lastWeek: 55000 },
-    { day: 'Sat', thisWeek: 30000, lastWeek: 45000 },
-    { day: 'Sun', thisWeek: 60000, lastWeek: 30000 },
+  interface CashFlowData {
+    day: string;
+    thisWeek: number;
+    lastWeek: number;
+  }
+
+  const defaultData: CashFlowData[] = [
+    { day: 'Mon', thisWeek: 4000, lastWeek: 3000 },
+    { day: 'Tue', thisWeek: 3000, lastWeek: 2000 },
+    { day: 'Wed', thisWeek: 2000, lastWeek: 4000 },
+    { day: 'Thu', thisWeek: 2780, lastWeek: 3908 },
+    { day: 'Fri', thisWeek: 1890, lastWeek: 4800 },
+    { day: 'Sat', thisWeek: 2390, lastWeek: 3800 },
+    { day: 'Sun', thisWeek: 3490, lastWeek: 4300 },
   ];
-  
-  export default function CashFlowChart() {
+
+  interface CashFlowChartProps {
+    data?: CashFlowData[];
+    isLoading?: boolean;
+    error?: Error | null;
+  }
+
+  export default function CashFlowChart({ 
+    data = defaultData, 
+    isLoading = false, 
+    error = null 
+  }: CashFlowChartProps) {
+    if (isLoading) {
+      return (
+        <div className="flex h-[400px] w-full max-w-4xl items-center justify-center rounded-lg bg-white p-6 shadow-md">
+          <div className="animate-pulse">Loading chart data...</div>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="flex h-[400px] w-full max-w-4xl items-center justify-center rounded-lg bg-white p-6 shadow-md">
+          <div className="text-red-500">Error loading chart: {error.message}</div>
+        </div>
+      );
+    }
+
     return (
-      <div className="w-full max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg">
+      <div className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-md">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold">Cash Flow</h2>
+          <p className="text-gray-500">Compare this week vs last week</p>
+        </div>
         {/* Title + Dropdown */}
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-gray-800">Cash Flow Analysis</h2>

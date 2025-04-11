@@ -535,7 +535,7 @@ interface MetricCardProps {
 }
 
 const MetricCard = ({ title, value, percent }: MetricCardProps) => {
-  const isPositive = title === 'Cash Saldo' || title === 'Outgoing Invoices';
+  const isPositive = title === 'Cash Saldo';
   const ArrowIcon = isPositive ? ArrowUpRight : ArrowDownLeft;
   const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
 
