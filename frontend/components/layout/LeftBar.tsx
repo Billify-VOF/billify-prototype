@@ -55,7 +55,7 @@ const LeftBar = ({ onPontoConnect }: LeftBarProps) => {
           className={`flex cursor-pointer flex-row justify-center gap-x-3 rounded-xl px-2 py-4 transition-all hover:bg-blue-50 lg:justify-start`}
         >
           <Unlock size={24} className={'text-gray-600'} />
-          <span className={`lg:block' text-gray-70`}>Ponto Connect</span>
+          <span className={`hidden text-gray-700 lg:block`}>Ponto Connect</span>
         </div>
       </div>
     </div>

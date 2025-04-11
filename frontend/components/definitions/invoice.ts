@@ -70,9 +70,9 @@ export const DEFAULT_URGENCY: Urgency = {
 };
 
 export const STATUS_COLORS: Record<InvoiceStatus, string> = {
-  overdue: 'text-green-600',
-  pending: 'text-red-500',
-  paid: 'text-yellow-600',
+  overdue: 'text-red-600',
+  pending: 'text-yellow-600',
+  paid: 'text-green-600',
 };
 
 export interface Invoice {
