@@ -257,3 +257,11 @@ class Invoice(models.Model):
 
         # Validate all fields
         self.full_clean()
+
+    def save(self, *args, **kwargs) -> None:
+        """Save the invoice instance to the database.
+
+        This method ensures that the model instance is persisted in the database.
+        """
+        super().save(*args, **kwargs)
+

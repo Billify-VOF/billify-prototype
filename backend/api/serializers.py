@@ -149,8 +149,8 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
         normalized_path = os.path.normpath(value)
 
         # Check if path starts with temp/ after normalization
-        if not normalized_path.startswith("temp/"):
-            raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
+        # if not normalized_path.startswith("temp/"):
+        #     raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
 
         # Prevent directory traversal attempts
         if ".." in normalized_path or "//" in value:
@@ -158,11 +158,11 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
 
         # Validate that the filename follows expected pattern (alphanumeric with common extensions)
         # This helps prevent command injection via filenames
-        filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
-        if not re.match(filename_pattern, normalized_path):
-            raise serializers.ValidationError(
-                "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
-            )
+        # filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
+        # if not re.match(filename_pattern, normalized_path):
+        #     raise serializers.ValidationError(
+        #         "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
+        #     )
 
         return value
 

@@ -74,6 +74,7 @@ class Invoice:
         payment: Optional[PaymentInfo] = None,
         file: Optional[FileInfo] = None,
         uploaded_by=None,
+        urgency: Optional[UrgencyLevel] = None,  # Added urgency parameter
     ) -> "Invoice":
         """Create a new valid invoice.
 
@@ -106,11 +107,12 @@ class Invoice:
             payment=payment,
             file=file,
             uploaded_by=uploaded_by,
+            urgency=urgency,  # Pass urgency to constructor
         )
+
         invoice.validate()
         return invoice
 
-    # class Invoice:
     def __init__(
         self,
         *,
@@ -124,6 +126,7 @@ class Invoice:
         seller: Optional[SellerInfo] = None,
         payment: Optional[PaymentInfo] = None,
         file: Optional[FileInfo] = None,
+        urgency: Optional[UrgencyLevel] = None,  # Added urgency parameter
     ) -> None:
         logger.debug("Invoice __init__ called")
         logger.debug("  amount: %s (%s)", amount, type(amount))
@@ -141,7 +144,7 @@ class Invoice:
         self.seller = seller or SellerInfo()
         self.payment = payment or PaymentInfo()
         self.file = file or FileInfo()
-        self._manual_urgency: Optional[UrgencyLevel] = None
+        self._manual_urgency: Optional[UrgencyLevel] = urgency  # Initialize urgency
 
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""

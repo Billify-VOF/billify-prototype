@@ -144,7 +144,6 @@ class InvoiceProcessingService:
             file_path = self.storage_repository.save_file(file, identifier)
             full_path = self.storage_repository.get_file_path(file_path)
             logger.debug("File saved at path: %s", full_path)
-
             # Extract file metadata
             logger.info("Extracting file metadata")
             file_size = os.path.getsize(full_path)
@@ -191,6 +190,7 @@ class InvoiceProcessingService:
 
             # Delegate processing to domain service (avoid fetch-edit-save)
             logger.info("Delegating to domain service for invoice processing")
+
             saved_invoice = self.invoice_service.process_invoice(
                 invoice_data=invoice_data,
                 file_size=file_size,
@@ -259,6 +259,7 @@ class InvoiceProcessingService:
         temp_file_path: str,
         urgency_level: Optional[int] = None,
         user_id: Optional[int] = None,
+        invoice_data: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Finalize an invoice by transferring its file from temporary to permanent storage.
 
@@ -360,6 +361,24 @@ class InvoiceProcessingService:
                 raise ProcessingError(f"Temporary file not found: {temp_file_path}")
             logger.debug("Verified temporary file exists: %s", temp_file_path)
 
+            # If invoice_data is provided, update the invoice with additional details
+
+            if invoice_data:
+                logger.info("Updating invoice with provided invoice_data")
+                for key, value in invoice_data.items():
+                    if key == "urgency":
+                        # Handle urgency key specifically
+                        if isinstance(value, dict) and "level" in value:
+                            urgency_level = value["level"]
+                            try:
+                                urgency = UrgencyLevel[urgency_level]
+                                invoice.set_urgency_manually(urgency)
+                                logger.info("Set urgency level to: %s", urgency.display_name)
+                            except KeyError:
+                                logger.warning("Invalid urgency level provided: %s", urgency_level)
+                    elif hasattr(invoice, key):
+                        setattr(invoice, key, value)
+                        logger.debug("Updated invoice attribute %s to %s", key, value)
             # Transfer the file to permanent storage
             try:
                 logger.info("Transferring file from temporary to permanent storage")
@@ -445,55 +464,56 @@ class InvoiceProcessingService:
 
                 logger.info("File transferred successfully to: %s", permanent_path)
 
-                # Update invoice with the permanent file path
+                # Update the invoice with the permanent file path
                 invoice.file.path = permanent_path
                 logger.debug("Updated invoice file path to: %s", permanent_path)
 
-                # Save the updated invoice
-                saved_invoice = self.invoice_repository.save(invoice, effective_user_id)
-                logger.info("Invoice successfully finalized with ID: %s", saved_invoice.id)
+                # Update the invoice in the repository
+                updated_invoice = self.invoice_repository.update(invoice, effective_user_id)
+                logger.info("Invoice successfully finalized and updated with ID: %s", updated_invoice.id)
 
                 # Get urgency info
-                urgency_info = self.invoice_service.get_urgency_info(saved_invoice)
+                urgency_info = self.invoice_service.get_urgency_info(updated_invoice)
 
                 # Include comprehensive invoice details in the response
                 return {
-                    "invoice_id": saved_invoice.id,
-                    "invoice_number": saved_invoice.invoice_number,
-                    "status": saved_invoice.status,
+                    "invoice_id": updated_invoice.id,
+                    "invoice_number": updated_invoice.invoice_number,
+                    "status": updated_invoice.status,
                     "file_path": permanent_path,
                     "urgency": urgency_info,
                     "finalized": True,
                     # Additional details
                     "amount": (
-                        str(self._get_nested_attr(saved_invoice, "amount"))
-                        if self._get_nested_attr(saved_invoice, "amount")
+                        str(self._get_nested_attr(updated_invoice, "amount"))
+                        if self._get_nested_attr(updated_invoice, "amount")
                         else None
                     ),
                     "due_date": (
-                        saved_invoice.due_date.isoformat()
-                        if hasattr(saved_invoice, "due_date") and saved_invoice.due_date is not None
+                        updated_invoice.due_date.isoformat()
+                        if hasattr(updated_invoice, "due_date") and updated_invoice.due_date is not None
                         else None
                     ),
                     "timestamps": {
-                        "created_at": getattr(saved_invoice, "created_at", None),
-                        "updated_at": getattr(saved_invoice, "updated_at", None),
+                        "created_at": getattr(updated_invoice, "created_at", None),
+                        "updated_at": getattr(updated_invoice, "updated_at", None),
                     },
                     "buyer": {
-                        "name": self._get_nested_attr(saved_invoice, "buyer.name"),
-                        "address": self._get_nested_attr(saved_invoice, "buyer.address"),
-                        "email": self._get_nested_attr(saved_invoice, "buyer.email"),
-                        "vat": self._get_nested_attr(saved_invoice, "buyer.vat"),
+                        "name": self._get_nested_attr(updated_invoice, "buyer.name"),
+                        "address": self._get_nested_attr(updated_invoice, "buyer.address"),
+                        "email": self._get_nested_attr(updated_invoice, "buyer.email"),
+                        "vat": self._get_nested_attr(updated_invoice, "buyer.vat"),
                     },
                     "seller": {
-                        "name": self._get_nested_attr(saved_invoice, "seller.name"),
-                        "vat": self._get_nested_attr(saved_invoice, "seller.vat"),
+                        "name": self._get_nested_attr(updated_invoice, "seller.name"),
+                        "vat": self._get_nested_attr(updated_invoice, "seller.vat"),
                     },
                     "file_metadata": {
-                        "size": self._get_nested_attr(saved_invoice, "file.size"),
-                        "type": self._get_nested_attr(saved_invoice, "file.file_type"),
-                        "original_name": self._get_nested_attr(saved_invoice, "file.original_name"),
+                        "size": self._get_nested_attr(updated_invoice, "file.size"),
+                        "type": self._get_nested_attr(updated_invoice, "file.file_type"),
+                        "original_name": self._get_nested_attr(updated_invoice, "file.original_name"),
                     },
+                    "invoice_data": invoice_data,  # Include the provided invoice_data in the response
                 }
 
             except StorageError as e:

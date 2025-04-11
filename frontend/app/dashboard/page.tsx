@@ -102,11 +102,16 @@ const BillifyDashboard = () => {
     if (!invoiceData) return;
     setUploadStatus('uploading');
     setErrorMessage('');
-
+    invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
+    invoiceData["temp_file_path"]= uploadedInvoiceData["invoice"]["file_path"];
     try {
-      const response = await fetch('/api/invoices/confirm', {
+      const response = await fetch(`http://localhost:8000/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
         method: 'POST',
         body: JSON.stringify(invoiceData),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
       });
 
       const data = await response.json();
