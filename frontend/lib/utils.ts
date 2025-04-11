@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function base64_urlencode(data: ArrayBuffer) {
-  const urlencoded = btoa(String.fromCharCode.apply(null, new Uint8Array(data)))
+  const urlencoded = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(data))))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');

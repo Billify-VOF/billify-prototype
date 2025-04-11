@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Menu, Upload, Settings, Receipt, Wallet, Unlock } from '@/components/ui/icons';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
@@ -18,6 +18,14 @@ interface ExtendedInvoiceData extends InvoiceData {
 }
 
 const BillifyDashboard = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+};
+
+const DashboardContent = () => {
   const searchParams = useSearchParams();
   // Add state for file upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -104,9 +112,21 @@ const BillifyDashboard = () => {
   };
 
   useEffect(() => {
-    const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
-    fetchInvoices(initialUrl);
+    const initialUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+      ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`
+      : null;
+
+    if (initialUrl) {
+      fetchInvoices(initialUrl);
+    } else {
+      console.error('NEXT_PUBLIC_BACKEND_URL is not defined');
+    }
   }, [filters]);
+
+  // Ensure NEXT_PUBLIC_BACKEND_URL is defined during build
+  if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+    console.error('Error: NEXT_PUBLIC_BACKEND_URL is not defined. Please set it in your environment variables.');
+  }
 
   // Load more invoices when scrolling
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -176,13 +196,18 @@ const BillifyDashboard = () => {
 
   // Add function to handle file upload
   const confirmUpload = async () => {
-    if (!invoiceData) return;
+    if (!invoiceData || !process.env.NEXT_PUBLIC_BACKEND_URL) {
+      console.error('Missing invoice data or NEXT_PUBLIC_BACKEND_URL');
+      return;
+    }
+
     setUploadStatus('uploading');
     setErrorMessage('');
     invoiceData['invoice_id'] = uploadedInvoiceData['invoice']['id'];
     invoiceData['id'] = uploadedInvoiceData['invoice']['id'];
     invoiceData['due_date'] = uploadedInvoiceData['invoice']['date'];
     invoiceData['temp_file_path'] = uploadedInvoiceData['invoice']['file_path']; // No type error now
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData['invoice']['id']}/confirm/`,
@@ -205,12 +230,15 @@ const BillifyDashboard = () => {
       }
 
       setUploadStatus('success');
-      // Close the dialog or show success message
       setIsDialogOpen(false);
 
-      // Refresh the invoices list
-      const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
-      fetchInvoices(initialUrl);
+      const initialUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`
+        : null;
+
+      if (initialUrl) {
+        fetchInvoices(initialUrl);
+      }
     } catch (error) {
       console.error('Upload error details:', error);
       setUploadStatus('error');
