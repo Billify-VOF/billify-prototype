@@ -72,12 +72,15 @@ export default function SearchComponent<T>({
     <div className="relative w-full">
       {/* Search Input */}
       <div className="relative flex items-center">
+        <div className="absolute left-3 text-gray-500">
+          <Search className="h-5 w-5" />
+        </div>
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="me-2 w-full rounded-lg border border-gray-300 px-2 py-1 text-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-600"
+          className="me-2 w-4/5 rounded-xl px-2 py-1 pl-10 text-lg bg-gray-100"
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
         {loading ? (
@@ -89,7 +92,6 @@ export default function SearchComponent<T>({
             onClick={handleSearch}
             className="absolute right-4 text-gray-500 hover:text-gray-700"
           >
-            <Search className="h-5 w-5" />
           </button>
         )}
       </div>
