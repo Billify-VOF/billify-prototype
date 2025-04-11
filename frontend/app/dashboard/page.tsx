@@ -293,7 +293,7 @@ const DashboardContent = () => {
             {`Hi${getDisplayName(user) !== 'User' ? `, ${getDisplayName(user)}` : ''}!`}
           </h1>
           <h6 className="mt-3 text-gray-500">
-            Here is the finance analysis for your store since January 2024
+            Here is the finance analysis for your business since January 2024
           </h6>
 
           {/* Top Metrics Grid */}

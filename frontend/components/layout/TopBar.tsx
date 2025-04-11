@@ -3,7 +3,7 @@ import NotificationBell from '@/components/NotificationBell';
 import SearchComponent from '@/components/SearchComponent';
 import SearchResultItem from '@/components/SearchResultItem';
 import { SearchItemResult } from '@/components/types';
-import { AlertCircle, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDisplayName } from '@/lib/utils/userUtils';
 
@@ -29,10 +29,9 @@ const TopBar = ({ onSearch, searchResult }: TopBarProps) => {
       />
 
       <div className="flex w-full flex-row items-center justify-end gap-x-5">
-        <AlertCircle size={20} className="cursor-pointer text-gray-500" />
         <NotificationBell />
         <div className="relative">
-          <button 
+          <button
             className="flex flex-row items-center gap-x-3"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             aria-expanded={isProfileOpen}
@@ -47,13 +46,13 @@ const TopBar = ({ onSearch, searchResult }: TopBarProps) => {
             </div>
           </button>
           {isProfileOpen && (
-            <div 
+            <div
               id="user-menu"
               className="absolute right-0 z-10 mt-2 w-48 rounded-lg border bg-white py-2 shadow-lg"
               role="menu"
               aria-orientation="vertical"
             >
-              <button 
+              <button
                 className="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                 onClick={handleLogout}
                 role="menuitem"
