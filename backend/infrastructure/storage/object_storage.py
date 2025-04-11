@@ -40,6 +40,7 @@ class ObjectStorage(StorageRepository):
             self.session = boto3.session.Session()
             self.client = self.session.client(
                 "s3",
+                region_name=settings.AWS_S3_REGION,
                 endpoint_url=settings.AWS_S3_ENDPOINT_URL,
                 aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -81,7 +82,7 @@ class ObjectStorage(StorageRepository):
         return s3_metadata
 
     def save_file(
-        self, file: Union[BinaryIO, UploadedFile], identifier: str, metadata: Optional[Dict[str, Any]] = None
+        self, file: str, identifier: str, metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Save a file to Digital Ocean Spaces with associated metadata.
@@ -98,6 +99,7 @@ class ObjectStorage(StorageRepository):
             StorageError: If file cannot be saved
         """
         try:
+            
             year_month = datetime.now().strftime("%Y/%m")
             # Get filename safely with fallback
             file_name = getattr(file, "name", None)
@@ -113,9 +115,8 @@ class ObjectStorage(StorageRepository):
                 if s3_metadata:
                     extra_args["Metadata"] = s3_metadata
                     logger.debug("Uploading file with metadata: %s", s3_metadata)
-
             # Upload file
-            self.client.upload_fileobj(file, self.bucket, storage_path, ExtraArgs=extra_args)
+            self.client.upload_file(file, self.bucket, storage_path, ExtraArgs=extra_args)
             logger.info("File uploaded successfully to: %s", storage_path)
 
             return storage_path

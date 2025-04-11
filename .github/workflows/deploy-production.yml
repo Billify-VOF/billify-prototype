@@ -127,6 +127,7 @@ jobs:
         run: |
           cd infrastructure
           cat <<EOF > .env
+          DEBUG=0
           POSTGRES_USER=${POSTGRES_USER}
           POSTGRES_DB=${POSTGRES_DB}
           POSTGRES_DB_URL=${POSTGRES_DB_URL}

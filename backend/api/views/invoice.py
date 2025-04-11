@@ -507,6 +507,7 @@ class InvoiceConfirmationView(BaseInvoiceView):
                         invoice_data = request.data
                     )
 
+
                     # Get status safely
                     status_value = self._get_formatted_status(result.get("status"))
 

@@ -27,6 +27,7 @@ from domain.exceptions import InvalidInvoiceError
 import inspect
 from io import BytesIO
 import json
+from infrastructure.storage.object_storage import ObjectStorage
 
 # Module-level logger
 logger = getLogger(__name__)
@@ -426,18 +427,24 @@ class InvoiceProcessingService:
                     # We need to handle this differently as TemporaryStorageAdapter
                     # metadata through
                     # First read the file content
+                    content =""
                     with open(temp_full_path, "rb") as file:
                         content = file.read()
 
-                    # Save to permanent storage with metadata
-                    file_obj = BytesIO(content)
-                    # Add original filename to the file object
-                    file_obj.name = Path(temp_file_path).name
-
-                    # Save directly to permanent storage with metadata
-                    permanent_path = self.storage_repository.save_file(
-                        file_obj, permanent_identifier, metadata=file_metadata
-                    )
+                    # Save to S3 if debug is False, otherwise save locally
+                    if not os.getenv("DEBUG", "False").lower() in ["true", "1"]:
+                        osb = ObjectStorage()
+                        logger.info("Uploading to S3 as debug mode is disabled")
+                        file_obj = BytesIO(content)
+                        file_obj.name = Path(temp_file_path).name
+                        permanent_path = osb.save_file(
+                            Path(temp_file_path), permanent_identifier, metadata=file_metadata
+                        )
+                    else:
+                        logger.info("Saving locally as debug mode is enabled")
+                        permanent_path = self.temp_storage.promote_to_permanent(
+                            temp_file_path, permanent_identifier
+                        )
 
                     # Delete the temporary file
                     self.temp_storage._untrack_temporary_file(temp_file_path)

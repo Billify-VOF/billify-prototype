@@ -26,10 +26,10 @@ const BillifyDashboard = () => {
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
   const [invoiceData, setInvoiceData] = useState<ExtendedInvoiceData>();
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState<{ dueDate?: string; status?: string }>({});
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
 
   // Reset all states when dialog is closed
   const handleDialogOpenChange = (open: boolean) => {
@@ -51,15 +51,11 @@ const BillifyDashboard = () => {
   }, [isDialogOpen]);
 
   // Fetch invoices with pagination
-  const fetchInvoices = async (page: number) => {
-    try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        ...(filters.dueDate && { due_date: filters.dueDate }),
-        ...(filters.status && { status: filters.status }),
-      });
+  const fetchInvoices = async (url: string | null) => {
+    if (!url) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices?${queryParams}`, {
+    try {
+      const response = await fetch(url, {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
         },
@@ -70,30 +66,27 @@ const BillifyDashboard = () => {
       }
 
       const data = await response.json();
-      setInvoices((prev) => (page === 1 ? data.results : [...prev, ...data.results]));
-      setHasMore(data.next !== null);
+      setInvoices((prev) => (url.includes('page=1') ? data.results : [...prev, ...data.results])); // Use `results` for invoices
+      setNextPageUrl(data.next); // Update `next` link
+      setPrevPageUrl(data.previous); // Update `previous` link
     } catch (error) {
       console.error('Error fetching invoices:', error);
     }
   };
 
-  // Fetch invoices when filters change
   useEffect(() => {
-    setPage(1); // Reset to the first page
-    fetchInvoices(1);
+    const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
+    fetchInvoices(initialUrl);
   }, [filters]);
 
   // Load more invoices when scrolling
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop === clientHeight && hasMore) {
-      setPage((prev) => prev + 1);
+    if (scrollHeight - scrollTop <= clientHeight + 50 && nextPageUrl) {
+      // Add a small buffer (50px) to ensure the fetch is triggered slightly before reaching the bottom
+      fetchInvoices(nextPageUrl); // Fetch next page using `next` link
     }
   };
-
-  useEffect(() => {
-    fetchInvoices(page);
-  }, [page]);
 
   //Add file handling functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,6 +175,10 @@ const BillifyDashboard = () => {
       setUploadStatus('success');
       // Close the dialog or show success message
       setIsDialogOpen(false);
+
+      // Refresh the invoices list
+      const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
+      fetchInvoices(initialUrl);
     } catch (error) {
       console.error('Upload error details:', error);
       setUploadStatus('error');
@@ -416,7 +413,10 @@ const BillifyDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4" onScroll={handleScroll}>
+              <div
+                className="space-y-4 overflow-auto h-[500px]" // Ensure the container is scrollable
+                onScroll={handleScroll}
+              >
                 {invoices.map((invoice) => {
                   return (
                     <div
