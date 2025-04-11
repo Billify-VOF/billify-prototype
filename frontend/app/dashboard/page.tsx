@@ -158,6 +158,8 @@ const BillifyDashboard = () => {
     setUploadStatus('uploading');
     setErrorMessage('');
     invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
+    invoiceData["id"] = uploadedInvoiceData["invoice"]["id"];
+    invoiceData["due_date"] = uploadedInvoiceData["invoice"]["date"];
     invoiceData["temp_file_path"] = uploadedInvoiceData["invoice"]["file_path"]; // No type error now
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
