@@ -19,4 +19,6 @@ export interface User {
   firstName?: string;
   lastName?: string;
   company_name?: string;
+  name?: string;
+  role?: string;
 }

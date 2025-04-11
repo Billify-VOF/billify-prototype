@@ -3,13 +3,9 @@ import NotificationBell from '@/components/NotificationBell';
 import SearchComponent from '@/components/SearchComponent';
 import SearchResultItem from '@/components/SearchResultItem';
 import { SearchItemResult } from '@/components/types';
-import { AlertCircle, LogOut } from 'lucide-react';
-import Image from 'next/image';
-import avatar from '../../assets/images/avatar.png';
+import { AlertCircle, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
-
-const name = 'H.Sophia';
-const role = 'Admin';
+import { getDisplayName } from '@/lib/utils/userUtils';
 
 interface TopBarProps {
   onSearch: (query: string) => void;
@@ -18,7 +14,7 @@ interface TopBarProps {
 
 const TopBar = ({ onSearch, searchResult }: TopBarProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -40,10 +36,13 @@ const TopBar = ({ onSearch, searchResult }: TopBarProps) => {
             className="flex cursor-pointer flex-row items-center gap-x-3"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
           >
-            <Image src={avatar} alt="User Avatar" width={40} height={40} className="rounded-full" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
+              <User className="h-6 w-6 text-gray-500" />
+            </div>
             <div className="flex flex-col">
-              <span className="font-semibold">{name}</span>
-              <span className="text-gray-500">{role}</span>
+              <span className="font-semibold">
+                {getDisplayName(user)}
+              </span>
             </div>
           </div>
           {isProfileOpen && (
