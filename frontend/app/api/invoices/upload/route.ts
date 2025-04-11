@@ -16,9 +16,9 @@ export async function POST(request: Request) {
       {
         method: 'POST',
         body: backendFormData,
-        headers:{
-          'Authorization': token,
-        }
+        headers: {
+          Authorization: token,
+        },
       },
     );
 

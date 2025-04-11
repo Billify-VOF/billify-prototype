@@ -9,7 +9,7 @@ import SearchComponent from '@/components/SearchComponent';
 import { dummySearchResults, SearchItemResult } from '@/components/types';
 import SearchResultItem from '@/components/SearchResultItem';
 import NotificationBell from '@/components/NotificationBell';
-import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
+import { STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
 import { Ponto_Connect_2_Options } from '@/constants/api';
 
@@ -32,8 +32,6 @@ const BillifyDashboard = () => {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState<{ dueDate?: string; status?: string }>({});
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
-  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
-  const [pontoStatus, setPontoStatus] = useState<boolean>(false);
 
   // Reset all states when dialog is closed
   const handleDialogOpenChange = (open: boolean) => {
@@ -63,17 +61,11 @@ const BillifyDashboard = () => {
       payload.append('state', state);
       payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI!);
       try {
-        const response = await fetch('/api/ponto/auth', {
+        await fetch('/api/ponto/auth', {
           method: 'POST',
           body: payload,
         });
-        if (response.ok) {
-          setPontoStatus(true);
-        } else {
-          setPontoStatus(false);
-        }
       } catch (error) {
-          setPontoStatus(false);
         console.log('Error while requesting access token: ', error);
       }
     }
@@ -95,7 +87,7 @@ const BillifyDashboard = () => {
     try {
       const response = await fetch(url, {
         headers: {
-          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
         },
       });
 
@@ -106,7 +98,6 @@ const BillifyDashboard = () => {
       const data = await response.json();
       setInvoices((prev) => (url.includes('page=1') ? data.results : [...prev, ...data.results])); // Use `results` for invoices
       setNextPageUrl(data.next); // Update `next` link
-      setPrevPageUrl(data.previous); // Update `previous` link
     } catch (error) {
       console.error('Error fetching invoices:', error);
     }
@@ -188,20 +179,23 @@ const BillifyDashboard = () => {
     if (!invoiceData) return;
     setUploadStatus('uploading');
     setErrorMessage('');
-    invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
-    invoiceData["id"] = uploadedInvoiceData["invoice"]["id"];
-    invoiceData["due_date"] = uploadedInvoiceData["invoice"]["date"];
-    invoiceData["temp_file_path"] = uploadedInvoiceData["invoice"]["file_path"]; // No type error now
+    invoiceData['invoice_id'] = uploadedInvoiceData['invoice']['id'];
+    invoiceData['id'] = uploadedInvoiceData['invoice']['id'];
+    invoiceData['due_date'] = uploadedInvoiceData['invoice']['date'];
+    invoiceData['temp_file_path'] = uploadedInvoiceData['invoice']['file_path']; // No type error now
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
-        method: 'POST',
-        body: JSON.stringify(invoiceData),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData['invoice']['id']}/confirm/`,
+        {
+          method: 'POST',
+          body: JSON.stringify(invoiceData),
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
         },
-      });
+      );
 
       const data = await response.json();
       console.log('Server response:', data);
@@ -302,7 +296,7 @@ const BillifyDashboard = () => {
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Outstanding Invoices</h2>
-                <div className="flex gap-3 items-center">
+                <div className="flex items-center gap-3">
                   {/* Filter Button with Dropdown */}
                   <div className="relative">
                     <button
@@ -312,14 +306,18 @@ const BillifyDashboard = () => {
                       Filter
                     </button>
                     {isFilterDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-64 rounded-lg border bg-white shadow-lg p-4 z-10">
+                      <div className="absolute right-0 z-10 mt-2 w-64 rounded-lg border bg-white p-4 shadow-lg">
                         <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Due Date
+                          </label>
                           <input
                             type="date"
                             className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
                             value={filters.dueDate || ''}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
+                            onChange={(e) =>
+                              setFilters((prev) => ({ ...prev, dueDate: e.target.value }))
+                            }
                           />
                         </div>
                         <div className="mb-4">
@@ -327,7 +325,9 @@ const BillifyDashboard = () => {
                           <select
                             className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
                             value={filters.status || ''}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                            onChange={(e) =>
+                              setFilters((prev) => ({ ...prev, status: e.target.value }))
+                            }
                           >
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
@@ -452,7 +452,7 @@ const BillifyDashboard = () => {
               </div>
 
               <div
-                className="space-y-4 overflow-auto h-[500px]" // Ensure the container is scrollable
+                className="h-[500px] space-y-4 overflow-auto" // Ensure the container is scrollable
                 onScroll={handleScroll}
               >
                 {invoices.map((invoice) => {
