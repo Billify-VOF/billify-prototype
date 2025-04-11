@@ -17,7 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/register', '/dashboard'];
+const publicRoutes = ['/login', '/register'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();

@@ -13,6 +13,10 @@ import { INVOICES_DATA, STATUS_COLORS, UploadStatus } from '@/components/definit
 import { generatePontoOAuthUrl } from '@/lib/utils';
 import { Ponto_Connect_2_Options } from '@/constants/api';
 
+interface ExtendedInvoiceData extends InvoiceData {
+  temp_file_path?: string;
+}
+
 const BillifyDashboard = () => {
   const searchParams = useSearchParams();
   // Add state for file upload
@@ -23,7 +27,12 @@ const BillifyDashboard = () => {
   const [isFileTypeInvalid, setIsFileTypeInvalid] = useState<boolean>(false);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
-  const [invoiceData, setInvoiceData] = useState<InvoiceData>();
+  const [invoiceData, setInvoiceData] = useState<ExtendedInvoiceData>();
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
+  const [filters, setFilters] = useState<{ dueDate?: string; status?: string }>({});
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
   const [pontoStatus, setPontoStatus] = useState<boolean>(false);
 
   // Reset all states when dialog is closed
@@ -79,6 +88,44 @@ const BillifyDashboard = () => {
     }
   }, [requestAccessToken]);
 
+  // Fetch invoices with pagination
+  const fetchInvoices = async (url: string | null) => {
+    if (!url) return;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoices');
+      }
+
+      const data = await response.json();
+      setInvoices((prev) => (url.includes('page=1') ? data.results : [...prev, ...data.results])); // Use `results` for invoices
+      setNextPageUrl(data.next); // Update `next` link
+      setPrevPageUrl(data.previous); // Update `previous` link
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    }
+  };
+
+  useEffect(() => {
+    const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
+    fetchInvoices(initialUrl);
+  }, [filters]);
+
+  // Load more invoices when scrolling
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50 && nextPageUrl) {
+      // Add a small buffer (50px) to ensure the fetch is triggered slightly before reaching the bottom
+      fetchInvoices(nextPageUrl); // Fetch next page using `next` link
+    }
+  };
+
   //Add file handling functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (uploadedInvoiceData) {
@@ -109,6 +156,7 @@ const BillifyDashboard = () => {
     setUploadStatus('uploading');
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
       const response = await fetch('/api/invoices/upload', {
@@ -140,11 +188,19 @@ const BillifyDashboard = () => {
     if (!invoiceData) return;
     setUploadStatus('uploading');
     setErrorMessage('');
-
+    invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
+    invoiceData["id"] = uploadedInvoiceData["invoice"]["id"];
+    invoiceData["due_date"] = uploadedInvoiceData["invoice"]["date"];
+    invoiceData["temp_file_path"] = uploadedInvoiceData["invoice"]["file_path"]; // No type error now
     try {
-      const response = await fetch('/api/invoices/confirm', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
         method: 'POST',
         body: JSON.stringify(invoiceData),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
+        },
       });
 
       const data = await response.json();
@@ -157,6 +213,10 @@ const BillifyDashboard = () => {
       setUploadStatus('success');
       // Close the dialog or show success message
       setIsDialogOpen(false);
+
+      // Refresh the invoices list
+      const initialUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/?page=1`;
+      fetchInvoices(initialUrl);
     } catch (error) {
       console.error('Upload error details:', error);
       setUploadStatus('error');
@@ -242,9 +302,58 @@ const BillifyDashboard = () => {
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Outstanding Invoices</h2>
-                <div className="flex gap-3">
-                  <button className="rounded-lg bg-gray-100 px-4 py-2 text-sm">Filter</button>
-                  {/* Combined Dialog */}
+                <div className="flex gap-3 items-center">
+                  {/* Filter Button with Dropdown */}
+                  <div className="relative">
+                    <button
+                      className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
+                      onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                    >
+                      Filter
+                    </button>
+                    {isFilterDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-64 rounded-lg border bg-white shadow-lg p-4 z-10">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                          <input
+                            type="date"
+                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                            value={filters.dueDate || ''}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700">Status</label>
+                          <select
+                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                            value={filters.status || ''}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                          >
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                          </select>
+                        </div>
+                        <div className="flex justify-between">
+                          <button
+                            className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
+                            onClick={() => setFilters({})}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
+                            onClick={() => setIsFilterDropdownOpen(false)}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Button */}
                   <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                     <DialogTrigger asChild>
                       <button
@@ -342,19 +451,26 @@ const BillifyDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {INVOICES_DATA.map((invoice) => {
+              <div
+                className="space-y-4 overflow-auto h-[500px]" // Ensure the container is scrollable
+                onScroll={handleScroll}
+              >
+                {invoices.map((invoice) => {
                   return (
                     <div
-                      key={invoice.invoice_number}
+                      key={invoice.id}
                       className="flex items-center justify-between rounded-lg bg-white p-4"
                     >
                       <div>
                         <div className="font-semibold">Invoice #{invoice.invoice_number}</div>
-                        <div className="text-sm text-gray-500">Due: {invoice.date}</div>
+                        <div className="text-sm text-gray-500">Due: {invoice.due_date}</div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className={`rounded-full px-3 py-1 ${STATUS_COLORS[invoice.status]}`}>
+                        <span
+                          className={`rounded-full px-3 py-1 ${
+                            STATUS_COLORS[invoice.status as keyof typeof STATUS_COLORS]
+                          }`}
+                        >
                           €{invoice.amount}
                         </span>
                         <input type="checkbox" className="h-5 w-5 rounded border-gray-300" />

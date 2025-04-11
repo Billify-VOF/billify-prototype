@@ -26,6 +26,8 @@ from datetime import date
 from domain.models.invoice import Invoice
 from domain.models.value_objects import UrgencyLevel
 
+from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
+
 
 class InvoiceRepository(ABC):
     """Interface defining invoice data access operations.
@@ -83,6 +85,8 @@ class InvoiceRepository(ABC):
         Raises:
             RepositoryError: If there's a persistence-related error
         """
+        
+
 
     @abstractmethod
     def get_by_number(self, invoice_number: str) -> Optional[Invoice]:

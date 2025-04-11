@@ -10,12 +10,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
+from django.urls import resolve
 
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 # PermissionDenied import needed when authentication code is uncommented for production
 # from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 
-from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer
+from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer, InvoiceSerializer
 from domain.services.invoice_service import InvoiceService
 from application.services.invoice_service import InvoiceProcessingService
 from domain.exceptions import StorageError, ProcessingError
@@ -23,7 +26,11 @@ from infrastructure.storage.file_system import FileStorage
 from infrastructure.django.repositories.invoice_repository import (
     DjangoInvoiceRepository,
 )
+from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
+from infrastructure.django.models.invoice import Invoice
+
 from integrations.transformers.pdf.transformer import PDFTransformer
+from django_filters.rest_framework import DjangoFilterBackend
 
 logger = getLogger(__name__)
 
@@ -106,7 +113,7 @@ class InvoiceUploadView(BaseInvoiceView):
     """Handle invoice uploads and initiate invoice processing workflow."""
 
     # Authentication is not required during development, for now.
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -132,7 +139,6 @@ class InvoiceUploadView(BaseInvoiceView):
         4. Creates an invoice record with the extracted data
         5. Returns both the invoice record and extracted information
         """
-
         logger.debug("Request data: %s", request.data)
         logger.debug("Received file: %s", request.FILES.get("file"))
         serializer = InvoiceUploadSerializer(data=request.data)
@@ -415,9 +421,9 @@ class InvoiceConfirmationView(BaseInvoiceView):
     """
 
     # Authentication is not required during development, for now.
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-    def post(self, request: Request, invoice_id: int) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Finalize an invoice by transferring it from temporary to permanent storage.
 
@@ -430,7 +436,8 @@ class InvoiceConfirmationView(BaseInvoiceView):
 
         Args:
             request: Django HTTP request object containing confirmation data
-            invoice_id (int): ID of the invoice to finalize
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Response: JSON response with finalized invoice data or error details
@@ -443,6 +450,12 @@ class InvoiceConfirmationView(BaseInvoiceView):
             503 Service Unavailable: Storage service errors
             500 Internal Server Error: Unexpected errors
         """
+        # Extract invoice_id from the URL kwargs
+        invoice_id = kwargs.get("invoice_id")
+        if not invoice_id:
+            logger.error("Invoice ID is missing in the URL.")
+            return Response({"error": "Invoice ID is required."}, status=400)
+
         serializer = InvoiceConfirmationSerializer(data=request.data)
         if not serializer.is_valid():
             logger.error("Serializer errors: %s", serializer.errors)
@@ -451,6 +464,7 @@ class InvoiceConfirmationView(BaseInvoiceView):
         # Check if invoice exists before proceeding
         try:
             # Try to get the invoice to verify it exists
+            print(f"Invoice ID: {invoice_id}")
             self.invoice_repository.get_by_id(invoice_id)
         except (ValueError, TypeError, KeyError) as e:
             logger.warning(
@@ -466,17 +480,17 @@ class InvoiceConfirmationView(BaseInvoiceView):
             return Response({"error": "Failed to verify invoice existence."}, status=500)
 
         try:
+
             # Extract validated data
-            temp_file_path = serializer.validated_data["temp_file_path"]
+            temp_file_path = serializer["temp_file_path"]
             urgency_level = serializer.validated_data.get("urgency_level")
 
             # Check if the temporary file exists
             # Validate that the path is within the temporary storage area
-            if not temp_file_path.startswith("temp/"):
-                logger.error("Invalid temporary file path: %s", temp_file_path)
-                return Response({"error": "Invalid temporary file path."}, status=400)
-
-            full_temp_path = self.storage_repository.get_file_path(temp_file_path)
+            # if not temp_file_path.startswith("temp/"):
+            #     logger.error("Invalid temporary file path: %s", temp_file_path)
+            #     return Response({"error": "Invalid temporary file path."}, status=400)
+            full_temp_path = self.storage_repository.get_file_path(temp_file_path.value)
             if not Path(full_temp_path).exists():
                 logger.error("Temporary file not found at path: %s", full_temp_path)
                 return Response({"error": "Temporary file not found."}, status=404)
@@ -487,10 +501,12 @@ class InvoiceConfirmationView(BaseInvoiceView):
                     # Finalize the invoice using the application service
                     result = self.invoice_processing_service.finalize_invoice(
                         invoice_id=invoice_id,
-                        temp_file_path=temp_file_path,
+                        temp_file_path=full_temp_path,
                         urgency_level=urgency_level,
                         user_id=self._get_user_id(request),
+                        invoice_data = request.data
                     )
+
 
                     # Get status safely
                     status_value = self._get_formatted_status(result.get("status"))
@@ -561,3 +577,14 @@ class InvoiceConfirmationView(BaseInvoiceView):
                 extra={"user_id": self._get_user_id(request), "invoice_id": invoice_id},
             )
             return Response({"error": "Internal server error", "details": str(e)}, status=500)
+
+
+class InvoiceViewSet(ModelViewSet):
+    """
+    A viewset for viewing and editing invoice instances.
+    """
+    queryset = Invoice.objects.all()
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['status', 'due_date']

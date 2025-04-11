@@ -16,6 +16,7 @@ The current implementation was kept due to time constraints for the MVP release.
 from typing import Dict, Any, List, Optional
 from domain.models.invoice import Invoice
 from domain.models.value_objects import InvoiceStatus
+from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Import the Django model
 
 
 class InvoiceService:
@@ -113,11 +114,11 @@ class InvoiceService:
         Returns:
             Dict with urgency level, display name, color code, and manual flag
         """
-        # Get the UrgencyLevel enum from the invoice
-        urgency_level = invoice.urgency
+        # Ensure the invoice has the urgency attribute
+        urgency_level = getattr(invoice, "urgency", None)
 
         # Check if urgency was manually set
-        is_manually_set = invoice.is_urgency_manually_set()
+        is_manually_set = invoice.is_urgency_manually_set() if hasattr(invoice, "is_urgency_manually_set") else False
 
         # Return a dictionary with all relevant information
         return {
@@ -183,7 +184,7 @@ class InvoiceService:
         original_file_name: Optional[str] = None,
         file_path: Optional[str] = None,
         user_id: Optional[int] = None,
-    ) -> Invoice:
+    ) -> DjangoInvoice:  # Return the Django model instance
         """Process an invoice, creating a new one or updating existing.
 
         This method consolidates the create and update logic into a single method
@@ -198,7 +199,7 @@ class InvoiceService:
             user_id: ID of the user who uploaded the invoice
 
         Returns:
-            Processed Invoice instance (either created or updated)
+            Processed Django Invoice instance (either created or updated)
 
         Raises:
             ValueError: If the invoice data is missing required fields
@@ -232,8 +233,20 @@ class InvoiceService:
         if hasattr(invoice, "uploaded_by") and user_id and not invoice.uploaded_by:
             invoice.uploaded_by = user_id
 
-        # Save if repository available
-        if hasattr(self, "invoice_repository") and self.invoice_repository:
-            return self.invoice_repository.save(invoice, user_id)
+        # Convert domain model to Django model for saving
+        django_invoice = DjangoInvoice(
+            invoice_number=invoice.invoice_number,
+            amount=invoice.amount,
+            due_date=invoice.due_date,
+            status=invoice.status.value,
+            uploaded_by_id=user_id,
+            file_path=file_path,
+            file_size=file_size,
+            file_type=file_type,
+            original_file_name=original_file_name,
+        )
 
+        # Save the Django model instance
+        django_invoice.save()
+        invoice.id = django_invoice.id
         return invoice

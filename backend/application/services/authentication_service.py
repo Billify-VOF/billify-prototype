@@ -65,3 +65,29 @@ class AuthenticationService:
             return True
         except Token.DoesNotExist:
             return False
+
+    def get_current_user(self, user_id: int) -> Tuple[bool, Dict[str, Any]]:
+        """Get the current authenticated user's profile information.
+
+        Args:
+            user_id: ID of the authenticated user
+
+        Returns:
+            Tuple containing:
+            - bool: Success status
+            - dict: Response data with user profile or error message
+        """
+        success, account, error_message = self.domain_auth_service.get_current_user(user_id)
+
+        if not success:
+            return False, {"error": error_message}
+
+        assert account is not None  # Ensure account is not None when success is True
+
+        return True, {
+            "id": account.id,
+            "username": account.username,
+            "email": account.email,
+            "firstName": account.first_name,
+            "lastName": account.last_name,
+        }

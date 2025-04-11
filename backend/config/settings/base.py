@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "drf_spectacular",
+    "django_celery_beat",
     # Local apps
     # 'api' is not included here as it's not a Django app -> it actually could
     # be a Django app, but it's not a real app, it's just a collection of views
@@ -146,7 +147,7 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ],
     "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
-    "PAGE_SIZE": 100,
+    "PAGE_SIZE": 10,
 }
 
 # CORS settings
@@ -174,14 +175,19 @@ AUTH_USER_MODEL = "infrastructure.Account"
 if not DEBUG:
     # Production storage settings (S3/MinIO)
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
+    AWS_ACCESS_KEY_ID = env("DIGITAL_OCEAN_SPACES_KEY")
+    AWS_SECRET_ACCESS_KEY = env("DIGITAL_OCEAN_SPACES_SECRET")
+    AWS_STORAGE_BUCKET_NAME = env("DIGITAL_OCEAN_SPACES_NAME")
+    AWS_S3_REGION='sfo3' #need to change with env
+    AWS_S3_ENDPOINT_URL = 'https://sfo3.digitaloceanspaces.com' # need to change with env
+    AWS_S3_OBJECT_PARAMETERS = {
+        "CacheControl": "max-age=86400",
+    }
     AWS_DEFAULT_ACL = None
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_VERIFY = True
     AWS_S3_SIGNATURE_VERSION = "s3v4"
+    AWS_LOCATION = "media"
 
 LOGGING = {
     "version": 1,
@@ -439,3 +445,13 @@ VALID_ISO_CURRENCY_CODES = {
     "ZMW",
     "ZWL",
 }
+
+# Celery-Related Settings
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost:5672//")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_BACKEND = None
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# CELERY BEAT SETTINGS
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

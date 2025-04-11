@@ -15,6 +15,8 @@ import { getDueDateMessage, calculateUrgencyFromDays } from '../lib/invoice';
 
 export interface InvoiceData {
   invoice_id: number;
+  id: string;
+  due_date: string;
   invoice_number: string;
   amount: string;
   date: string;
@@ -53,6 +55,8 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
     supplier_name: '',
     status: 'pending',
     urgency: result?.invoice_data?.urgency || DEFAULT_URGENCY,
+    due_date:'',
+    id: '',
   });
   const [autoCalculatedUrgency, setAutoCalculatedUrgency] = useState<Urgency | undefined>(
     undefined,
@@ -88,6 +92,8 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         date: formattedDate,
         supplier_name: result.invoice_data.supplier_name || '',
         urgency: result.invoice_data.urgency || DEFAULT_URGENCY,
+        due_date: result.invoice_data.due_date || '',
+        id: result.invoice_data.id || '',
       });
       setAutoCalculatedUrgency(result.invoice_data.urgency);
     }

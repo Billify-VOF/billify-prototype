@@ -86,18 +86,17 @@ class DjangoInvoiceRepository(InvoiceRepository):
             "amount": db_invoice.amount,
             "due_date": db_invoice.due_date,
             "invoice_number": db_invoice.invoice_number,
-            "invoice_id": db_invoice.id,  # type: ignore[attr-defined]
             "status": InvoiceStatus.from_db_value(db_invoice.status),
             "uploaded_by": db_invoice.uploaded_by_id,
             "buyer": buyer_info,
             "seller": seller_info,
             "payment": payment_info,
             "file": file_info,
+            "invoice_id": db_invoice.id,
         }
         logger.debug("Created invoice args: %s", invoice_args)
-
-        if db_invoice.manual_urgency is not None:
-            invoice_args["_manual_urgency"] = UrgencyLevel.from_db_value(db_invoice.manual_urgency)
+        # if db_invoice.manual_urgency is not None:
+        #     invoice_args["manual_urgency"] = UrgencyLevel.from_db_value(db_invoice.manual_urgency)
 
         return DomainInvoice(**invoice_args)
 
@@ -244,7 +243,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             InvalidInvoiceError: If invoice doesn't exist
         """
         try:
-            db_invoice = DjangoInvoice.objects.get(invoice_number=invoice.invoice_number)
+            db_invoice = DjangoInvoice.objects.get(id=invoice.id)
 
             # Get the manual urgency value if it exists
             manual_urgency_value = (
@@ -255,7 +254,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
             update_fields = {
                 "amount": invoice.amount,
                 "due_date": invoice.due_date,
-                "status": invoice.status.value,
+                "status": invoice.status,
                 "uploaded_by_id": user_id,
                 "manual_urgency": manual_urgency_value,
             }

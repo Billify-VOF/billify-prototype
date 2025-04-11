@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
 
 from application.services.authentication_service import AuthenticationService
 from domain.services.authentication_service import (
@@ -83,3 +84,24 @@ class LogoutView(APIView):
             {"message": "Successfully logged out." if success else "Logout failed."},
             status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    """Get the current user's profile information.
+
+    Returns:
+        Response: User profile data including:
+            - id: User ID
+            - username: Username
+            - email: Email address (optional)
+            - firstName: First name (optional)
+            - lastName: Last name (optional)
+    """
+    success, response = auth_service.get_current_user(request.user.id)
+
+    if not success:
+        return Response(response, status=status.HTTP_401_UNAUTHORIZED)
+
+    return Response(response)

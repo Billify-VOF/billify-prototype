@@ -10,19 +10,21 @@ URL patterns are organized by feature:
 - Ponto integration endpoints (/ponto/*)
 """
 
-from django.urls import path, include
+from django.urls import path
 from rest_framework.routers import DefaultRouter
-from api.views.auth import LoginView, LogoutView, RegisterView
-from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView
+from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView, InvoiceViewSet
+from api.views.auth import LoginView, LogoutView, RegisterView, get_user_profile
 from api.views.ponto import PontoViewSet
 
 router = DefaultRouter()
+router.register(r'invoices', InvoiceViewSet, basename='invoice')
 router.register(r"ponto", PontoViewSet, basename="ponto")
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/me/", get_user_profile, name="user-profile"),
     path("invoices/upload/", InvoiceUploadView.as_view(), name="invoice-upload"),
     # Invoice confirmation endpoint - handles the second phase of the two-phase storage approach
     # Transfers files from temporary to permanent storage after user review
@@ -36,5 +38,6 @@ urlpatterns = [
         InvoicePreviewView.as_view(),
         name="invoice-preview",
     ),
-    path("", include(router.urls)),
 ]
+
+urlpatterns += router.urls

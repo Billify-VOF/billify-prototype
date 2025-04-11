@@ -5,6 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 import os
 import re
+from infrastructure.django.models.invoice import Invoice
 
 User = get_user_model()
 
@@ -77,7 +78,9 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True, min_length=3, max_length=150)
     password = serializers.CharField(required=True, min_length=8, write_only=True)
-    company_name = serializers.CharField(required=False, min_length=2, max_length=255, default="")
+    company_name = serializers.CharField(
+        required=False, min_length=2, max_length=255, allow_blank=True, allow_null=True
+    )
 
     def validate_password(self, value: str) -> str:
         """Validate password strength."""
@@ -147,8 +150,8 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
         normalized_path = os.path.normpath(value)
 
         # Check if path starts with temp/ after normalization
-        if not normalized_path.startswith("temp/"):
-            raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
+        # if not normalized_path.startswith("temp/"):
+        #     raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
 
         # Prevent directory traversal attempts
         if ".." in normalized_path or "//" in value:
@@ -156,11 +159,11 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
 
         # Validate that the filename follows expected pattern (alphanumeric with common extensions)
         # This helps prevent command injection via filenames
-        filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
-        if not re.match(filename_pattern, normalized_path):
-            raise serializers.ValidationError(
-                "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
-            )
+        # filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
+        # if not re.match(filename_pattern, normalized_path):
+        #     raise serializers.ValidationError(
+        #         "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
+        #     )
 
         return value
 
@@ -195,3 +198,12 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
             "InvoiceConfirmationSerializer is for validation only. "
             "Use InvoiceProcessingService for invoice finalization."
         )
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Invoice model.
+    """
+    class Meta:
+        model = Invoice
+        fields = '__all__'
