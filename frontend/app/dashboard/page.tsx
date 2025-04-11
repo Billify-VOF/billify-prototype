@@ -21,6 +21,11 @@ const BillifyDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>();
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
+  const [filters, setFilters] = useState<{ dueDate?: string; status?: string }>({});
 
   // Reset all states when dialog is closed
   const handleDialogOpenChange = (open: boolean) => {
@@ -40,6 +45,51 @@ const BillifyDashboard = () => {
       setUploadedInvoiceData(null);
     }
   }, [isDialogOpen]);
+
+  // Fetch invoices with pagination
+  const fetchInvoices = async (page: number) => {
+    try {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        ...(filters.dueDate && { due_date: filters.dueDate }),
+        ...(filters.status && { status: filters.status }),
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices?${queryParams}`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem('token') || ''}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoices');
+      }
+
+      const data = await response.json();
+      setInvoices((prev) => (page === 1 ? data.results : [...prev, ...data.results]));
+      setHasMore(data.next !== null);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    }
+  };
+
+  // Fetch invoices when filters change
+  useEffect(() => {
+    setPage(1); // Reset to the first page
+    fetchInvoices(1);
+  }, [filters]);
+
+  // Load more invoices when scrolling
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop === clientHeight && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices(page);
+  }, [page]);
 
   //Add file handling functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,7 +156,7 @@ const BillifyDashboard = () => {
     invoiceData["invoice_id"] = uploadedInvoiceData["invoice"]["id"];
     invoiceData["temp_file_path"]= uploadedInvoiceData["invoice"]["file_path"];
     try {
-      const response = await fetch(`http://localhost:8000/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${uploadedInvoiceData["invoice"]["id"]}/confirm/`, {
         method: 'POST',
         body: JSON.stringify(invoiceData),
         headers: {
@@ -211,9 +261,58 @@ const BillifyDashboard = () => {
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Outstanding Invoices</h2>
-                <div className="flex gap-3">
-                  <button className="rounded-lg bg-gray-100 px-4 py-2 text-sm">Filter</button>
-                  {/* Combined Dialog */}
+                <div className="flex gap-3 items-center">
+                  {/* Filter Button with Dropdown */}
+                  <div className="relative">
+                    <button
+                      className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
+                      onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                    >
+                      Filter
+                    </button>
+                    {isFilterDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-64 rounded-lg border bg-white shadow-lg p-4 z-10">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                          <input
+                            type="date"
+                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                            value={filters.dueDate || ''}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700">Status</label>
+                          <select
+                            className="mt-1 w-full rounded-lg border-gray-300 px-4 py-2"
+                            value={filters.status || ''}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                          >
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                          </select>
+                        </div>
+                        <div className="flex justify-between">
+                          <button
+                            className="rounded-lg bg-gray-100 px-4 py-2 text-sm"
+                            onClick={() => setFilters({})}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
+                            onClick={() => setIsFilterDropdownOpen(false)}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Button */}
                   <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                     <DialogTrigger asChild>
                       <button
@@ -311,16 +410,16 @@ const BillifyDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {INVOICES_DATA.map((invoice) => {
+              <div className="space-y-4" onScroll={handleScroll}>
+                {invoices.map((invoice) => {
                   return (
                     <div
-                      key={invoice.invoice_number}
+                      key={invoice.id}
                       className="flex items-center justify-between rounded-lg bg-white p-4"
                     >
                       <div>
                         <div className="font-semibold">Invoice #{invoice.invoice_number}</div>
-                        <div className="text-sm text-gray-500">Due: {invoice.date}</div>
+                        <div className="text-sm text-gray-500">Due: {invoice.due_date}</div>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className={`rounded-full px-3 py-1 ${STATUS_COLORS[invoice.status]}`}>

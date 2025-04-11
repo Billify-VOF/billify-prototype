@@ -30,6 +30,7 @@ from infrastructure.django.models.invoice import Invoice as DjangoInvoice  # Imp
 from infrastructure.django.models.invoice import Invoice
 
 from integrations.transformers.pdf.transformer import PDFTransformer
+from django_filters.rest_framework import DjangoFilterBackend
 
 logger = getLogger(__name__)
 
@@ -584,3 +585,5 @@ class InvoiceViewSet(ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['status', 'due_date']
