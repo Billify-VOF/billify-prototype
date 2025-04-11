@@ -426,8 +426,12 @@ const BillifyDashboard = () => {
                         <div className="text-sm text-gray-500">Due: {invoice.due_date}</div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className={`rounded-full px-3 py-1 `}>
-                          €{invoice.amount} 
+                        <span
+                          className={`rounded-full px-3 py-1 ${
+                            STATUS_COLORS[invoice.status as keyof typeof STATUS_COLORS]
+                          }`}
+                        >
+                          €{invoice.amount}
                         </span>
                         <input type="checkbox" className="h-5 w-5 rounded border-gray-300" />
                       </div>
