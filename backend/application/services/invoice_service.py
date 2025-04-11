@@ -261,7 +261,7 @@ class InvoiceProcessingService:
         urgency_level: Optional[int] = None,
         user_id: Optional[int] = None,
         invoice_data: Dict[str, Any] = None,
-        invoice_number: str = ""
+        invoice_number: str = "",
     ) -> Dict[str, Any]:
         """Finalize an invoice by transferring its file from temporary to permanent storage.
 
