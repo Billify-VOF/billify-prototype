@@ -452,7 +452,7 @@ class InvoiceConfirmationView(BaseInvoiceView):
         """
         # Extract invoice_id from the URL kwargs
         invoice_id = kwargs.get("invoice_id")
-        
+
         if not invoice_id:
             logger.error("Invoice ID is missing in the URL.")
             return Response({"error": "Invoice ID is required."}, status=400)
