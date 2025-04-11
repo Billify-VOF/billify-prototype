@@ -92,9 +92,9 @@ export default function NotificationBell(props: { className?: string }) {
     <div className={`relative ${props.className}`} ref={dropdownRef}>
       {/* Notification Bell with Counter */}
       <button onClick={toggleDropdown} className="relative pr-2 pt-2">
-        <Bell className="h-6 w-6 text-gray-700" />
+        <Bell className="h-5 w-5 text-gray-700" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+          <span className="absolute right-1 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-xs text-white">
             {unreadCount}
           </span>
         )}
