@@ -14,10 +14,11 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from api.views.invoice import InvoiceUploadView, InvoicePreviewView, InvoiceConfirmationView, InvoiceViewSet
 from api.views.auth import LoginView, LogoutView, RegisterView, get_user_profile
-from api.views.ponto import PontoView
+from api.views.ponto import PontoViewSet
 
 router = DefaultRouter()
-router.register(r'invoices', InvoiceViewSet, basename='invoice')
+router.register(r"invoices", InvoiceViewSet, basename="invoice")
+router.register(r"ponto", PontoViewSet, basename="ponto")
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
@@ -36,30 +37,6 @@ urlpatterns = [
         "invoices/preview/<path:file_path>/",
         InvoicePreviewView.as_view(),
         name="invoice-preview",
-    ),
-    path(
-        "ponto/transactions-history/",
-        PontoView.as_view(),
-        {"action": "get_transaction_history"},
-        name="transaction_history",
-    ),
-    path(
-        "ponto/login/",
-        PontoView.as_view(),
-        {"action": "ponto_login"},
-        name="ponto_login",
-    ),
-    path(
-        "ponto/login/refresh/",
-        PontoView.as_view(),
-        {"action": "refresh_access_token"},
-        name="ponto_login_refresh",
-    ),
-    path(
-        "ponto/accounts/",
-        PontoView.as_view(),
-        {"action": "fetch_account_details"},
-        name="accounts",
     ),
 ]
 

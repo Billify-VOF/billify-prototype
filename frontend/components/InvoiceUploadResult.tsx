@@ -55,7 +55,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
     supplier_name: '',
     status: 'pending',
     urgency: result?.invoice_data?.urgency || DEFAULT_URGENCY,
-    due_date:'',
+    due_date: '',
     id: '',
   });
   const [autoCalculatedUrgency, setAutoCalculatedUrgency] = useState<Urgency | undefined>(

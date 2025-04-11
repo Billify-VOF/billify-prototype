@@ -4,7 +4,6 @@ from typing import Any, Optional
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 import os
-import re
 from infrastructure.django.models.invoice import Invoice
 
 User = get_user_model()
@@ -151,7 +150,8 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
 
         # Check if path starts with temp/ after normalization
         # if not normalized_path.startswith("temp/"):
-        #     raise serializers.ValidationError("Invalid temporary file path format. Must start with 'temp/'.")
+        #     raise serializers.ValidationError
+        #               ("Invalid temporary file path format. Must start with 'temp/'.")
 
         # Prevent directory traversal attempts
         if ".." in normalized_path or "//" in value:
@@ -162,7 +162,8 @@ class InvoiceConfirmationSerializer(serializers.Serializer):
         # filename_pattern = r"^temp/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$"
         # if not re.match(filename_pattern, normalized_path):
         #     raise serializers.ValidationError(
-        #         "Invalid filename format. Only alphanumeric characters, hyphens, and underscores are allowed."
+        #         "Invalid filename format.
+        #               Only alphanumeric characters, hyphens, and underscores are allowed."
         #     )
 
         return value
@@ -204,6 +205,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     """
     Serializer for the Invoice model.
     """
+
     class Meta:
         model = Invoice
-        fields = '__all__'
+        fields = "__all__"

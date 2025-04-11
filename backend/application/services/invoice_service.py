@@ -427,7 +427,7 @@ class InvoiceProcessingService:
                     # We need to handle this differently as TemporaryStorageAdapter
                     # metadata through
                     # First read the file content
-                    content =""
+                    content = ""
                     with open(temp_full_path, "rb") as file:
                         content = file.read()
 

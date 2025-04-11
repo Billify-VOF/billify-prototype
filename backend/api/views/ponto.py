@@ -7,10 +7,11 @@ import urllib3
 from urllib.parse import urlencode
 
 # Django imports
-from django.shortcuts import redirect
 from django.http import HttpRequest
-from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.core.exceptions import BadRequest
 
 # Local imports
 from infrastructure.django.repositories.ponto_repository import (
@@ -34,12 +35,11 @@ from config.settings.base import (
     LOG_LEVEL,
     PONTO_CLIENT_ID,
     PONTO_CLIENT_SECRET,
-    PONTO_AUTH_URL,
-    PONTO_REDIRECT_URI,
     PONTO_CONNECT_BASE_URL,
     PONTO_ACCOUNTS_ENDPOINT,
     PONTO_PAGE_LIMIT,
     PONTO_PAGE_LIMIT_LIST,
+    PONTO_TOKEN_URL,
 )
 
 # Configure logger
@@ -52,7 +52,7 @@ except AttributeError:
     logger.setLevel(logging.INFO)
 
 
-class PontoView(APIView):
+class PontoViewSet(ViewSet):
     """
     A view for handling Ponto API interactions.
 
@@ -87,7 +87,8 @@ class PontoView(APIView):
         self.ponto_token_encryption_service = PontoTokenEncryptionService()
         self.ponto_token_service = PontoTokenService(ponto_token_repository=self.ponto_token_repository)
 
-    def fetch_account_details(self, request):
+    @action(detail=False, methods=["get"])
+    def accounts(self, request):
         """Fetches account details for the authenticated user from the Ponto Connect API.
 
         This endpoint retrieves account details for the authenticated user by making a request to the
@@ -149,7 +150,8 @@ class PontoView(APIView):
             logger.error(f"Error occurred while fetching account details for user {user}: {str(e)}")
             return Response({"error": f"Request failed: {e}"}, status=500)
 
-    def ponto_login(self, request: HttpRequest) -> Response:
+    @action(detail=False, methods=["post"])
+    def login(self, request: HttpRequest) -> Response:
         """
         Handles both the redirection to Ponto's OAuth2 login page and the callback
         to exchange the authorization code for an access token.
@@ -160,44 +162,44 @@ class PontoView(APIView):
         Returns:
             Response: The redirect or token response.
         """
-        session_id = PontoProvider.generate_random_session_id()
-        auth_url = (
-            f"{PONTO_AUTH_URL}?"
-            f"client_id={PONTO_CLIENT_ID}&"
-            f"redirect_uri={PONTO_REDIRECT_URI}&"
-            f"response_type=code&"
-            f"scope=ai+pi+offline_access&"
-            f"state={session_id}"
-        )
-        auth_code = request.GET.get("code")
-        if not auth_code:
-            # Redirect user to Ponto's login page if no code is provided
-            return redirect(auth_url)
 
-        # Step 2: Exchange authorization code for access token
         try:
+            code = request.POST.get("code")
+            redirect_uri = request.POST.get("redirect_uri")
+            code_verifier = request.POST.get("state")
+
+            if code is None:
+                raise BadRequest("Code is missing")
+            if redirect_uri is None:
+                raise BadRequest("Redirect URI is missing")
+            if code_verifier is None:
+                raise BadRequest("Code verifier is missing")
+
             client = PontoProvider.generate_client_credentials(PONTO_CLIENT_ID, PONTO_CLIENT_SECRET)
 
             # Prepare request data for the token exchange
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "application/vnd.api+json",
+                "Accept": "application/json",
                 "Authorization": f"Basic {client}",
             }
 
             data = {
                 "grant_type": "authorization_code",
-                "code": auth_code,
-                "redirect_uri": PONTO_REDIRECT_URI,
+                "code": code,
+                "client_id": PONTO_CLIENT_ID,
+                "redirect_uri": redirect_uri,
+                "code_verifier": code_verifier,
             }
 
             encoded_data = urlencode(data).encode("utf-8")
+
             # Create a PoolManager with the SSL context
             http = PontoProvider.create_http_instance()
 
             response = http.request(
                 "POST",
-                PONTO_CONNECT_BASE_URL,
+                PONTO_TOKEN_URL,
                 headers=headers,
                 body=encoded_data,
                 preload_content=True,
@@ -254,7 +256,8 @@ class PontoView(APIView):
                 status=500,
             )
 
-    def refresh_access_token(self, request: HttpRequest):
+    @action(detail=False, methods=["post"])
+    def refresh(self, request: HttpRequest):
         """
         Refreshes the access token using the stored refresh token, updates it in the database,
         and returns the updated token.
@@ -350,7 +353,8 @@ class PontoView(APIView):
         except Exception:
             raise IbanityAccountNotFoundError({"error": "No Ibanity account found for this user"}, status=404)
 
-    def get_transaction_history(self, request: HttpRequest):
+    @action(detail=False, methods=["get"])
+    def transaction_history(self, request: HttpRequest):
         """Get transaction history for a user's account.
 
         Args:

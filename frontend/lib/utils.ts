@@ -6,10 +6,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function base64_urlencode(str: string) {
-  const encoder = new TextEncoder();
-  const uint8Array = encoder.encode(str);
-  const urlencoded = btoa(String.fromCharCode(...Array.from(uint8Array))) // Convert Uint8Array to number[]
+export function base64_urlencode(data: ArrayBuffer) {
+  const urlencoded = btoa(String.fromCharCode.apply(null, new Uint8Array(data)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
@@ -47,16 +45,14 @@ export function generateCodeVerifier(): string {
   return result;
 }
 
-export async function sha256Base64(input: string): Promise<string> {
+export async function sha256Base64(input: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-
-  return btoa(String.fromCharCode(...Array.from(new Uint8Array(hashBuffer)))); // Convert Uint8Array to number[]
+  return hashBuffer;
 }
 
-export async function generateCodeChallenge(): Promise<string> {
-  const codeVerifier = generateCodeVerifier();
+export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
   const sha256 = await sha256Base64(codeVerifier);
   const codeChallenge = base64_urlencode(sha256);
 
@@ -65,9 +61,9 @@ export async function generateCodeChallenge(): Promise<string> {
 
 export const generatePontoOAuthUrl = async () => {
   try {
-    const state = base64_urlencode(generateCodeVerifier());
-    const codeChallenge = await generateCodeChallenge();
-    return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${codeVerifier}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
   } catch (error) {
     console.log('Failed to generate Ponto OAuth URL');
     throw error;

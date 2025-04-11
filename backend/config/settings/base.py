@@ -178,8 +178,8 @@ if not DEBUG:
     AWS_ACCESS_KEY_ID = env("DIGITAL_OCEAN_SPACES_KEY")
     AWS_SECRET_ACCESS_KEY = env("DIGITAL_OCEAN_SPACES_SECRET")
     AWS_STORAGE_BUCKET_NAME = env("DIGITAL_OCEAN_SPACES_NAME")
-    AWS_S3_REGION='sfo3' #need to change with env
-    AWS_S3_ENDPOINT_URL = 'https://sfo3.digitaloceanspaces.com' # need to change with env
+    AWS_S3_REGION = "sfo3"  # need to change with env
+    AWS_S3_ENDPOINT_URL = "https://sfo3.digitaloceanspaces.com"  # need to change with env
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
     }
