@@ -261,6 +261,7 @@ class InvoiceProcessingService:
         urgency_level: Optional[int] = None,
         user_id: Optional[int] = None,
         invoice_data: Dict[str, Any] = None,
+        invoice_number: str = "",
     ) -> Dict[str, Any]:
         """Finalize an invoice by transferring its file from temporary to permanent storage.
 
@@ -301,7 +302,7 @@ class InvoiceProcessingService:
                 logger.error("Invoice not found with ID: %s", invoice_id)
                 raise ProcessingError(f"Invoice not found: {invoice_id}")
 
-            logger.info("Retrieved invoice: %s", invoice.invoice_number)
+            logger.info("Retrieved invoice: %s", invoice_number)
 
             # Validate the invoice data before finalizing
             try:
@@ -377,6 +378,11 @@ class InvoiceProcessingService:
                                 logger.info("Set urgency level to: %s", urgency.display_name)
                             except KeyError:
                                 logger.warning("Invalid urgency level provided: %s", urgency_level)
+                    elif key == "invoice_number":
+                        # Handle invoice_number key specifically
+                        value = invoice_number
+                        setattr(invoice, key, value)
+                        logger.info("Updated invoice attribute %s to %s", key, value)
                     elif hasattr(invoice, key):
                         setattr(invoice, key, value)
                         logger.debug("Updated invoice attribute %s to %s", key, value)
@@ -387,7 +393,7 @@ class InvoiceProcessingService:
                 # Prepare metadata to associate with the stored file
                 file_metadata = {
                     "invoice_id": str(invoice.id),
-                    "invoice_number": invoice.invoice_number,
+                    "invoice_number": invoice_number,
                     "uploaded_by": str(effective_user_id),
                     "finalized_at": timestamp,
                 }
@@ -474,8 +480,8 @@ class InvoiceProcessingService:
                 # Update the invoice with the permanent file path
                 invoice.file.path = permanent_path
                 logger.debug("Updated invoice file path to: %s", permanent_path)
-
                 # Update the invoice in the repository
+                invoice.invoice_number = invoice_number
                 updated_invoice = self.invoice_repository.update(invoice, effective_user_id)
                 logger.info("Invoice successfully finalized and updated with ID: %s", updated_invoice.id)
 

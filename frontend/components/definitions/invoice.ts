@@ -70,9 +70,9 @@ export const DEFAULT_URGENCY: Urgency = {
 };
 
 export const STATUS_COLORS: Record<InvoiceStatus, string> = {
-  overdue: 'bg-red-100 text-red-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-green-100 text-green-800',
+  overdue: 'text-red-600',
+  pending: 'text-yellow-600',
+  paid: 'text-green-600',
 };
 
 export interface Invoice {
@@ -83,34 +83,5 @@ export interface Invoice {
   supplier_name: string;
   status: InvoiceStatus;
   urgency: Urgency;
+  change?: string;
 }
-
-export const INVOICES_DATA: Invoice[] = [
-  {
-    invoice_id: 1,
-    invoice_number: 'INV-001',
-    amount: 1000.0,
-    date: '2025-03-10',
-    supplier_name: 'Supplier A',
-    status: 'pending',
-    urgency: { ...URGENCY_LEVELS[0], is_manual: false },
-  },
-  {
-    invoice_id: 2,
-    invoice_number: 'INV-002',
-    amount: 500.0,
-    date: '2025-03-15',
-    supplier_name: 'Supplier B',
-    status: 'paid',
-    urgency: { ...URGENCY_LEVELS[1], is_manual: false },
-  },
-  {
-    invoice_id: 3,
-    invoice_number: 'INV-003',
-    amount: 750.0,
-    date: '2025-03-20',
-    supplier_name: 'Supplier C',
-    status: 'overdue',
-    urgency: { ...URGENCY_LEVELS[2], is_manual: true },
-  },
-];
