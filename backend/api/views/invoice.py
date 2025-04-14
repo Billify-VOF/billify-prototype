@@ -177,7 +177,9 @@ class InvoiceUploadView(BaseInvoiceView):
                 },
                 "invoice_data": {
                     "invoice_number": result.get("invoice_number"),
-                    "total_amount": (str(result.get("total_amount")) if result.get("total_amount") is not None else None),
+                    "total_amount": (
+                        str(result.get("total_amount")) if result.get("total_amount") is not None else None
+                    ),
                     "date": formatted_date,
                     "supplier_name": result.get("supplier_name", ""),
                     "urgency": result.get(
