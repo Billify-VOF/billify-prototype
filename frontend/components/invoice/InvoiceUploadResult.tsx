@@ -247,7 +247,15 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                   setOpen(false);
                 }}
               >
-                <div className="p-0" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="p-0"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.stopPropagation();
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <DayPicker
                     mode="single"
                     selected={date}
