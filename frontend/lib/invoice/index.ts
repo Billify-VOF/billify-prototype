@@ -21,7 +21,7 @@ export interface InvoiceFormData {
   id: string;
   due_date: string;
   invoice_number: string;
-  amount: string;
+  amount: number;
   date: string;
   supplier_name?: string;
   status: string;
