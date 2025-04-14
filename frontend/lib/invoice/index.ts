@@ -1,6 +1,6 @@
 import { UrgencyLevel, URGENCY_LEVELS, Urgency } from '../../components/definitions/invoice';
 
-export interface Invoice {
+export interface InvoiceFile {
   id: string;
   status: string;
   file_path: string;
@@ -12,7 +12,7 @@ export interface UploadResult {
   message?: string;
   error?: string;
   detail?: string;
-  invoice?: Invoice;
+  invoice?: InvoiceFile;
   invoice_data?: InvoiceData;
 }
 
