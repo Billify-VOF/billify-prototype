@@ -24,6 +24,9 @@ const FileUpload: React.FC = () => {
       const response = await fetch('/api/invoices/upload/', {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
       });
 
       const data = await response.json();

@@ -183,6 +183,10 @@ const DashboardContent = () => {
       const response = await fetch('/api/invoices/upload', {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          "Access-Control-Allow-Origin": "*" 
+        },
       });
 
       const data = await response.json();
