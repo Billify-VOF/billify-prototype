@@ -59,7 +59,7 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
   return codeChallenge;
 }
 
-export const generatePontoOAuthUrl = async () => {
+export async function generatePontoOAuthUrl () {
   try {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
