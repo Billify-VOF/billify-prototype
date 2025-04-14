@@ -182,9 +182,10 @@ const DashboardContent = () => {
 
     try {
       const response = await axios.post('/api/invoices/upload', formData, {
+        method: 'POST', // Explicitly specify the method
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'multipart/form-data', // Ensure correct content type
         },
       });
 

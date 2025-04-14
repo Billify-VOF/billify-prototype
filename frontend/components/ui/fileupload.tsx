@@ -21,7 +21,10 @@ const FileUpload: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('/api/invoices/upload/', formData, {
+      const response = await axios({
+        method: 'POST', // Explicitly specify the method
+        url: '/api/invoices/upload/',
+        data: formData,
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
           'Content-Type': 'multipart/form-data',
