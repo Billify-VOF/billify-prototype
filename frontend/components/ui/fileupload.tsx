@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-//import axios from 'axios';
+import axios from 'axios';
 import { InvoiceUploadResult, UploadResult } from '@/components/InvoiceUploadResult';
 
 const FileUpload: React.FC = () => {
@@ -21,15 +21,14 @@ const FileUpload: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/invoices/upload/', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('/api/invoices/upload/', formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       setUploadState({
         status: 'complete',

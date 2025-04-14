@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import axios from 'axios';
 
 export async function POST(request: Request) {
   try {
@@ -11,21 +12,20 @@ export async function POST(request: Request) {
     const backendFormData = new FormData();
     backendFormData.append('file', file);
 
-    const backendResponse = await fetch(
+    const backendResponse = await axios.post(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/upload/`,
+      backendFormData,
       {
-        method: 'POST',
-        body: backendFormData,
         headers: {
           Authorization: token,
-          "Access-Control-Allow-Origin": "*" 
+          "Access-Control-Allow-Origin": "*",
         },
       },
     );
 
-    const data = await backendResponse.json();
+    const data = backendResponse.data;
 
-    if (!backendResponse.ok) {
+    if (backendResponse.status !== 200) {
       // Handle backend error response
       return NextResponse.json(
         {

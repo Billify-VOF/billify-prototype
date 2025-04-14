@@ -11,6 +11,7 @@ import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { Filter, Upload } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDisplayName } from '@/lib/utils/userUtils';
+import axios from 'axios';
 
 //import components
 import LeftBar from '../../components/layout/LeftBar';
@@ -180,23 +181,16 @@ const DashboardContent = () => {
     formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
-      const response = await fetch('/api/invoices/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('/api/invoices/upload', formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-          "Access-Control-Allow-Origin": "*" 
+          "Access-Control-Allow-Origin": "*",
         },
       });
 
-      const data = await response.json();
+      const data = response.data;
       console.log('Server response:', data);
 
-      if (!response.ok) {
-        throw new Error(data.detail || data.error || 'Failed to upload file');
-      }
-
-      console.log('PARENT TEST - Upload successful, setting data:', data);
       setUploadStatus('success');
       setSelectedFile(null);
       setUploadedInvoiceData(data); // Store the entire response
@@ -204,7 +198,11 @@ const DashboardContent = () => {
     } catch (error) {
       console.error('Upload error details:', error);
       setUploadStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to upload file');
+      setErrorMessage(
+        axios.isAxiosError(error) && error.response?.data
+          ? error.response.data.detail || error.response.data.error || 'Failed to upload file'
+          : 'Failed to upload file'
+      );
     }
   };
 
