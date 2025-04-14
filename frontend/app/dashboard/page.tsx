@@ -181,7 +181,7 @@ const DashboardContent = () => {
     formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
-      const response = await axios.post('/api/invoices/upload', formData, {
+      const response = await axios.post('/api/invoices/upload/', formData, {
         method: 'POST', // Explicitly specify the method
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
