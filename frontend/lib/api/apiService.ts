@@ -8,6 +8,7 @@ class ApiService {
       baseURL: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api`,
       headers: {
         'Content-Type': 'application/json',
+        "Access-Control-Allow-Origin": "*" 
       },
     });
 

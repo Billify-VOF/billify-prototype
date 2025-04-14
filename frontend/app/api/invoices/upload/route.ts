@@ -18,6 +18,7 @@ export async function POST(request: Request) {
         body: backendFormData,
         headers: {
           Authorization: token,
+          "Access-Control-Allow-Origin": "*" 
         },
       },
     );

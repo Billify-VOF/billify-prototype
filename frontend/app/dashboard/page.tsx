@@ -103,6 +103,7 @@ const DashboardContent = () => {
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          "Access-Control-Allow-Origin": "*" 
         },
       });
 
@@ -227,6 +228,7 @@ const DashboardContent = () => {
             Accept: 'application/json',
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            "Access-Control-Allow-Origin": "*" 
           },
         },
       );
