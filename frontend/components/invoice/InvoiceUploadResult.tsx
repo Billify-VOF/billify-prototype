@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PDFViewerWrapper } from './PDFViewerWrapper';
+import { PDFViewerWrapper } from '../PDFViewerWrapper';
 import { differenceInDays, format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,48 +9,25 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { UrgencySelector } from './invoice/UrgencySelector';
-import { DEFAULT_URGENCY, Urgency } from './definitions/invoice';
-import { getDueDateMessage, calculateUrgencyFromDays } from '../lib/invoice';
-
-export interface InvoiceData {
-  invoice_id: number;
-  id: string;
-  due_date: string;
-  invoice_number: string;
-  amount: string;
-  date: string;
-  supplier_name?: string;
-  status: string;
-  urgency?: Urgency;
-}
-
-interface Invoice {
-  id: string;
-  status: string;
-  file_path: string;
-  updated: boolean;
-}
-
-export interface UploadResult {
-  status: 'success' | 'error';
-  message?: string;
-  error?: string;
-  detail?: string;
-  invoice?: Invoice;
-  invoice_data?: InvoiceData;
-}
+import { UrgencySelector } from './UrgencySelector';
+import { DEFAULT_URGENCY, Urgency } from '../definitions/invoice';
+import {
+  getDueDateMessage,
+  calculateUrgencyFromDays,
+  UploadResult,
+  InvoiceFormData,
+} from '../../lib/invoice';
 
 interface Props {
   result: UploadResult | null; // Allow null values
-  onChange: (data: InvoiceData) => void;
+  onChange: (data: InvoiceFormData) => void;
 }
 
 export function InvoiceUploadResult({ result, onChange }: Props) {
-  const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+  const [invoiceData, setInvoiceData] = useState<InvoiceFormData>({
     invoice_id: 0,
     invoice_number: '',
-    amount: '',
+    amount: 0,
     date: '',
     supplier_name: '',
     status: 'pending',
@@ -88,7 +65,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         invoice_id: result.invoice_data.invoice_id || 0,
         status: result.invoice_data.status || 'pending',
         invoice_number: result.invoice_data.invoice_number || '',
-        amount: result.invoice_data.amount || '',
+        amount: result.invoice_data.amount || 0,
         date: formattedDate,
         supplier_name: result.invoice_data.supplier_name || '',
         urgency: result.invoice_data.urgency || DEFAULT_URGENCY,
@@ -114,7 +91,8 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
   const handleAmountChange = (value: string) => {
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(value) || value === '') {
-      setInvoiceData((prev) => ({ ...prev, amount: value }));
+      const numericValue = value === '' ? 0 : parseFloat(value);
+      setInvoiceData((prev) => ({ ...prev, amount: numericValue }));
     }
   };
 
@@ -215,7 +193,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
             <label className="block text-sm font-medium text-gray-700">Amount:</label>
             <input
               type="text"
-              value={invoiceData.amount}
+              value={invoiceData.amount.toString()}
               onChange={(e) => handleAmountChange(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
@@ -269,7 +247,15 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
                   setOpen(false);
                 }}
               >
-                <div className="p-0" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="p-0"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.stopPropagation();
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <DayPicker
                     mode="single"
                     selected={date}

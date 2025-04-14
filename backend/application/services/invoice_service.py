@@ -258,7 +258,6 @@ class InvoiceProcessingService:
         self,
         invoice_id: int,
         temp_file_path: str,
-        urgency_level: Optional[int] = None,
         user_id: Optional[int] = None,
         invoice_data: Dict[str, Any] = None,
         invoice_number: str = "",
@@ -274,7 +273,6 @@ class InvoiceProcessingService:
         Args:
             invoice_id: ID of the invoice to finalize
             temp_file_path: Path to the temporary file
-            urgency_level: Optional manual urgency level to set (1-5)
             user_id: ID of the user finalizing the invoice
 
         Returns:
@@ -283,7 +281,6 @@ class InvoiceProcessingService:
             - invoice_number: Business identifier of the invoice
             - status: Current status of the invoice
             - file_path: New permanent file path
-            - urgency: Updated urgency information
             - timestamps: Creation and modification dates
             - metadata: Additional invoice details
 
@@ -342,20 +339,6 @@ class InvoiceProcessingService:
             logger.info("Invoice being finalized by user ID: %s", effective_user_id)
             permanent_identifier = f"invoice_{invoice.invoice_number}_{effective_user_id}_{timestamp}"
 
-            # Set urgency level if provided
-            urgency = None
-            if urgency_level is not None:
-                # Validate urgency level first
-                try:
-                    urgency = UrgencyLevel.from_db_value(urgency_level)
-                except (ValueError, TypeError) as e:
-                    logger.warning("Invalid urgency level value: %s - %s", urgency_level, str(e))
-                    # Continue with automatic urgency level
-                else:
-                    # Only set urgency if validation succeeded
-                    invoice.set_urgency_manually(urgency)
-                    logger.info("Set manual urgency level: %s", urgency.display_name)
-
             # Verify temporary file exists before attempting transfer
             temp_full_path = self.storage_repository.get_file_path(temp_file_path)
             if not temp_full_path.exists():
@@ -364,6 +347,7 @@ class InvoiceProcessingService:
             logger.debug("Verified temporary file exists: %s", temp_file_path)
 
             # If invoice_data is provided, update the invoice with additional details
+            urgency = None
 
             if invoice_data:
                 logger.info("Updating invoice with provided invoice_data")
