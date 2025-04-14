@@ -55,7 +55,7 @@ class Invoice:
 
     Attributes:
         id (Optional[int]): Database ID if persisted
-        amount (Decimal): Invoice amount (must be positive)
+        total_amount (Decimal): Invoice total amount (must be positive)
         due_date (date): When payment is due
         invoice_number (str): Unique identifier
         status (InvoiceStatus): Current payment status
@@ -65,7 +65,7 @@ class Invoice:
     @classmethod
     def create(
         cls,
-        amount: Decimal,
+        total_amount: Decimal,
         due_date: date,
         invoice_number: str,
         status: InvoiceStatus = InvoiceStatus.PENDING,
@@ -82,7 +82,7 @@ class Invoice:
         Use this method instead of constructor for normal invoice creation.
 
         Args:
-            amount (Decimal): Invoice amount (must be positive)
+            total_amount (Decimal): Invoice total amount (must be positive)
             due_date (date): When payment is due
             invoice_number (str): Unique identifier
             status (InvoiceStatus, optional): Initial status.
@@ -98,7 +98,7 @@ class Invoice:
                 - Other validation rules
         """
         invoice = cls(
-            amount=amount,
+            total_amount=total_amount,
             due_date=due_date,
             invoice_number=invoice_number,
             status=status,
@@ -116,7 +116,7 @@ class Invoice:
     def __init__(
         self,
         *,
-        amount: Decimal,
+        total_amount: Decimal,
         due_date: date,
         invoice_number: str,
         uploaded_by: Optional[int] = None,
@@ -129,12 +129,12 @@ class Invoice:
         urgency: Optional[UrgencyLevel] = None,  # Added urgency parameter
     ) -> None:
         logger.debug("Invoice __init__ called")
-        logger.debug("  amount: %s (%s)", amount, type(amount))
+        logger.debug("  total_amount %s (%s)", total_amount, type(total_amount))
         logger.debug("  due_date: %s (%s)", due_date, type(due_date))
         logger.debug("  invoice_number: %s (%s)", invoice_number, type(invoice_number))
 
         self.id: Optional[int] = invoice_id
-        self.amount: Decimal = amount
+        self.total_amount: Decimal = total_amount
         self.due_date: date = due_date
         self.invoice_number: str = invoice_number
         self.status: InvoiceStatus = status
@@ -148,8 +148,8 @@ class Invoice:
 
     def validate(self) -> None:
         """Apply business rules to validate invoice data."""
-        if self.amount <= 0:
-            raise InvalidInvoiceError("Invoice amount must be positive")
+        if self.total_amount <= 0:
+            raise InvalidInvoiceError("Invoice total_amount must be positive")
         self.validate_status()
 
     def validate_status(self) -> None:
@@ -326,7 +326,7 @@ class Invoice:
 
         Args:
             **kwargs: Field updates as keyword arguments, which can include:
-                amount (Decimal): New invoice amount
+                total_amount (Decimal): New invoice total amount
                 due_date (date): New due date
                 invoice_number (str): New invoice number
                 status (InvoiceStatus): New invoice status

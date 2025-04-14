@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         invoice: data.invoice,
         invoice_data: {
           invoice_number: 'Unknown',
-          amount: '0.00',
+          total_amount: '0.00',
           date: '',
           supplier_name: 'Unknown',
           urgency: null,
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       invoice: data.invoice,
       invoice_data: {
         invoice_number: data.invoice_data.invoice_number,
-        amount: data.invoice_data.amount,
+        total_amount: data.invoice_data.total_amount,
         date: formattedDate,
         supplier_name: data.invoice_data.supplier_name,
         urgency: data.invoice_data.urgency,

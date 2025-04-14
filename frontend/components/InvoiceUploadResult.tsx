@@ -18,7 +18,7 @@ export interface InvoiceData {
   id: string;
   due_date: string;
   invoice_number: string;
-  amount: string;
+  total_amount: string;
   date: string;
   supplier_name?: string;
   status: string;
@@ -50,7 +50,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoice_id: 0,
     invoice_number: '',
-    amount: '',
+    total_amount: '',
     date: '',
     supplier_name: '',
     status: 'pending',
@@ -88,7 +88,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
         invoice_id: result.invoice_data.invoice_id || 0,
         status: result.invoice_data.status || 'pending',
         invoice_number: result.invoice_data.invoice_number || '',
-        amount: result.invoice_data.amount || '',
+        total_amount: result.invoice_data.total_amount || '',
         date: formattedDate,
         supplier_name: result.invoice_data.supplier_name || '',
         urgency: result.invoice_data.urgency || DEFAULT_URGENCY,
@@ -114,7 +114,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
   const handleAmountChange = (value: string) => {
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(value) || value === '') {
-      setInvoiceData((prev) => ({ ...prev, amount: value }));
+      setInvoiceData((prev) => ({ ...prev, total_amount: value }));
     }
   };
 
@@ -215,7 +215,7 @@ export function InvoiceUploadResult({ result, onChange }: Props) {
             <label className="block text-sm font-medium text-gray-700">Amount:</label>
             <input
               type="text"
-              value={invoiceData.amount}
+              value={invoiceData.total_amount}
               onChange={(e) => handleAmountChange(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />

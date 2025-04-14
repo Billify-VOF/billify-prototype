@@ -83,7 +83,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
 
         # Create domain invoice with core fields and nested objects
         invoice_args = {
-            "amount": db_invoice.amount,
+            "total_amount": db_invoice.total_amount,
             "due_date": db_invoice.due_date,
             "invoice_number": db_invoice.invoice_number,
             "status": InvoiceStatus.from_db_value(db_invoice.status),
@@ -142,7 +142,6 @@ class DjangoInvoiceRepository(InvoiceRepository):
 
         return DjangoInvoice(
             invoice_number=domain_invoice.invoice_number,
-            amount=domain_invoice.amount,
             due_date=domain_invoice.due_date,
             file_path=effective_file_path,
             status=domain_invoice.status.value,
@@ -252,7 +251,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
 
             # Create update fields dictionary
             update_fields = {
-                "amount": invoice.amount,
+                "total_amount": invoice.total_amount,
                 "due_date": invoice.due_date,
                 "status": invoice.status,
                 "uploaded_by_id": user_id,

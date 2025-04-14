@@ -183,6 +183,7 @@ class InvoiceProcessingService:
                 "subtotal": invoice_data.get("subtotal"),
                 "vat_amount": invoice_data.get("vat_amount"),
                 "total_amount": invoice_data.get("total_amount"),
+                "due_date": invoice_data.get("due_date"),
             }
             logger.debug(
                 "Structured metadata extracted: %s",
@@ -209,6 +210,7 @@ class InvoiceProcessingService:
             # Invoice processing completed successfully
             updated = getattr(saved_invoice, "is_updated", False)
             logger.info("Invoice processing completed successfully")
+
             return {
                 "invoice_id": saved_invoice.id,
                 "invoice_number": saved_invoice.invoice_number,
@@ -404,8 +406,8 @@ class InvoiceProcessingService:
                     file_metadata["urgency_name"] = urgency.display_name
 
                 # Add additional metadata from the invoice if available
-                if amount := getattr(invoice, "amount", None):
-                    file_metadata["amount"] = str(amount)
+                if total_amount := getattr(invoice, "total_amount", None):
+                    file_metadata["total_amount"] = str(total_amount)
                 if due_date := getattr(invoice, "due_date", None):
                     file_metadata["due_date"] = due_date.isoformat()
                 if currency := getattr(invoice, "currency", None):
@@ -497,9 +499,9 @@ class InvoiceProcessingService:
                     "urgency": urgency_info,
                     "finalized": True,
                     # Additional details
-                    "amount": (
-                        str(self._get_nested_attr(updated_invoice, "amount"))
-                        if self._get_nested_attr(updated_invoice, "amount")
+                    "total_amount": (
+                        str(self._get_nested_attr(updated_invoice, "total_amount"))
+                        if self._get_nested_attr(updated_invoice, "total_amount")
                         else None
                     ),
                     "due_date": (

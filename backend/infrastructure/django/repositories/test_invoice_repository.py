@@ -21,7 +21,7 @@ class TestInvoiceRepository(TestCase):
         """Test saving an invoice in the repository"""
         invoice = DomainInvoice.create(
             invoice_number="INV-12345",
-            amount=Decimal("100.50"),
+            total_amount=Decimal("100.50"),
             due_date=date.today(),
             buyer=BuyerInfo(name="Test Buyer"),
             seller=SellerInfo(name="Test Vendor"),
@@ -34,7 +34,7 @@ class TestInvoiceRepository(TestCase):
         self.assertIsInstance(saved_invoice, DomainInvoice)
 
         self.assertEqual(saved_invoice.invoice_number, "INV-12345")
-        self.assertEqual(saved_invoice.amount, Decimal("100.50"))
+        self.assertEqual(saved_invoice.total_amount, Decimal("100.50"))
         self.assertEqual(saved_invoice.buyer.name, "Test Buyer")
         self.assertEqual(saved_invoice.seller.name, "Test Vendor")
 

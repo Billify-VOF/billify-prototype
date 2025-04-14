@@ -22,7 +22,7 @@ amount2 = Money(100, "EUR")
 ```
 Key points:
 - We don't care about which specific money object it is
-- We only care about the amount and currency
+- We only care about the total amount and currency
 - Two money objects with 100 EUR are considered equal
 - We create new money objects rather than modifying existing ones
 
@@ -45,8 +45,8 @@ Key points:
 
 Example using an invoice (implemented):
 ```python
-invoice1 = Invoice(amount=100, invoice_number="INV-001", due_date=...)
-invoice2 = Invoice(amount=100, invoice_number="INV-001", due_date=...)
+invoice1 = Invoice(total_amount=100, invoice_number="INV-001", due_date=...)
+invoice2 = Invoice(total_amount=100, invoice_number="INV-001", due_date=...)
 ```
 Even with identical properties, these are different because each invoice has:
 - Unique ID in the database

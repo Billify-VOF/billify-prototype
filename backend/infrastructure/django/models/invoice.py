@@ -25,7 +25,7 @@ class Invoice(models.Model):
                      Auto-incrementing integer field that uniquely
                      identifies each invoice.
         invoice_number (CharField): Business-specific unique identifier
-        amount (DecimalField): Total invoice amount
+        total_amount (DecimalField): Total invoice total amount
         due_date (DateField): When payment is due
         status (CharField): Current payment status
         uploaded_by (ForeignKey): User who uploaded the invoice
@@ -34,7 +34,7 @@ class Invoice(models.Model):
 
     Key Assumptions:
         - Invoices can only be created from PDF files
-        - Maximum invoice amount is 99,999,999.99
+        - Maximum invoice total amount is 99,999,999.99
         - Invoice numbers are unique but format varies by country
         - Status transitions are managed by the domain model
         - Timestamps are automatically managed by Django
@@ -56,7 +56,7 @@ class Invoice(models.Model):
             "Therefore, invoice numbers are not constrained to be unique."
         ),
     )
-    amount: models.DecimalField = models.DecimalField(
+    total_amount: models.DecimalField = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         help_text="Total invoice amount. Maximum 99,999,999.99. Negative amounts not allowed.",
@@ -157,7 +157,7 @@ class Invoice(models.Model):
     def create(
         cls,
         invoice_number: str,
-        amount: Decimal,
+        total_amount: Decimal,
         due_date: date,
         uploaded_by: int,
         file_path: str,
@@ -167,7 +167,7 @@ class Invoice(models.Model):
 
         Args:
             invoice_number: Business identifier of the invoice
-            amount: Total invoice amount
+            total_amount: Total invoice amount
             due_date: When payment is due
             uploaded_by: User ID who uploaded the invoice
             file_path: Path to the stored invoice file
@@ -175,7 +175,7 @@ class Invoice(models.Model):
         """
         instance = cls(
             invoice_number=invoice_number,
-            amount=amount,
+            total_amount=total_amount,
             due_date=due_date,
             uploaded_by_id=uploaded_by,
             file_path=file_path,
@@ -213,8 +213,8 @@ class Invoice(models.Model):
         """
         # Run base parent model validations before custom validations
         super().clean()
-        if self.amount is not None and self.amount < 0:
-            raise ValidationError({"amount": "Negative amounts are not allowed."})
+        if self.total_amount is not None and self.total_amount < 0:
+            raise ValidationError({"total_amount": "Negative total amounts are not allowed."})
         self._validate_urgency_level()
 
     def _validate_urgency_level(self) -> None:
@@ -240,7 +240,7 @@ class Invoice(models.Model):
         Updates only the fields that are provided in kwargs, ensuring proper validation.
 
         Args:
-            **fields_to_update: Fields to update (amount, due_date, status, etc.)
+            **fields_to_update: Fields to update (total_amount, due_date, status, etc.)
 
         Raises:
             ValidationError: If updated fields don't meet validation requirements.

@@ -177,7 +177,7 @@ class InvoiceUploadView(BaseInvoiceView):
                 },
                 "invoice_data": {
                     "invoice_number": result.get("invoice_number"),
-                    "amount": (str(result.get("amount")) if result.get("amount") is not None else None),
+                    "total_amount": (str(result.get("total_amount")) if result.get("total_amount") is not None else None),
                     "date": formatted_date,
                     "supplier_name": result.get("supplier_name", ""),
                     "urgency": result.get(
@@ -198,7 +198,7 @@ class InvoiceUploadView(BaseInvoiceView):
                     "user_id": self._get_user_id(request),
                     "invoice_id": result["invoice_id"],
                     "has_invoice_number": "invoice_number" in result,
-                    "has_amount": "amount" in result,
+                    "has_amount": "total_amount" in result,
                     "has_date": "due_date" in result,
                 },
             )
@@ -260,7 +260,7 @@ class InvoiceUploadView(BaseInvoiceView):
             return Response({"error": "Internal server error", "details": str(e)}, status=500)
 
     def _convert_amount(self, amount_str: Optional[str]) -> Optional[Decimal]:
-        """Convert string amount to Decimal or None."""
+        """Convert string total_amount to Decimal or None."""
         return Decimal(amount_str) if amount_str else None
 
     def process_extracted_data(self, extracted_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -276,7 +276,7 @@ class InvoiceUploadView(BaseInvoiceView):
 
         processed_data = {
             "invoice_number": extracted_data.get("invoice_number"),
-            "amount": self._convert_amount(extracted_data.get("amount")),
+            "total_amount": self._convert_amount(extracted_data.get("total_amount")),
             "due_date": due_date,
             "supplier_name": extracted_data.get("supplier_name"),
         }
@@ -315,12 +315,12 @@ class InvoiceUploadView(BaseInvoiceView):
                     logger.debug("Date validation error: %s", str(e))
                     errors.append(f"Invalid date format: {raw_due_date}")
 
-        # Validate amount
+        # Validate total amount
         try:
-            if data.get("amount"):
-                Decimal(data["amount"])
+            if data.get("total_amount"):
+                Decimal(data["total_amount"])
         except (ValueError, TypeError):
-            errors.append(f"Invalid amount: {data.get('amount')}")
+            errors.append(f"Invalid total amount: {data.get('total_amount')}")
 
         if errors:
             logger.error("Validation errors: %s", errors)
