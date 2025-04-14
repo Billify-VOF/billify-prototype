@@ -1,5 +1,33 @@
 import { UrgencyLevel, URGENCY_LEVELS, Urgency } from '../../components/definitions/invoice';
 
+export interface Invoice {
+  id: string;
+  status: string;
+  file_path: string;
+  updated: boolean;
+}
+
+export interface UploadResult {
+  status: 'success' | 'error';
+  message?: string;
+  error?: string;
+  detail?: string;
+  invoice?: Invoice;
+  invoice_data?: InvoiceData;
+}
+
+export interface InvoiceData {
+  invoice_id: number;
+  id: string;
+  due_date: string;
+  invoice_number: string;
+  amount: string;
+  date: string;
+  supplier_name?: string;
+  status: string;
+  urgency?: Urgency;
+}
+
 export const getDueDateMessage = (level?: string): string => {
   if (!level) {
     return 'Unknown due date';

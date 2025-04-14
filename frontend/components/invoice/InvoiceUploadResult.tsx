@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PDFViewerWrapper } from './PDFViewerWrapper';
+import { PDFViewerWrapper } from '../PDFViewerWrapper';
 import { differenceInDays, format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,37 +9,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { UrgencySelector } from './invoice/UrgencySelector';
-import { DEFAULT_URGENCY, Urgency } from './definitions/invoice';
-import { getDueDateMessage, calculateUrgencyFromDays } from '../lib/invoice';
-
-export interface InvoiceData {
-  invoice_id: number;
-  id: string;
-  due_date: string;
-  invoice_number: string;
-  amount: string;
-  date: string;
-  supplier_name?: string;
-  status: string;
-  urgency?: Urgency;
-}
-
-interface Invoice {
-  id: string;
-  status: string;
-  file_path: string;
-  updated: boolean;
-}
-
-export interface UploadResult {
-  status: 'success' | 'error';
-  message?: string;
-  error?: string;
-  detail?: string;
-  invoice?: Invoice;
-  invoice_data?: InvoiceData;
-}
+import { UrgencySelector } from './UrgencySelector';
+import { DEFAULT_URGENCY, Urgency } from '../definitions/invoice';
+import {
+  getDueDateMessage,
+  calculateUrgencyFromDays,
+  UploadResult,
+  InvoiceData,
+} from '../../lib/invoice';
 
 interface Props {
   result: UploadResult | null; // Allow null values
