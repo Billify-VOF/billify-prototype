@@ -1,6 +1,6 @@
 import { UrgencyLevel, URGENCY_LEVELS, Urgency } from '../../components/definitions/invoice';
 
-export interface InvoiceFile {
+export interface UploadedInvoiceFile {
   id: string;
   status: string;
   file_path: string;
@@ -12,11 +12,11 @@ export interface UploadResult {
   message?: string;
   error?: string;
   detail?: string;
-  invoice?: InvoiceFile;
-  invoice_data?: InvoiceData;
+  invoice?: UploadedInvoiceFile;
+  invoice_data?: InvoiceFormData;
 }
 
-export interface InvoiceData {
+export interface InvoiceFormData {
   invoice_id: number;
   id: string;
   due_date: string;

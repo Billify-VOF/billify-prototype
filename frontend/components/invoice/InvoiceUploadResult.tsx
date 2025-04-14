@@ -15,16 +15,16 @@ import {
   getDueDateMessage,
   calculateUrgencyFromDays,
   UploadResult,
-  InvoiceData,
+  InvoiceFormData,
 } from '../../lib/invoice';
 
 interface Props {
   result: UploadResult | null; // Allow null values
-  onChange: (data: InvoiceData) => void;
+  onChange: (data: InvoiceFormData) => void;
 }
 
 export function InvoiceUploadResult({ result, onChange }: Props) {
-  const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+  const [invoiceData, setInvoiceData] = useState<InvoiceFormData>({
     invoice_id: 0,
     invoice_number: '',
     amount: '',
