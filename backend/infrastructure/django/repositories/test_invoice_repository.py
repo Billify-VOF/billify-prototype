@@ -25,7 +25,7 @@ class TestInvoiceRepository(TestCase):
             due_date=date.today(),
             buyer=BuyerInfo(name="Test Buyer"),
             seller=SellerInfo(name="Test Vendor"),
-            payment=PaymentInfo(total_amount=Decimal("110.50")),
+            payment=PaymentInfo(total_amount=Decimal("100.50")),
             file=FileInfo(path="test_file.pdf"),
         )
 

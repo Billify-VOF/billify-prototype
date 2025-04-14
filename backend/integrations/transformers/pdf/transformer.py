@@ -143,7 +143,6 @@ class PDFTransformer:
             logger.info("Standardizing extracted data")
 
             # Standardize amounts
-            total_amount = self._standardize_amount(raw_data.get("total_amount", "0.00"))
             subtotal = self._standardize_amount(raw_data.get("subtotal", "0.00"))
             vat_amount = self._standardize_amount(raw_data.get("vat_amount", "0.00"))
             total_amount = self._standardize_amount(raw_data.get("total_amount", "0.00"))
