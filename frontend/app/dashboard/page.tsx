@@ -183,7 +183,7 @@ const DashboardContent = () => {
     formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
-      const response = await fetch('/api/invoices/upload', {
+      const response = await fetch('/api/invoices/upload/', {
         method: 'POST',
         body: formData,
       });

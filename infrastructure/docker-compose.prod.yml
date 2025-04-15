@@ -46,6 +46,9 @@ services:
       # Security (Generate these securely and share via secure channel)
       - PONTO_PRIVATE_KEY_PASSWORD=${PONTO_PRIVATE_KEY_PASSWORD}
       - PONTO_SIGNATURE_KEY_ID=${PONTO_SIGNATURE_KEY_ID}
+      - YUKI_AUTHENTICATION_URL=${YUKI_AUTHENTICATION_URL}
+      - YUKI_API_KEY=${YUKI_API_KEY}
+      - YUKI_ADMIN_ID=${YUKI_ADMIN_ID}
       - FERNET_KEY=${FERNET_KEY}
     depends_on:
       - redis
@@ -59,7 +62,7 @@ services:
       - NEXT_PUBLIC_IBANITY_CLIENT_ID=$NEXT_PUBLIC_IBANITY_CLIENT_ID
       - NEXT_PUBLIC_REDIRECT_URI=$NEXT_PUBLIC_REDIRECT_URI
       - NEXT_PUBLIC_PONTO_CONNECT_OAUTH2_URL=$NEXT_PUBLIC_PONTO_CONNECT_OAUTH2_URL
-      - NEXT_PUBLIC_BACKEND_URL=https://staging-api.billify.be
+      - NEXT_PUBLIC_BACKEND_URL=https://staging.billify.be
       - NEXT_PUBLIC_DEBUG=false
       - NODE_ENV=production
     restart: always
