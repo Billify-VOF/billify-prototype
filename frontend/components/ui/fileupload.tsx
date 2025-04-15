@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 //import axios from 'axios';
-import { InvoiceUploadResult, UploadResult } from '@/components/InvoiceUploadResult';
+import { InvoiceUploadResult, UploadResult } from '@/components/invoice/InvoiceUploadResult';
 
 const FileUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);

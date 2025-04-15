@@ -14,8 +14,6 @@ from rest_framework.request import Request
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-# PermissionDenied import needed when authentication code is uncommented for production
-# from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 
 from api.serializers import InvoiceUploadSerializer, InvoiceConfirmationSerializer, InvoiceSerializer
@@ -30,7 +28,6 @@ from infrastructure.django.models.invoice import Invoice
 
 from integrations.transformers.pdf.transformer import PDFTransformer
 from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
 
 logger = getLogger(__name__)
 
@@ -485,18 +482,6 @@ class InvoiceConfirmationView(BaseInvoiceView):
         try:
             # Extract validated data
             temp_file_path = serializer["temp_file_path"]
-            urgency_level = serializer.validated_data.get("urgency_level")
-
-            # Fetch the invoice object from the database
-            invoice = get_object_or_404(Invoice, id=invoice_id)
-
-            # Update the invoice object with data from request.data
-            for key, value in request.data.items():
-                if hasattr(invoice, key):
-                    setattr(invoice, key, value)
-
-            # Save the updated invoice object
-            invoice.save()
 
             # Check if the temporary file exists
             # Validate that the path is within the temporary storage area
@@ -515,7 +500,6 @@ class InvoiceConfirmationView(BaseInvoiceView):
                     result = self.invoice_processing_service.finalize_invoice(
                         invoice_id=invoice_id,
                         temp_file_path=full_temp_path,
-                        urgency_level=urgency_level,
                         user_id=self._get_user_id(request),
                         invoice_data=request.data,
                         invoice_number=request.data.get("invoice_number"),

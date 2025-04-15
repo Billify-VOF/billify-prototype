@@ -3,7 +3,8 @@ import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react
 import { useSearchParams } from 'next/navigation';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { InvoiceData, InvoiceUploadResult } from '@/components/InvoiceUploadResult';
+import { InvoiceUploadResult } from '@/components/invoice/InvoiceUploadResult';
+import { InvoiceData } from '@/lib/invoice';
 import { dummySearchResults, SearchItemResult } from '@/components/types';
 import { STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
@@ -21,6 +22,9 @@ import { Ponto_Connect_2_Options } from '@/constants/api';
 
 interface ExtendedInvoiceData extends InvoiceData {
   temp_file_path?: string;
+  invoice_id: number;
+  id: string;
+  due_date: string;
 }
 
 const BillifyDashboard = () => {
@@ -179,7 +183,7 @@ const DashboardContent = () => {
     formData.append('token', `Bearer ${localStorage.getItem('token') || ''}`);
 
     try {
-      const response = await fetch('/api/invoices/upload', {
+      const response = await fetch('/api/invoices/upload/', {
         method: 'POST',
         body: formData,
       });

@@ -75,7 +75,7 @@ export const STATUS_COLORS: Record<InvoiceStatus, string> = {
   paid: 'text-green-600',
 };
 
-export interface Invoice {
+export interface InvoiceModel {
   invoice_id: number;
   invoice_number: string;
   total_amount: number;
