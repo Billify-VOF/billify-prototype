@@ -143,6 +143,9 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Profile Settings</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Profile settings editing will be available in a future update. Currently, these fields are displayed for reference only.
+              </p>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
