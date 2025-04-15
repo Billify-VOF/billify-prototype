@@ -20,10 +20,16 @@ interface UserSettings {
 }
 
 export default function SettingsPage() {
+  // Initialize router and search params for URL manipulation
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Get user data from auth context
   const { user } = useAuth();
+  // Ref to prevent duplicate token requests
   const hasFetched = useRef(false);
+  // Loading state for initial data fetch
+  const [isLoading, setIsLoading] = useState(true);
+  // State for user settings form
   const [settings, setSettings] = useState<UserSettings>({
     email: '',
     password: '********',
@@ -32,6 +38,8 @@ export default function SettingsPage() {
     companyName: '',
   });
 
+  // Function to handle Ponto OAuth callback
+  // This is called when user returns from Ponto authorization
   const requestAccessToken = useCallback(async () => {
     const code = searchParams.get('code');
     if (!code) return;
@@ -58,6 +66,8 @@ export default function SettingsPage() {
     }
   }, [searchParams, router]);
 
+  // Effect to handle Ponto OAuth callback
+  // Only runs once when component mounts
   useEffect(() => {
     if (!hasFetched.current) {
       requestAccessToken();
@@ -65,6 +75,8 @@ export default function SettingsPage() {
     }
   }, [requestAccessToken]);
 
+  // Effect to populate settings form with user data
+  // Also manages loading state
   useEffect(() => {
     if (user) {
       setSettings({
@@ -74,9 +86,11 @@ export default function SettingsPage() {
         lastName: user.lastName || '',
         companyName: user.company_name || '',
       });
+      setIsLoading(false);
     }
   }, [user]);
 
+  // Handler for form field changes
   const handleChange = (field: keyof UserSettings, value: string) => {
     setSettings(prev => ({
       ...prev,
@@ -84,12 +98,15 @@ export default function SettingsPage() {
     }));
   };
 
+  // Form submission handler
+  // Currently just logs the settings (API integration pending)
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // API integration will be added later
     console.log('Settings to be saved:', settings);
   };
 
+  // Handler for Ponto connection button
   const handlePontoConnect = async () => {
     try {
       const oauthUrl = await generatePontoOAuthUrl();
@@ -99,8 +116,21 @@ export default function SettingsPage() {
     }
   };
 
+  // Don't render anything if user is not authenticated
   if (!user) {
     return null;
+  }
+
+  // Show loading spinner while fetching user data
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
