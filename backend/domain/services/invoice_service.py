@@ -40,7 +40,7 @@ class InvoiceService:
         """
         # Delegate to the domain model's update method
 
-        invoice.update(amount=extracted_data["amount"], due_date=extracted_data["due_date"])
+        invoice.update(total_amount=extracted_data["total_amount"], due_date=extracted_data["due_date"])
 
         return invoice
 
@@ -65,7 +65,7 @@ class InvoiceService:
 
         # Use the factory method to create and validate the invoice
         return Invoice.create(
-            amount=extracted_data["amount"],
+            total_amount=extracted_data["total_amount"],
             due_date=extracted_data["due_date"],
             invoice_number=extracted_data["invoice_number"],
         )
@@ -194,7 +194,7 @@ class InvoiceService:
         that handles both new and existing invoices based on the invoice number.
 
         Args:
-            invoice_data: Dictionary with extracted invoice information (amount, due_date, etc.)
+            invoice_data: Dictionary with extracted invoice information (total_amount, due_date, etc.)
             file_size: Size of the uploaded file in bytes
             file_type: MIME type of the file
             original_file_name: Original name of the uploaded file
@@ -239,7 +239,7 @@ class InvoiceService:
         # Convert domain model to Django model for saving
         django_invoice = DjangoInvoice(
             invoice_number=invoice.invoice_number,
-            amount=invoice.amount,
+            total_amount=invoice.total_amount,
             due_date=invoice.due_date,
             status=invoice.status.value,
             uploaded_by_id=user_id,

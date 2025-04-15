@@ -25,7 +25,7 @@ For full implementation, see: [invoice.py](../../../backend/infrastructure/djang
 # Our PostgreSQL implementation with Django
 class Invoice(models.Model):
     invoice_number = models.CharField(max_length=100, unique=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     due_date = models.DateField()
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
@@ -56,13 +56,13 @@ erDiagram
     }
     Invoice {
         string invoice_number
-        decimal amount
+        decimal total_amount
         date due_date
         string status
         User uploaded_by
     }
     Transaction {
-        decimal amount
+        decimal total_amount
         date payment_date
         string status
         Invoice invoice

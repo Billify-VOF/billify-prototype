@@ -27,9 +27,9 @@ class TextAnalyzer:
                 r"(#\s*\d{1,}-?\d{1,}-?\d{1,}|\d{1,}-?\d{1,}-?\d{1,}|\d{1,}|"
                 r"\w{1,}\d+)"
             ),
-            "amount": (
-                r"(?:Total (?:Due|price|cost|amount|:)?|Total|Amount Due|"
-                r"Grand\s*Total|Net to pay|Subtotal|Totaal|€|EUR|\$)\s*"
+            "total_amount": (
+                r"(?:Total (?:Due|price|cost|amount|with VAT|:|\(€\):)?|Total|Amount Due|"
+                r"Grand\s*Total (?:\([€\$]\)*:)?|Net to pay|Subtotal|Totaal|€|EUR|\$|USD)\s*"
                 r"(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)"
             ),
             "date": (
@@ -82,8 +82,8 @@ class TextAnalyzer:
     def validate_extracted_fields(self, fields: Dict) -> bool:
         """Verify that all required fields were extracted successfully."""
         # Relax required fields if invoice_number or date are optional
-        # or just {'amount'} if you prefer
-        required_fields = {"invoice_number", "amount", "date"}
+        # or just {'total_amount'} if you prefer
+        required_fields = {"invoice_number", "total_amount", "date"}
         return all(field in fields and fields[field] for field in required_fields)
 
     def _extract_using_patterns(self, text: str, patterns: Dict) -> Dict:
@@ -141,7 +141,7 @@ class TextAnalyzer:
         return None
 
     def standardize_amount(self, amount_str: str, format_type: str) -> str:
-        """Standardize amount based on detected format."""
+        """Standardize total amount based on detected format."""
         # Remove currency symbols and whitespace
         amount_str = re.sub(r"[€$\s]", "", amount_str)
 

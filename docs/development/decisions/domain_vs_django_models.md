@@ -116,7 +116,7 @@ class DjangoInvoiceRepository(InvoiceRepository):
     def _to_domain(self, db_invoice: DjangoInvoice) -> DomainInvoice:
         """Convert Django model to domain model."""
         return DomainInvoice(
-            amount=db_invoice.amount,
+            total_amount=db_invoice.total_amount,
             due_date=db_invoice.due_date,
             invoice_number=db_invoice.invoice_number,
             file_path=db_invoice.file_path,
@@ -227,7 +227,7 @@ Here's how data flows through our system when working with invoices:
 ```python
 # Without Repository Pattern (Direct Database Access):
 invoice = Invoice.objects.get(id=123)  # Directly coupled to Django ORM
-invoice.amount = 500
+invoice.total_amount = 500
 invoice.save()
 
 # With Repository Pattern:
@@ -255,7 +255,7 @@ Here's how it would look if we combined business logic and persistence (the Acti
 ```python
 class Invoice(models.Model):
     due_date = models.DateField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     manual_urgency = models.IntegerField(null=True, blank=True)
     
     def calculate_urgency(self) -> int:
@@ -331,7 +331,7 @@ class MongoInvoiceRepository(InvoiceRepository):
     def save(self, invoice: Invoice, user_id: int) -> Invoice:
         # Pseudocode: Convert domain model to MongoDB document
         document = {
-            'amount': float(invoice.amount),
+            'total_amount': float(invoice.total_amount),
             'due_date': invoice.due_date.isoformat(),
             'invoice_number': invoice.invoice_number,
             'uploaded_by': user_id
@@ -445,7 +445,7 @@ def test_invoice_saving_with_audit():
     mock_repo = MockInvoiceRepository()
     audited_repo = AuditedInvoiceRepository(mock_repo)
     
-    invoice = Invoice(amount=100)
+    invoice = Invoice(total_amount=100)
     audited_repo.save(invoice, user_id=1)
     
     # Can verify both save and audit occurred

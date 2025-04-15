@@ -103,8 +103,27 @@ class PDFTransformer:
         Returns:
             Standardized amount string
         """
-        if amount_str and isinstance(amount_str, str):
-            return amount_str.replace(",", "@").replace(".", "").replace("@", ".")
+        if amount_str.find(".") >= 0 and amount_str.find(",") >= 0:
+            # If the amount string contains both `.` and `,`,
+            # we need to determine which one serves as the decimal symbol.
+            splits = re.split(r"[,.]", amount_str)
+            whole_number = int("".join(splits[:-1]))
+            fractional_number = int(splits[-1])
+            amount_str = str(whole_number) + "." + str(fractional_number)
+        elif amount_str.find(".") >= 0 and amount_str.find(",") == -1:
+            # If the amount string contains only `.`
+            if amount_str.count(".") > 1:
+                # If amount string has multiple `.`, that means `.` is thousand separator
+                amount_str = amount_str.replace(".", "")
+            # The other case is amount string has only one `.`, and this is normal cause it's decimal point
+        elif amount_str.find(",") >= 0 and amount_str.find(".") == -1:
+            # If the amount string contains only `,`
+            if amount_str.count(",") > 1:
+                # If amount string has multiple `,`, that means `,` is thousand separator
+                amount_str = amount_str.replace(",", "")
+            elif amount_str.count(",") == 1:
+                # If amount string has only one `,`, then it means decimal point
+                amount_str = amount_str.replace(",", ".")
         return amount_str
 
     def _standardize_data(self, raw_data: Dict, file_metadata: Dict) -> Dict[str, Any]:
@@ -124,7 +143,6 @@ class PDFTransformer:
             logger.info("Standardizing extracted data")
 
             # Standardize amounts
-            amount = self._standardize_amount(raw_data.get("amount", "0.00"))
             subtotal = self._standardize_amount(raw_data.get("subtotal", "0.00"))
             vat_amount = self._standardize_amount(raw_data.get("vat_amount", "0.00"))
             total_amount = self._standardize_amount(raw_data.get("total_amount", "0.00"))
@@ -161,7 +179,6 @@ class PDFTransformer:
                 "file_type": file_metadata.get("file_type"),
                 # Default values for required fields
                 "invoice_number": raw_data.get("invoice_number", ""),
-                "amount": Decimal(amount),
                 "due_date": parsed_due_date,
                 # Buyer & Seller Information
                 "buyer_name": raw_data.get("buyer_name", ""),
@@ -200,9 +217,9 @@ class PDFTransformer:
         Raises:
             PDFTransformationError: If data fails validation
         """
-        if data.get("amount", Decimal("0")) <= 0:
-            logger.error("Invalid invoice amount: %s", data.get("amount"))
-            raise PDFTransformationError("Invoice amount must be positive")
+        if data.get("total_amount", Decimal("0")) <= 0:
+            logger.error("Invalid invoice total amount: %s", data.get("total_amount"))
+            raise PDFTransformationError("Invoice total amount must be positive")
 
         if not data.get("invoice_number"):
             logger.error("Missing invoice number")

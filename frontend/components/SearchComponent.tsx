@@ -80,7 +80,7 @@ export default function SearchComponent<T>({
           placeholder="Search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="me-2 w-4/5 rounded-xl px-2 py-1 pl-10 text-lg bg-gray-100"
+          className="me-2 w-4/5 rounded-xl bg-gray-100 px-2 py-1 pl-10 text-lg"
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
         {loading ? (
@@ -91,8 +91,7 @@ export default function SearchComponent<T>({
           <button
             onClick={handleSearch}
             className="absolute right-4 text-gray-500 hover:text-gray-700"
-          >
-          </button>
+          ></button>
         )}
       </div>
       {

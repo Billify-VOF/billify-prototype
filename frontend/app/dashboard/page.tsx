@@ -513,7 +513,7 @@ const DashboardContent = () => {
                               STATUS_COLORS[invoice.status as keyof typeof STATUS_COLORS]
                             }`}
                           >
-                            ${invoice.amount}
+                            ${invoice.total_amount}
                           </span>
                         </div>
                       </div>

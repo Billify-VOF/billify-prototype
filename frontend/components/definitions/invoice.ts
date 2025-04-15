@@ -78,7 +78,7 @@ export const STATUS_COLORS: Record<InvoiceStatus, string> = {
 export interface InvoiceModel {
   invoice_id: number;
   invoice_number: string;
-  amount: number;
+  total_amount: number;
   date: string;
   supplier_name: string;
   status: InvoiceStatus;

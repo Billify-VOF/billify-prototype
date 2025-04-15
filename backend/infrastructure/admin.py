@@ -25,7 +25,7 @@ class InvoiceAdmin(admin.ModelAdmin):
     Register Invoice model in the Django admin.
     """
 
-    list_display = ("invoice_number", "amount", "status", "due_date")
+    list_display = ("invoice_number", "total_amount", "status", "due_date")
     search_fields = ("invoice_number", "original_file_name")
 
 

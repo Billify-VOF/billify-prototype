@@ -56,14 +56,14 @@ Example from our codebase ([Invoice](../../../backend/domain/models/invoice.py))
 class Invoice:
     def __init__(
         self,
-        amount: Decimal,
+        total_amount: Decimal,
         due_date: date,
         invoice_number: str,
         file_path: str,
         invoice_id: Optional[int] = None
     ):
         self.id = invoice_id
-        self.amount = amount
+        self.total_amount = total_amount
         self.due_date = due_date
         self.invoice_number = invoice_number
         self.file_path = file_path
@@ -72,8 +72,8 @@ class Invoice:
 
     def validate(self):
         """Apply business rules to validate invoice data."""
-        if self.amount <= 0:
-            raise InvalidInvoiceError("Invoice amount must be positive")
+        if self.total_amount <= 0:
+            raise InvalidInvoiceError("Invoice total amount must be positive")
 
     @property
     def urgency(self) -> UrgencyLevel:
@@ -89,8 +89,8 @@ class Invoice:
    - **Entities**: Two entities with identical data are still different entities
    ```python
      # Example: Two invoices for €100 to the same customer are different invoices
-    invoice1 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-001")
-    invoice2 = Invoice(amount=100, due_date=date.today(), invoice_number="INV-002")
+    invoice1 = Invoice(total_amount=100, due_date=date.today(), invoice_number="INV-001")
+    invoice2 = Invoice(total_amount=100, due_date=date.today(), invoice_number="INV-002")
      # Even with same data, invoice1 ≠ invoice2 because they have different IDs
      ```
    - **Value Objects**: Two value objects with the same values are considered equal
@@ -105,7 +105,7 @@ class Invoice:
    - **Entities**: Can be changed while remaining the same entity
     ```python
      # Example: An invoice's status can change, but it's still the same invoice
-     invoice = Invoice(amount=100, due_date=date.today(), invoice_number="INV-001")
+     invoice = Invoice(total_amount=100, due_date=date.today(), invoice_number="INV-001")
      invoice.status = 'pending'  # Initially pending
      # Later...
      invoice.status = 'paid'     # Status changed, but same invoice
@@ -252,8 +252,8 @@ Different types of validation in our codebase:
   ```python
   def validate(self):
       """Apply business rules to validate invoice data."""
-      if self.amount <= 0:
-          raise InvalidInvoiceError("Invoice amount must be positive")
+      if self.total_amount <= 0:
+          raise InvalidInvoiceError("Invoice total amount must be positive")
         
         # Future validation rules can be added here:
         # if self.due_date < date.today():
@@ -300,8 +300,8 @@ Bad approach (anemic domain model):
 ```python
 # Just stores data without behavior
 class Invoice:
-    def __init__(self, amount: Decimal, due_date: date):
-        self.amount = amount
+    def __init__(self, total_amount: Decimal, due_date: date):
+        self.total_amount = total_amount
         self.due_date = due_date
         self.status = 'pending'
 
@@ -316,8 +316,8 @@ def calculate_invoice_urgency(invoice):
 Good approach (our rich domain model):
 ```python
 class Invoice:
-    def __init__(self, amount: Decimal, due_date: date, ...):
-        self.amount = amount
+    def __init__(self, total_amount: Decimal, due_date: date, ...):
+        self.total_amount = total_amount
         self.due_date = due_date
         self.status = 'pending'
         self._manual_urgency = None
@@ -326,8 +326,8 @@ class Invoice:
 
     def validate(self):
         """Knows its own rules"""
-        if self.amount <= 0:
-            raise InvalidInvoiceError("Invoice amount must be positive")
+        if self.total_amount <= 0:
+            raise InvalidInvoiceError("Invoice total amount must be positive")
 
     @property
     def urgency(self) -> UrgencyLevel:
@@ -360,7 +360,7 @@ Benefits of rich domain models:
 3. **Clear usage**: Other code doesn't need to know implementation details:
   ```python
   # Simple to use because Invoice knows what to do
-  invoice = Invoice(amount=Decimal("100.00"), due_date=date.today(), invoice_number="INV-001")
+  invoice = Invoice(total_amount=Decimal("100.00"), due_date=date.today(), invoice_number="INV-001")
    
   # Don't need to know how urgency is calculated
   print(invoice.urgency)  # Just works!
@@ -377,28 +377,28 @@ This makes the code:
   ```python
   # Bad: Using primitive types for business concepts
   class Invoice:
-      def __init__(self, amount: float, status: str):
-          self.amount = amount    # Float has rounding issues
+      def __init__(self, total_amount: float, status: str):
+          self.total_amount = total_amount    # Float has rounding issues
           self.status = status    # Any string is allowed
 
   # Problems with primitive types:
   invoice1 = Invoice(99.99999, "NEW")     # Float rounding issues
-  invoice2 = Invoice(-50.0, "pending")    # Negative amount allowed
+  invoice2 = Invoice(-50.0, "pending")    # Negative total amount allowed
   invoice3 = Invoice(100.0, "DANCING")    # Invalid status allowed
 
   # Better: Using proper types for business concepts
   class Invoice:
-      def __init__(self, amount: Decimal, status: InvoiceStatus):
-          self.amount = amount    # Decimal for precise money values
+      def __init__(self, total_amount: Decimal, status: InvoiceStatus):
+          self.total_amount = total_amount    # Decimal for precise money values
           self.status = status    # Only valid statuses allowed
 
       def validate(self):
-          if self.amount <= 0:
-              raise InvalidInvoiceError("Amount must be positive")
+          if self.total_amount <= 0:
+              raise InvalidInvoiceError("Total amount must be positive")
 
   # Now invalid values are caught immediately:
   invoice = Invoice(
-      amount=Decimal("100.00"),        # Precise decimal amount
+      total_amount=Decimal("100.00"),        # Precise decimal total amount
       status=InvoiceStatus.PENDING     # Only valid statuses allowed
   )
   ```
