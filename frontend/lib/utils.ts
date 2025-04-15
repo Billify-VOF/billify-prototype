@@ -1,4 +1,3 @@
-import { Ponto_Connect_2_Options } from '@/constants/api';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

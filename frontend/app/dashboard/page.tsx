@@ -1,6 +1,5 @@
 'use client';
-import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense, useState, useEffect } from 'react';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { InvoiceUploadResult } from '@/components/invoice/InvoiceUploadResult';
@@ -11,14 +10,11 @@ import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { Filter, Upload } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDisplayName } from '@/lib/utils/userUtils';
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 //import components
 import LeftBar from '../../components/layout/LeftBar';
 import TopBar from '../../components/layout/TopBar';
 import CashFlowChart from '../../components/dashboard/CashFlowChart';
 import AnalysisSection from '../../components/dashboard/AnalysisSection';
-import { Ponto_Connect_2_Options } from '@/constants/api';
 
 interface ExtendedInvoiceData extends InvoiceFormData {
   temp_file_path?: string;
@@ -36,77 +32,7 @@ const BillifyDashboard = () => {
   );
 };
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-function base64_urlencode(data: ArrayBuffer) {
-  const urlencoded = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(data))))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  return urlencoded;
-}
-
-function getSecureRandomInt(min: number, max: number) {
-  const range = max - min + 1;
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
-  const randomBytes = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(randomBytes);
-  let randomValue = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    randomValue = (randomValue << 8) | randomBytes[i];
-  }
-  return min + (randomValue % range);
-}
-
-function generateCodeVerifier(): string {
-  const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  // Random length between 43-128 because that is the CodeVerifier requirement
-  const length = getSecureRandomInt(43, 128);
-
-  const randomBytes = new Uint8Array(length);
-
-  crypto.getRandomValues(randomBytes);
-
-  let result = '';
-
-  for (let i = 0; i < length; i++) {
-    result += allowedChars.charAt(randomBytes[i] % allowedChars.length);
-  }
-
-  return result;
-}
-
-async function sha256Base64(input: string): Promise<ArrayBuffer> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return hashBuffer;
-}
-
-async function generateCodeChallenge(codeVerifier: string): Promise<string> {
-  const sha256 = await sha256Base64(codeVerifier);
-  const codeChallenge = base64_urlencode(sha256);
-
-  return codeChallenge;
-}
-
-const generatePontoOAuthUrl = async () => {
-  try {
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-    return `${Ponto_Connect_2_Options.OAUTH_URL}?client_id=${Ponto_Connect_2_Options.CLIENT_ID}&redirect_uri=${Ponto_Connect_2_Options.REDIRECT_URI}&response_type=code&scope=${Ponto_Connect_2_Options.SCOPE}&state=${codeVerifier}&code_challenge=${codeChallenge}&code_challenge_method=${Ponto_Connect_2_Options.CODE_CHALLENGE_METHOD}`;
-  } catch (error) {
-    console.log('Failed to generate Ponto OAuth URL');
-    throw error;
-  }
-};
-
-
 const DashboardContent = () => {
-  const searchParams = useSearchParams();
   const { user } = useAuth();
   // Add state for file upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -140,34 +66,6 @@ const DashboardContent = () => {
       setUploadedInvoiceData(null);
     }
   }, [isDialogOpen]);
-
-  const requestAccessToken = useCallback(async () => {
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    if (code && state && Ponto_Connect_2_Options.REDIRECT_URI) {
-      const payload = new FormData();
-      payload.append('code', code);
-      payload.append('state', state);
-      payload.append('redirect_uri', Ponto_Connect_2_Options.REDIRECT_URI!);
-      try {
-        await fetch('/api/ponto/auth', {
-          method: 'POST',
-          body: payload,
-        });
-      } catch (error) {
-        console.log('Error while requesting access token: ', error);
-      }
-    }
-  }, [searchParams]);
-
-  const hasFetched = useRef(false);
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      requestAccessToken();
-      hasFetched.current = true; // Prevents duplicate execution
-    }
-  }, [requestAccessToken]);
 
   // Fetch invoices with pagination
   const fetchInvoices = async (url: string | null) => {
@@ -294,7 +192,6 @@ const DashboardContent = () => {
     invoiceData['due_date'] = uploadedInvoiceData['invoice']['date'];
     invoiceData['temp_file_path'] = uploadedInvoiceData['invoice']['file_path']; // No type error now
     console.log('Invoice data:', invoiceData);
-    
 
     try {
       const response = await fetch(
@@ -355,15 +252,10 @@ const DashboardContent = () => {
     console.log('Search query: ', query);
   };
 
-  const onPontoConnect = async () => {
-    const oauthUrl = await generatePontoOAuthUrl();
-    window.open(oauthUrl);
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Left Sidebar */}
-      <LeftBar onPontoConnect={onPontoConnect} />
+      <LeftBar />
       <div className="flex w-full flex-col">
         <TopBar onSearch={onSearch} searchResult={searchResult} />
 

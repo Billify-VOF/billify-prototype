@@ -2,27 +2,26 @@ import { useState } from 'react';
 import { LiaFileInvoiceSolid } from 'react-icons/lia';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { LiaWalletSolid } from 'react-icons/lia';
-import { IoShieldCheckmarkOutline } from 'react-icons/io5';
-import { HiOutlineSupport, HiOutlineChartPie } from 'react-icons/hi';
-import { Unlock } from '@/components/ui/icons';
+import { HiOutlineChartPie } from 'react-icons/hi';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import logo from '../../assets/images/logo.svg';
 
-interface LeftBarProps {
-  onPontoConnect: () => void;
-}
-
-const LeftBar = ({ onPontoConnect }: LeftBarProps) => {
+const LeftBar = () => {
+  const router = useRouter();
   const [activeItem, setActiveItem] = useState('Dashboard');
 
   const menuItems = [
-    { label: 'Dashboard', icon: HiOutlineChartPie },
-    { label: 'Invoices', icon: LiaFileInvoiceSolid },
-    { label: 'Wallets', icon: LiaWalletSolid },
-    { label: 'Settings', icon: IoSettingsOutline },
-    { label: 'Privecy Policy', icon: IoShieldCheckmarkOutline },
-    { label: 'Help & Support', icon: HiOutlineSupport },
+    { label: 'Dashboard', icon: HiOutlineChartPie, path: '/dashboard' },
+    { label: 'Invoices', icon: LiaFileInvoiceSolid, path: '/invoices' },
+    { label: 'Wallets', icon: LiaWalletSolid, path: '/wallets' },
+    { label: 'Settings', icon: IoSettingsOutline, path: '/settings' },
   ];
+
+  const handleItemClick = (label: string, path: string) => {
+    setActiveItem(label);
+    router.push(path);
+  };
 
   return (
     <div className="flex w-24 flex-col border-r-2 border-gray-200 bg-white px-2 py-6 lg:w-80 lg:px-6">
@@ -36,7 +35,7 @@ const LeftBar = ({ onPontoConnect }: LeftBarProps) => {
           return (
             <div
               key={item.label}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => handleItemClick(item.label, item.path)}
               className={`flex cursor-pointer flex-row justify-center gap-x-3 rounded-xl px-2 py-4 transition-all hover:bg-blue-50 lg:justify-start ${
                 isActive ? 'bg-blue-500/5' : ''
               }`}
@@ -50,13 +49,6 @@ const LeftBar = ({ onPontoConnect }: LeftBarProps) => {
             </div>
           );
         })}
-        <div
-          onClick={() => onPontoConnect()}
-          className={`flex cursor-pointer flex-row justify-center gap-x-3 rounded-xl px-2 py-4 transition-all hover:bg-blue-50 lg:justify-start`}
-        >
-          <Unlock size={24} className={'text-gray-600'} />
-          <span className={`hidden text-gray-700 lg:block`}>Ponto Connect</span>
-        </div>
       </div>
     </div>
   );
