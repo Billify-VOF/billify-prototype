@@ -32,7 +32,7 @@ export default function SettingsPage() {
   // State for user settings form
   const [settings, setSettings] = useState<UserSettings>({
     email: '',
-    password: '********',
+    password: '',
     firstName: '',
     lastName: '',
     companyName: '',
@@ -81,7 +81,7 @@ export default function SettingsPage() {
     if (user) {
       setSettings({
         email: user.email || '',
-        password: '********',
+        password: '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         companyName: user.company_name || '',
