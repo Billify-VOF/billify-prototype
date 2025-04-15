@@ -28,6 +28,7 @@ from infrastructure.django.models.invoice import Invoice
 
 from integrations.transformers.pdf.transformer import PDFTransformer
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 
 logger = getLogger(__name__)
 
@@ -452,6 +453,7 @@ class InvoiceConfirmationView(BaseInvoiceView):
         # Extract invoice_id from the URL kwargs
         invoice_id = kwargs.get("invoice_id")
 
+        
         if not invoice_id:
             logger.error("Invoice ID is missing in the URL.")
             return Response({"error": "Invoice ID is required."}, status=400)
@@ -482,6 +484,16 @@ class InvoiceConfirmationView(BaseInvoiceView):
         try:
             # Extract validated data
             temp_file_path = serializer["temp_file_path"]
+            # Fetch the invoice object from the database
+            invoice = get_object_or_404(Invoice, id=invoice_id)
+
+            # Update the invoice object with data from request.data
+            for key, value in request.data.items():
+                if hasattr(invoice, key):
+                    setattr(invoice, key, value)
+
+            # Save the updated invoice object
+            invoice.save()
 
             # Check if the temporary file exists
             # Validate that the path is within the temporary storage area

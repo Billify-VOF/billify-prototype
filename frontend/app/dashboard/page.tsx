@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { InvoiceUploadResult } from '@/components/invoice/InvoiceUploadResult';
-import { InvoiceData } from '@/lib/invoice';
+import { InvoiceFormData } from '@/lib/invoice';
 import { dummySearchResults, SearchItemResult } from '@/components/types';
 import { STATUS_COLORS, UploadStatus } from '@/components/definitions/invoice';
 import { generatePontoOAuthUrl } from '@/lib/utils';
@@ -20,11 +20,12 @@ import CashFlowChart from '../../components/dashboard/CashFlowChart';
 import AnalysisSection from '../../components/dashboard/AnalysisSection';
 import { Ponto_Connect_2_Options } from '@/constants/api';
 
-interface ExtendedInvoiceData extends InvoiceData {
+interface ExtendedInvoiceData extends InvoiceFormData {
   temp_file_path?: string;
   invoice_id: number;
   id: string;
   due_date: string;
+  total_amount: string;
 }
 
 const BillifyDashboard = () => {
@@ -47,7 +48,7 @@ const DashboardContent = () => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<SearchItemResult[]>([]);
   const [invoiceData, setInvoiceData] = useState<ExtendedInvoiceData>();
-  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [invoices, setInvoices] = useState<ExtendedInvoiceData[]>([]);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState<{ dueDate?: string; status?: string }>({});
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
@@ -186,6 +187,9 @@ const DashboardContent = () => {
       const response = await fetch('/api/invoices/upload/', {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
       });
 
       const data = await response.json();
@@ -220,6 +224,8 @@ const DashboardContent = () => {
     invoiceData['id'] = uploadedInvoiceData['invoice']['id'];
     invoiceData['due_date'] = uploadedInvoiceData['invoice']['date'];
     invoiceData['temp_file_path'] = uploadedInvoiceData['invoice']['file_path']; // No type error now
+    console.log('Invoice data:', invoiceData);
+    
 
     try {
       const response = await fetch(
