@@ -1,5 +1,13 @@
 import { Ponto_Connect_2_Options } from '@/constants/api';
-import { base64_urlencode } from '.';
+
+function base64_urlencode(data: ArrayBuffer) {
+  const urlencoded = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(data))))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  return urlencoded;
+}
 
 function getSecureRandomInt(min: number, max: number) {
   const range = max - min + 1;
